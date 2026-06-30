@@ -8,7 +8,7 @@
 
 pi-brains is a scalable knowledge and behavior system for the [Pi](https://github.com/earendil-works/pi) coding agent.
 
-It connects Pi to GitSense Brains, rules, notes, and lessons so Pi can use structured repository knowledge while it works. That means Pi can think before it spends context, verify before it acts, and carry project knowledge across sessions instead of rediscovering it every time.
+It connects Pi to GitSense Brains, rules, notes, and lessons so Pi can use structured knowledge while it works. That knowledge can be personal preferences, project conventions, domain context, prior lessons, or repository intelligence. Pi can think before it spends context, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
 
 ## Install
 
@@ -16,7 +16,7 @@ It connects Pi to GitSense Brains, rules, notes, and lessons so Pi can use struc
 pi install npm:@gitsense/pi-brains
 ```
 
-Start Pi in a repository and run:
+Start Pi in a workspace and run:
 
 ```text
 /brains
@@ -56,17 +56,40 @@ Save this as a repo lesson: checkout discount behavior is split between src/chec
 
 pi-brains makes knowledge a first-class citizen in Pi.
 
-GitSense makes it simple to capture and store repository knowledge: rules, notes, lessons, topics, and Brains. pi-brains makes it simple for Pi to use that knowledge while it works.
+GitSense makes it simple to capture and store knowledge: rules, notes, lessons, topics, and Brains. pi-brains makes it simple for Pi to use that knowledge while it works.
 
-That changes the starting point. A normal agent often begins by grepping, opening files, and spending context before it knows where the real risk is. With pi-brains, Pi can ask the repository what it already knows first.
+That changes the starting point. A normal agent often begins by grepping, opening files, and spending context before it knows where the real risk is. With pi-brains, Pi can ask what is already known first.
+
+## Pi + Brains
+
+Brains make structured knowledge available to Pi before it starts opening files.
 
 Ask Pi:
+
+```text
+I want to build a Pi extension. Before reading code, use the brains in this repo to find the docs, APIs, gotchas, and examples I should know about.
+```
+
+Pi can combine different kinds of knowledge:
+
+| Brain | What Pi learns before spending context |
+| --- | --- |
+| Docs | Which guide, section, or reference doc to read |
+| Code intent | Which files likely matter and why |
+| Dependency maps | Which files have high blast radius |
+| Implicit todos | Hidden debt, stubs, workarounds, or cleanup candidates |
+| Rules | What behavior must be followed |
+| Lessons | What previous work taught the team |
+
+Then Pi can verify the important findings against source before it acts.
+
+For example, a broad request like this:
 
 ```text
 I want to improve search. Before deciding what to change, use the brains in this repo to identify any gotchas, then verify the important findings against source.
 ```
 
-Pi can use structured repository knowledge to separate the problem before editing:
+can become a focused plan:
 
 - "Search" may mean TUI fuzzy matching, autocomplete, session search, model filtering, or agent grep/find tools.
 - `packages/tui/src/fuzzy.ts` may be shared infrastructure with high blast radius.
@@ -74,15 +97,16 @@ Pi can use structured repository knowledge to separate the problem before editin
 - A Brain may surface hidden maintenance work, such as an incomplete stub or deprecated compatibility path.
 - Pi can verify the relevant findings against source before proposing a plan.
 
-The point is not that Pi never reads code. The point is that Pi gets a better first pass before it spends context on the wrong files.
+The point is not that Pi never reads code. The point is that Pi gets a better first pass before it spends context on the wrong files. Grep finds text. Vector search finds similar passages. Brains give Pi structured, queryable knowledge it can use to decide where to spend context.
 
 ## What You Can Teach Pi
 
 | Knowledge | Example |
 | --- | --- |
 | Personal behavior | "Do not edit files until I approve the plan." |
-| Repo conventions | "Generated files should be changed through schemas." |
-| File-specific context | "This ledger is pipe-delimited accounting data." |
+| Project conventions | "Generated files should be changed through schemas." |
+| Domain context | "Ledger files are pipe-delimited accounting data." |
+| File-specific context | "This file mixes billing totals and CSV export formatting." |
 | Lessons | "This refactor failed before because logic is split across two files." |
 | Brains | "Find gotchas, blast radius, hidden debt, or relevant files before planning." |
 | Triggers | "Block production config edits unless approval is present." |
@@ -91,7 +115,7 @@ The point is not that Pi never reads code. The point is that Pi gets a better fi
 
 Rules and hooks can make an agent react to events. pi-brains goes further by making knowledge scalable.
 
-- **Knowledge is queryable.** Pi can search Brains before it chooses which files to open.
+- **Knowledge is queryable.** Pi can search Brains before it chooses what context to spend.
 - **Behavior is teachable.** Tell Pi what to remember or enforce in normal language.
 - **Context is scoped.** Save knowledge as personal or repo-scoped.
 - **Lessons survive sessions.** Capture what went wrong once so future agents start smarter.
@@ -102,6 +126,7 @@ Rules and hooks can make an agent react to events. pi-brains goes further by mak
 | Command | Description |
 | --- | --- |
 | `/brains` | Initialize GitSense context and show the HUD |
+| `/brains build <brain-name>` | Build/import a Brain manifest |
 | `/brains insights` | Show session status and brain data |
 | `/brains rules` | Show rule status and options |
 | `/brains rules on` | Enable rules checking |

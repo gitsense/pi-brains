@@ -16,6 +16,10 @@ type NoticeLevel = Parameters<ExtensionContext["ui"]["notify"]>[1];
 const GITSENSE_SYSTEM_PROMPT = `GitSense / pi-brains context:
 - GitSense is available through the gsc CLI.
 - pi-brains evaluates GitSense rules for Pi lifecycle events.
+- Brains are local manifest databases. Before using a Brain, check availability with: gsc brains --json
+- If the requested Brain is not available, do not pretend it exists. Tell the user it must be built first and suggest: /brains build <brain-name>
+- Do not build Brains automatically unless the user explicitly asks. Building a Brain can write .gitsense files and may take time.
+- To build/import a Brain manifest manually, run: gsc manifest import <brain-name-or-manifest-path-or-url>
 - Rules live in .gitsense/rules/records.jsonl; executable trigger files live in .gitsense/rules/triggers/.
 - "Trigger rules" means GitSense tool-trigger rules: executable rules with trigger code, instruction text/query, frequency, and lifecycle event.
 - To inspect a rule, run: gsc rules show <rule-id>
@@ -672,6 +676,29 @@ export class PiBrainsController {
     } catch {
       if (this.disposed) return "";
       return "Error running gsc pi -b";
+    }
+  }
+
+  async buildBrain(uri: string, options?: { force?: boolean }): Promise<string> {
+    const args = ["manifest", "import", uri];
+    if (options?.force) args.push("--force");
+
+    try {
+      this.debug.log(`gsc ${args.join(" ")}`);
+      const result = await this.pi.exec("gsc", args, {
+        signal: this.backgroundAbort.signal,
+        timeout: 120_000,
+      });
+      if (this.disposed) return "";
+
+      const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
+      if (result.code === 0) {
+        return output || `Brain built from ${uri}`;
+      }
+      return output || `gsc manifest import failed with exit code ${result.code}`;
+    } catch (error) {
+      if (this.disposed) return "";
+      return error instanceof Error ? error.message : "Error building Brain";
     }
   }
 

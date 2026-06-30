@@ -44,6 +44,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     return new Text(prefix + "\n\n" + content, 0, 0);
   });
 
+  pi.registerMessageRenderer("brains-build", (message, _options, theme) => {
+    const content = typeof message.content === "string" ? message.content : "";
+    const prefix = theme.fg("accent", "[brains-build]");
+    return new Text(prefix + "\n\n" + content, 0, 0);
+  });
+
   pi.on("session_start", (_event, ctx) => {
     controller.start(ctx);
   });
@@ -108,7 +114,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   pi.registerCommand("brains", {
     description: "Manage pi-brains and rules",
     handler: async (args, ctx) => {
-      const [command, value] = args.trim().split(/\s+/, 2);
+      const parts = args.trim().split(/\s+/).filter(Boolean);
+      const command = parts[0];
+      const value = parts.slice(1).join(" ");
 
       // /brains - initialize expert context
       if (!command) {
@@ -124,6 +132,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
           content: output || "No insights available",
           display: true,
         });
+        return;
+      }
+
+      // /brains build - build/import a Brain manifest
+      if (command === "build") {
+        await handleBuildCommand(value, controller, pi);
         return;
       }
 
@@ -302,6 +316,46 @@ Managing rules:
   });
 }
 
+async function handleBuildCommand(value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
+  const args = (value ?? "").trim().split(/\s+/).filter(Boolean);
+  const force = args.includes("--force");
+  const manifest = args.find(arg => arg !== "--force");
+
+  if (!manifest) {
+    const brains = await controller.runGscBrains();
+    const help = `Build a Brain from a GitSense manifest.
+
+Usage:
+
+  /brains build <brain-name>
+  /brains build <manifest-path-or-url>
+  /brains build <brain-name> --force
+
+This runs:
+
+  gsc manifest import <brain-name-or-manifest-path-or-url>
+
+For a name like "code-intent", gsc looks for .gitsense/manifests/code-intent.json. Building a Brain writes to .gitsense and may take time. pi-brains will not build Brains automatically unless you explicitly ask.
+
+Current Brains:
+
+${brains || "No active Brains found."}`;
+    pi.sendMessage({
+      customType: "brains-build",
+      content: help,
+      display: true,
+    });
+    return;
+  }
+
+  const output = await controller.buildBrain(manifest, { force });
+  pi.sendMessage({
+    customType: "brains-build",
+    content: output || `Brain build completed for ${manifest}`,
+    display: true,
+  });
+}
+
 function showAbout(pi: ExtensionAPI): void {
   const about = `GitSense (gsc) turns domain knowledge into queryable intelligence for coding agents.
 
@@ -309,6 +363,7 @@ What gsc can do:
 
   Search with meaning    gsc rg <pattern> --db <brain> --fields purpose
   Query by concept       gsc query --db <brain> --filter "..."
+  Build Brains           /brains build <brain-name>
   Check blast radius     gsc query --db <brain> --glob <file> --fields coupling_risk
   Capture lessons        gsc lessons add --summary "..." --instruction "..."
   Define rules           gsc rules add --glob "**/*.ts" --summary "..." --instruction "..."
@@ -336,6 +391,7 @@ function showHelp(pi: ExtensionAPI): void {
   const help = `/brains commands:
 
   /brains              Initialize expert context (gsc experts init)
+  /brains build        Build/import a Brain manifest
   /brains insights     Show session status and brain data
   /brains rules        Show rules status and options
   /brains rules status Show recent rule decisions
