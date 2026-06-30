@@ -30,11 +30,15 @@ Use chat as the interface. You should not need to write rule files or run `gsc` 
 
 ### Catch Habit Commands
 
+Teach Pi to recognize accidental terminal habits before they become chat messages.
+
 ```text
 I often type ls, clear, and pwd out of habit. Add a personal rule so those prompts are treated as terminal habits and are not sent into the conversation.
 ```
 
 ### Ask Before Editing
+
+Make approval part of Pi's default behavior instead of repeating it every session.
 
 ```text
 Add a personal rule: do not write or edit files until I explicitly say to make the change. You can inspect files and propose a plan first.
@@ -42,11 +46,15 @@ Add a personal rule: do not write or edit files until I explicitly say to make t
 
 ### Protect Generated Files
 
+Turn a project convention into behavior Pi applies before it edits.
+
 ```text
 Add a repo rule for src/generated/**. When editing those files, warn that generated files should not be edited directly and tell Pi to edit the source schema instead.
 ```
 
 ### Remember Project Lessons
+
+Capture what the team already learned so future agents start with that context.
 
 ```text
 Save this as a repo lesson: checkout discount behavior is split between src/checkout/pricing.ts and src/checkout/rules.ts. Future discount changes should inspect both files before editing.
