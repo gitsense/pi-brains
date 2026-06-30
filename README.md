@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/pi-brains-logo.png" alt="pi-brains logo" width="400">
+  <img src="assets/pi-brains-logo.png" alt="pi-brains logo" width="600">
 </p>
 
 <h3 align="center">
