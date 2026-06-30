@@ -26,9 +26,23 @@ Start Pi in a workspace and run:
 
 If GitSense (`gsc`) is not installed, `/brains` will show install instructions.
 
-## Quick Start
+## What Pi Can Remember
 
-Use chat as the interface. You should not need to write rule files or run `gsc` commands for normal use.
+pi-brains gives Pi scoped knowledge it can search, connect to the task, and use while it works.
+
+| Knowledge | Example |
+| --- | --- |
+| Personal behavior | "Do not edit files until I approve the plan." |
+| Project conventions | "Generated files should be changed through schemas." |
+| Domain context | "Ledger files are pipe-delimited accounting data." |
+| File-specific context | "This file mixes billing totals and CSV export formatting." |
+| Lessons | "This refactor failed before because logic is split across two files." |
+| Brains | "Find gotchas, blast radius, hidden debt, or relevant files before planning." |
+| Triggers | "Block production config edits unless approval is present." |
+
+## How It Works
+
+Tell Pi what to remember or how to behave. pi-brains turns that into durable knowledge Pi can use later.
 
 ### Catch Habit Commands
 
@@ -51,7 +65,7 @@ Add a personal rule: do not write or edit files until I explicitly say to make t
 Turn a project convention into behavior Pi applies before it edits.
 
 ```text
-Add a repo rule for src/generated/**. When editing those files, warn that generated files should not be edited directly and tell Pi to edit the source schema instead.
+Add a repo rule for src/generated/**. These files are generated from schemas in src/schema/**. When a change touches generated code, inspect the schema first and explain which generator command should be run.
 ```
 
 ### Remember Project Lessons
@@ -125,18 +139,6 @@ can become a focused plan:
 
 The point is not that Pi never reads code. The point is that Pi gets a better first pass before it spends context on the wrong files. Grep finds text. Vector search finds similar passages. Brains give Pi structured, queryable knowledge it can use to decide where to spend context.
 
-## What Pi Can Remember
-
-| Knowledge | Example |
-| --- | --- |
-| Personal behavior | "Do not edit files until I approve the plan." |
-| Project conventions | "Generated files should be changed through schemas." |
-| Domain context | "Ledger files are pipe-delimited accounting data." |
-| File-specific context | "This file mixes billing totals and CSV export formatting." |
-| Lessons | "This refactor failed before because logic is split across two files." |
-| Brains | "Find gotchas, blast radius, hidden debt, or relevant files before planning." |
-| Triggers | "Block production config edits unless approval is present." |
-
 ## What Makes pi-brains Different
 
 Hooks are good at reacting to events. Markdown files are good for a small amount of shared guidance. pi-brains is different because knowledge stays scoped, searchable, and durable as it grows.
@@ -152,7 +154,8 @@ Hooks are good at reacting to events. Markdown files are good for a small amount
 | Command | Description |
 | --- | --- |
 | `/brains` | Initialize GitSense context and show the HUD |
-| `/brains build <brain-name>` | Build/import a Brain manifest |
+| `/brains build` | Build/import all local Brain manifests |
+| `/brains build <brain-name>` | Build/import one Brain manifest |
 | `/brains insights` | Show session status and brain data |
 | `/brains rules` | Show rule status and options |
 | `/brains rules on` | Enable rules checking |
