@@ -72,6 +72,24 @@ Instead of starting with blind grep and file loading, Pi can ask what is already
 
 Brains make structured knowledge available to Pi before it starts opening files.
 
+### Try Pi With Brains
+
+The [GitSense Pi fork](https://github.com/gitsense/pi) ships with Brain manifests for Pi itself:
+
+```bash
+git clone https://github.com/gitsense/pi.git
+cd pi
+pi install npm:@gitsense/pi-brains
+```
+
+From a Pi session inside the cloned repo, build the Brains:
+
+```text
+/brains build
+```
+
+Pi can then use its own docs, code intent, dependency map, and implicit todos before it starts opening files.
+
 Ask Pi:
 
 ```text
