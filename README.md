@@ -40,9 +40,9 @@ pi-brains gives Pi scoped knowledge it can search, connect to the task, and use 
 | Brains | "Find gotchas, blast radius, hidden debt, or relevant files before planning." |
 | Triggers | "Block production config edits unless approval is present." |
 
-## How It Works
+## Start With Rules
 
-Tell Pi what to remember or how to behave. pi-brains turns that into durable knowledge Pi can use later.
+Rules are the easiest way to teach Pi new behavior. Tell Pi what should happen, and pi-brains can turn that into durable behavior for future sessions.
 
 ### Catch Habit Commands
 
@@ -68,12 +68,29 @@ Turn a project convention into behavior Pi applies before it edits.
 Add a repo rule for src/generated/**. These files are generated from schemas in src/schema/**. When a change touches generated code, inspect the schema first and explain which generator command should be run.
 ```
 
-### Remember Project Lessons
+### Route Project Changes
 
-Capture what you and others learned so future agents start with that context.
+Turn project knowledge into behavior Pi applies before it edits.
 
 ```text
-Save this as a repo lesson: checkout discount behavior is split between src/checkout/pricing.ts and src/checkout/rules.ts. Future discount changes should inspect both files before editing.
+Add a repo rule: checkout discount behavior is split between src/checkout/pricing.ts and src/checkout/rules.ts. Before editing discount behavior, inspect both files and explain where the change belongs.
+```
+
+## See Rules In Action
+
+The demo repo ships with rules, lessons, and triggers you can try immediately.
+
+```bash
+git clone https://github.com/gitsense/gsc-rules-demos.git
+cd gsc-rules-demos
+pi install npm:@gitsense/pi-brains
+pi
+```
+
+Then ask Pi:
+
+```text
+Show me what pi-brains can do in this repo.
 ```
 
 ## Give Pi a Better Starting Point
@@ -143,11 +160,11 @@ The point is not that Pi never reads code. The point is that Pi gets a better fi
 
 Hooks are good at reacting to events. Markdown files are good for a small amount of shared guidance. pi-brains is different because knowledge stays scoped, searchable, and durable as it grows.
 
-- **Knowledge stays queryable.** Pi can search Brains, rules, notes, and lessons instead of reading one long instruction file.
+- **Knowledge stays queryable.** Pi can search Brains, rules, notes, and lessons by scope, summaries, topics, and tags, so it can pull in the relevant knowledge when it matters.
 - **Behavior can be taught in chat.** Tell Pi what to remember or enforce, and it can turn that into durable knowledge.
 - **Context is scoped.** Save knowledge as personal, project, file-specific, topic-specific, or trigger-backed.
 - **Lessons survive sessions.** Capture what went wrong once so future agents start smarter.
-- **Rules do not become one giant markdown file.** Store focused records that can be matched, updated, disabled, or deleted.
+- **Rules stay manageable.** Store focused records that can be matched by scope, updated, disabled, deleted, or applied only when they are relevant.
 
 ## Commands
 
@@ -165,10 +182,9 @@ Hooks are good at reacting to events. Markdown files are good for a small amount
 | `/brains debug` | Toggle debug logging |
 | `/brains help` | Show available commands |
 
-## Documentation
+## Demo Repository
 
-- [Tutorial](TUTORIAL.md): chat-first examples for creating rules, notes, lessons, and triggers.
-- [Technical reference](TECHNICAL.md): command details, trigger fields, lifecycle events, and configuration.
+Use [gitsense/gsc-rules-demos](https://github.com/gitsense/gsc-rules-demos) to see the chat-first workflow for creating rules, notes, lessons, and triggers.
 
 ## Current Boundaries
 
