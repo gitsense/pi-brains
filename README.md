@@ -2,11 +2,9 @@
   <img src="assets/pi-brains-logo.png" alt="pi-brains logo" width="400">
 </p>
 
-<h1 align="center">pi-brains</h1>
-
-<p align="center">
+<h3 align="center">
   Teach Pi what to remember and how to behave.
-</p>
+</h3>
 
 pi-brains is a scalable knowledge and behavior system for the [Pi](https://github.com/earendil-works/pi) coding agent.
 
