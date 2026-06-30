@@ -1,0 +1,45 @@
+{
+  "name": "@gitsense/pi-brains",
+  "version": "0.1.0",
+  "description": "A configurable repository-awareness HUD for the Pi coding agent",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "gitsense"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions/pi-brains/index.ts"
+    ]
+  },
+  "files": [
+    "assets",
+    "extensions",
+    "examples",
+    "README.md",
+    "TECHNICAL.md",
+    "TUTORIAL.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "check": "tsgo --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.79.5",
+    "@earendil-works/pi-tui": "0.79.5",
+    "@types/node": "24.12.4",
+    "@typescript/native-preview": "7.0.0-dev.20260120.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
