@@ -6,7 +6,9 @@
   Teach Pi what to remember and how to behave.
 </h3>
 
-pi-brains is a scalable way to teach [Pi](https://github.com/earendil-works/pi) what to remember and how to behave while it works.
+pi-brains lets you teach [Pi](https://github.com/earendil-works/pi) by chatting with it.
+
+Tell Pi what to remember, how to behave, or what to check before it acts. pi-brains turns that into scoped, durable knowledge Pi can search and use while it works.
 
 It connects Pi to GitSense Brains, rules, notes, and lessons, so Pi can use what you and others already know before it starts guessing. That knowledge can include personal preferences, project conventions, domain context, prior lessons, and knowledge extracted from the repo.
 
@@ -60,9 +62,19 @@ Make approval part of Pi's default behavior instead of repeating it every sessio
 Add a personal rule: do not write or edit files until I explicitly say to make the change. You can inspect files and propose a plan first.
 ```
 
+Rules are only the starting point. You can also teach Pi to:
+
+- remember project-specific file formats
+- look up notes before interpreting unfamiliar files
+- apply lessons from previous work
+- warn before high-risk edits
+- run triggers when a tool action needs a guardrail
+
+The demo repo shows these pieces working together.
+
 ## See Rules In Action
 
-The demo repo ships with rules, lessons, and triggers you can try immediately.
+The demo repo ships with rules, notes, lessons, and triggers you can try immediately.
 
 ```bash
 git clone https://github.com/gitsense/gsc-rules-demos.git
