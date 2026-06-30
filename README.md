@@ -8,7 +8,7 @@
 
 pi-brains is a scalable way to teach [Pi](https://github.com/earendil-works/pi) what to remember and how to behave while it works.
 
-It connects Pi to GitSense Brains, rules, notes, and lessons, so Pi can use what you and your team already know before it starts guessing. That knowledge can include personal preferences, project conventions, domain context, prior lessons, and knowledge extracted from the repo.
+It connects Pi to GitSense Brains, rules, notes, and lessons, so Pi can use what you and others already know before it starts guessing. That knowledge can include personal preferences, project conventions, domain context, prior lessons, and knowledge extracted from the repo.
 
 This is not one giant markdown file. Knowledge is stored as scoped, queryable records that Pi can search and apply when they matter. Pi can think before it pays the cost of opening files, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
 
