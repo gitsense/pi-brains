@@ -60,22 +60,6 @@ Make approval part of Pi's default behavior instead of repeating it every sessio
 Add a personal rule: do not write or edit files until I explicitly say to make the change. You can inspect files and propose a plan first.
 ```
 
-### Protect Generated Files
-
-Turn a project convention into behavior Pi applies before it edits.
-
-```text
-Add a repo rule for src/generated/**. These files are generated from schemas in src/schema/**. When a change touches generated code, inspect the schema first and explain which generator command should be run.
-```
-
-### Route Project Changes
-
-Turn project knowledge into behavior Pi applies before it edits.
-
-```text
-Add a repo rule: checkout discount behavior is split between src/checkout/pricing.ts and src/checkout/rules.ts. Before editing discount behavior, inspect both files and explain where the change belongs.
-```
-
 ## See Rules In Action
 
 The demo repo ships with rules, lessons, and triggers you can try immediately.
