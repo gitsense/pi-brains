@@ -6,9 +6,11 @@
   Teach Pi what to remember and how to behave.
 </h3>
 
-pi-brains is a scalable knowledge and behavior system for the [Pi](https://github.com/earendil-works/pi) coding agent.
+pi-brains is a scalable way to teach [Pi](https://github.com/earendil-works/pi) what to remember and how to behave while it works.
 
-It connects Pi to GitSense Brains, rules, notes, and lessons so Pi can use structured knowledge while it works. That knowledge can be personal preferences, project conventions, domain context, prior lessons, or repository intelligence. Pi can think before it spends context, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
+It connects Pi to GitSense Brains, rules, notes, and lessons, so Pi can use what you and your team already know before it starts guessing. That knowledge can include personal preferences, project conventions, domain context, prior lessons, and knowledge extracted from the repo.
+
+This is not one giant markdown file. Knowledge is stored as scoped, queryable records that Pi can search and apply when they matter. Pi can think before it pays the cost of opening files, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
 
 ## Install
 
@@ -54,19 +56,17 @@ Add a repo rule for src/generated/**. When editing those files, warn that genera
 
 ### Remember Project Lessons
 
-Capture what the team already learned so future agents start with that context.
+Capture what you and others learned so future agents start with that context.
 
 ```text
 Save this as a repo lesson: checkout discount behavior is split between src/checkout/pricing.ts and src/checkout/rules.ts. Future discount changes should inspect both files before editing.
 ```
 
-## Make Pi Much Smarter
-
-pi-brains makes knowledge a first-class citizen in Pi.
+## Give Pi a Better Starting Point
 
 GitSense makes it simple to capture and store knowledge: rules, notes, lessons, topics, and Brains. pi-brains makes it simple for Pi to use that knowledge while it works.
 
-That changes the starting point. A normal agent often begins by grepping, opening files, and spending context before it knows where the real risk is. With pi-brains, Pi can ask what is already known first.
+Instead of starting with blind grep and file loading, Pi can ask what is already known first.
 
 ## Pi + Brains
 
@@ -107,7 +107,7 @@ can become a focused plan:
 
 The point is not that Pi never reads code. The point is that Pi gets a better first pass before it spends context on the wrong files. Grep finds text. Vector search finds similar passages. Brains give Pi structured, queryable knowledge it can use to decide where to spend context.
 
-## What You Can Teach Pi
+## What Pi Can Remember
 
 | Knowledge | Example |
 | --- | --- |
@@ -121,13 +121,13 @@ The point is not that Pi never reads code. The point is that Pi gets a better fi
 
 ## What Makes pi-brains Different
 
-Rules and hooks can make an agent react to events. pi-brains goes further by making knowledge scalable.
+Hooks are good at reacting to events. Markdown files are good for a small amount of shared guidance. pi-brains is different because knowledge stays scoped, searchable, and durable as it grows.
 
-- **Knowledge is queryable.** Pi can search Brains before it chooses what context to spend.
-- **Behavior is teachable.** Tell Pi what to remember or enforce in normal language.
-- **Context is scoped.** Save knowledge as personal or repo-scoped.
+- **Knowledge stays queryable.** Pi can search Brains, rules, notes, and lessons instead of reading one long instruction file.
+- **Behavior can be taught in chat.** Tell Pi what to remember or enforce, and it can turn that into durable knowledge.
+- **Context is scoped.** Save knowledge as personal, project, file-specific, topic-specific, or trigger-backed.
 - **Lessons survive sessions.** Capture what went wrong once so future agents start smarter.
-- **Rules stay focused.** Store durable instructions as structured knowledge instead of one growing markdown file.
+- **Rules do not become one giant markdown file.** Store focused records that can be matched, updated, disabled, or deleted.
 
 ## Commands
 
