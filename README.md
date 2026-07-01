@@ -10,9 +10,7 @@ pi-brains lets you teach [Pi](https://github.com/earendil-works/pi) by chatting 
 
 Tell Pi what to remember, how to behave, or what to check before it acts. pi-brains turns that into durable knowledge tied to the right files, topics, events, or preferences.
 
-GitSense powers the knowledge and behavior layer. pi-brains brings it into Pi while it works.
-
-Knowledge is stored as focused records that Pi can search and apply when they matter. Pi can think before it pays the cost of opening files, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
+GitSense powers the knowledge and behavior layer. pi-brains brings it into Pi so Pi can search what is already known, apply the right guidance, and verify against source before it acts.
 
 ## Install
 
@@ -36,9 +34,11 @@ pi-brains gives Pi a knowledge and behavior layer organized by files, topics, ev
 
 pi-brains is not trying to replace hooks, markdown instructions, or search.
 
-It gives Pi a layer of focused records it can query and apply while it works. A record can be personal, project-wide, file-specific, topic-specific, or event-triggered. That means Pi can pull in the right rule, note, lesson, or Brain result when the task calls for it, before it commits to the wrong path or spends context on the wrong files.
+Hooks are useful for reacting to events. Markdown is useful for shared guidance. Search is useful for finding text.
 
-### What This Means
+pi-brains gives Pi focused records it can query and apply while it works. A record can be personal, project-wide, file-specific, topic-specific, or event-triggered. That means Pi can pull in the right rule, note, lesson, or Brain result when the task calls for it, before it commits to the wrong path or spends context on the wrong files.
+
+### What Pi Can Remember and Apply
 
 Pi can:
 
@@ -51,7 +51,7 @@ Pi can:
 
 The point is not that Pi stops reading code. The point is that Pi gets a better starting point, then verifies the important findings against source.
 
-## Dead Simple
+## Teach Pi in Plain Language
 
 You teach Pi by telling it what you want in plain language. pi-brains handles turning that into durable behavior or knowledge.
 
