@@ -55,6 +55,8 @@ The point is not that Pi stops reading code. The point is that Pi gets a better 
 
 You teach Pi by telling it what you want in plain language. pi-brains handles turning that into durable behavior or knowledge.
 
+Here are a few examples of prompts that can become durable behavior or reusable knowledge:
+
 ### Catch Habit Commands
 
 Teach Pi to recognize accidental terminal habits before they become chat messages.
