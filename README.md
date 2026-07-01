@@ -10,9 +10,9 @@ pi-brains lets you teach [Pi](https://github.com/earendil-works/pi) by chatting 
 
 Tell Pi what to remember, how to behave, or what to check before it acts. pi-brains turns that into scoped, durable knowledge Pi can search and use while it works.
 
-It connects Pi to GitSense Brains, rules, notes, and lessons, so Pi can use what you and others already know before it starts guessing. That knowledge can include personal preferences, project conventions, domain context, prior lessons, and knowledge extracted from the repo.
+GitSense powers the knowledge and behavior layer. pi-brains brings it into Pi while it works.
 
-This is not one giant markdown file. Knowledge is stored as scoped, queryable records that Pi can search and apply when they matter. Pi can think before it pays the cost of opening files, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
+Knowledge is stored as scoped, queryable records that Pi can search and apply when they matter. Pi can think before it pays the cost of opening files, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
 
 ## Install
 
@@ -28,7 +28,7 @@ Start Pi in a workspace and run:
 
 If GitSense (`gsc`) is not installed, `/brains` will show install instructions.
 
-## What Pi Can Remember
+## What You Can Teach Pi
 
 pi-brains gives Pi scoped knowledge it can search, connect to the task, and use while it works.
 
