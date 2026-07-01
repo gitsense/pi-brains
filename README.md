@@ -38,7 +38,7 @@ Hooks are useful for reacting to events. Markdown is useful for shared guidance.
 
 pi-brains gives Pi focused records it can query and apply while it works. A record can be personal, project-wide, file-specific, topic-specific, or event-triggered. That means Pi can pull in the right rule, note, lesson, or Brain result when the task calls for it, before it commits to the wrong path or spends context on the wrong files.
 
-### What Pi Can Remember and Apply
+### What Pi Can Do
 
 Pi can:
 
