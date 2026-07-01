@@ -73,6 +73,14 @@ Make approval part of Pi's default behavior instead of repeating it every sessio
 Add a personal rule: do not write or edit files until I explicitly say to make the change. You can inspect files and propose a plan first.
 ```
 
+### Explain A File Format
+
+Teach Pi project context before it reads unfamiliar files.
+
+```text
+Add a repo note for data/accounting/*.ledger. These files use the format date | type | amount | account | reference. Before interpreting these files, use the note to explain the ledger format and business meaning.
+```
+
 ## Try It Yourself
 
 These repos are already set up so you can see how pi-brains works.
