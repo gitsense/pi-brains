@@ -8,11 +8,11 @@
 
 pi-brains lets you teach [Pi](https://github.com/earendil-works/pi) by chatting with it.
 
-Tell Pi what to remember, how to behave, or what to check before it acts. pi-brains turns that into scoped, durable knowledge Pi can search and use while it works.
+Tell Pi what to remember, how to behave, or what to check before it acts. pi-brains turns that into durable knowledge tied to the right files, topics, events, or preferences.
 
 GitSense powers the knowledge and behavior layer. pi-brains brings it into Pi while it works.
 
-Knowledge is stored as scoped, queryable records that Pi can search and apply when they matter. Pi can think before it pays the cost of opening files, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
+Knowledge is stored as focused records that Pi can search and apply when they matter. Pi can think before it pays the cost of opening files, verify before it acts, and carry knowledge across sessions instead of rediscovering it every time.
 
 ## Install
 
@@ -30,13 +30,13 @@ If GitSense (`gsc`) is not installed, `/brains` will show install instructions.
 
 ## Why Pi + Brains
 
-pi-brains gives Pi a scoped knowledge and behavior layer it can search, match to the task, and apply before it acts.
+pi-brains gives Pi a knowledge and behavior layer organized by files, topics, events, and preferences.
 
 ### How pi-brains Is Different
 
 pi-brains is not trying to replace hooks, markdown instructions, or search.
 
-It gives Pi a layer of scoped records it can query and apply while it works. A record can be personal, project-wide, file-specific, topic-specific, or event-triggered. That means Pi can pull in the right rule, note, lesson, or Brain result when the task calls for it, before it commits to the wrong path or spends context on the wrong files.
+It gives Pi a layer of focused records it can query and apply while it works. A record can be personal, project-wide, file-specific, topic-specific, or event-triggered. That means Pi can pull in the right rule, note, lesson, or Brain result when the task calls for it, before it commits to the wrong path or spends context on the wrong files.
 
 ### What This Means
 
