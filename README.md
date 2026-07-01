@@ -73,7 +73,7 @@ Add a personal rule: do not write or edit files until I explicitly say to make t
 
 ## Try It Yourself
 
-You can try pi-brains in repos that already include GitSense knowledge.
+These repos are already set up so you can see how pi-brains works.
 
 ### Rules Demo
 
