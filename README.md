@@ -119,11 +119,13 @@ Show me what pi-brains can do in this repo.
 
 Use the GitSense Pi fork to try repository intelligence for Pi itself.
 
-#### Repository Intelligence
+#### What You'll Learn
 
-Brains make structured knowledge available to Pi before it starts opening files. Instead of starting with blind grep and file loading, Pi can ask what is already known first.
+This repo ships with its own intelligence. The Brain manifests are committed with the repo, so Pi can build queryable knowledge about the codebase before it starts opening files.
 
-Pi can combine different kinds of knowledge:
+A Brain is a queryable index of repository knowledge. It helps Pi ask what is already known first: which docs matter, what files are for, where the blast radius is, and what hidden todos or lessons may affect the task.
+
+The included Brains cover:
 
 | Brain | What Pi learns before spending context |
 | --- | --- |
@@ -147,7 +149,7 @@ Build the included Brains:
 /brains build
 ```
 
-Pi can then use its own docs, code intent, dependency map, and implicit todos before it starts opening files.
+Now you can ask Pi to use those Brains before it plans a change.
 
 Ask Pi:
 
@@ -199,8 +201,22 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 ## Development
 
 ```bash
+npm install
 npm run check
 npm test
+```
+
+To try local changes in Pi, install this package from your checkout:
+
+```bash
+pi install /path/to/pi-brains
+pi
+```
+
+Then run:
+
+```text
+/brains
 ```
 
 ## License
