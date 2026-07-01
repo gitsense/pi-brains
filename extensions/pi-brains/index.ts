@@ -321,21 +321,25 @@ async function handleBuildCommand(value: string | undefined, controller: PiBrain
   const force = args.includes("--force");
   const manifest = args.find(arg => arg !== "--force");
 
-  if (!manifest) {
+  if (manifest === "help") {
     const brains = await controller.runGscBrains();
     const help = `Build a Brain from a GitSense manifest.
 
 Usage:
 
+  /brains build
   /brains build <brain-name>
   /brains build <manifest-path-or-url>
+  /brains build --force
   /brains build <brain-name> --force
 
-This runs:
+With no name, pi-brains imports every manifest in .gitsense/manifests.
+
+Named builds run:
 
   gsc manifest import <brain-name-or-manifest-path-or-url>
 
-For a name like "code-intent", gsc looks for .gitsense/manifests/code-intent.json. Building a Brain writes to .gitsense and may take time. pi-brains will not build Brains automatically unless you explicitly ask.
+For a name like "code-intent", gsc looks for .gitsense/manifests/code-intent.json. Building Brains writes to .gitsense and may take time. pi-brains will not build Brains automatically unless you explicitly ask.
 
 Current Brains:
 
@@ -348,10 +352,12 @@ ${brains || "No active Brains found."}`;
     return;
   }
 
-  const output = await controller.buildBrain(manifest, { force });
+  const output = manifest
+    ? await controller.buildBrain(manifest, { force })
+    : await controller.buildAllBrains({ force });
   pi.sendMessage({
     customType: "brains-build",
-    content: output || `Brain build completed for ${manifest}`,
+    content: output || `Brain build completed${manifest ? ` for ${manifest}` : ""}`,
     display: true,
   });
 }

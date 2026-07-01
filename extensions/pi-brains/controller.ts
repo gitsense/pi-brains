@@ -1,3 +1,5 @@
+import { readdir } from "node:fs/promises";
+import { join } from "node:path";
 import type { AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, BeforeAgentStartEventResult, ContextEvent, ExtensionAPI, ExtensionContext, InputEvent, InputEventResult, SessionBeforeCompactEvent, SessionCompactEvent, ToolCallEvent, ToolCallEventResult, ToolResultEvent } from "@earendil-works/pi-coding-agent";
 import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-works/pi-tui";
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
@@ -17,7 +19,7 @@ const GITSENSE_SYSTEM_PROMPT = `GitSense / pi-brains context:
 - GitSense is available through the gsc CLI.
 - pi-brains evaluates GitSense rules for Pi lifecycle events.
 - Brains are local manifest databases. Before using a Brain, check availability with: gsc brains --json
-- If the requested Brain is not available, do not pretend it exists. Tell the user it must be built first and suggest: /brains build <brain-name>
+- If the requested Brain is not available, do not pretend it exists. Tell the user it must be built first and suggest: /brains build
 - Do not build Brains automatically unless the user explicitly asks. Building a Brain can write .gitsense files and may take time.
 - To build/import a Brain manifest manually, run: gsc manifest import <brain-name-or-manifest-path-or-url>
 - Rules live in .gitsense/rules/records.jsonl; executable trigger files live in .gitsense/rules/triggers/.
@@ -700,6 +702,35 @@ export class PiBrainsController {
       if (this.disposed) return "";
       return error instanceof Error ? error.message : "Error building Brain";
     }
+  }
+
+  async buildAllBrains(options?: { force?: boolean }): Promise<string> {
+    const manifestDir = join(this.cwd || process.cwd(), ".gitsense", "manifests");
+    let manifestNames: string[];
+
+    try {
+      const entries = await readdir(manifestDir, { withFileTypes: true });
+      manifestNames = entries
+        .filter(entry => entry.isFile() && entry.name.endsWith(".json"))
+        .map(entry => entry.name.slice(0, -".json".length))
+        .sort();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return `No local Brain manifests found at ${manifestDir}.\n\n${message}`;
+    }
+
+    if (manifestNames.length === 0) {
+      return `No local Brain manifests found at ${manifestDir}.`;
+    }
+
+    const outputs: string[] = [];
+    for (const manifestName of manifestNames) {
+      const output = await this.buildBrain(manifestName, options);
+      outputs.push(`## ${manifestName}\n\n${output || "No output"}`);
+      if (this.disposed) break;
+    }
+
+    return outputs.join("\n\n");
   }
 
   async queryBrainForFiles(brain: string, field: string): Promise<Map<string, string>> {

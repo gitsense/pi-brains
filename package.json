@@ -1,9 +1,20 @@
 {
   "name": "@gitsense/pi-brains",
   "version": "0.1.0",
-  "description": "A configurable repository-awareness HUD for the Pi coding agent",
+  "description": "Teach Pi durable knowledge and behavior with GitSense",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gitsense/pi-brains.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gitsense/pi-brains/issues"
+  },
+  "homepage": "https://github.com/gitsense/pi-brains#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "pi-package",
     "pi-extension",
@@ -17,10 +28,7 @@
   "files": [
     "assets",
     "extensions",
-    "examples",
     "README.md",
-    "TECHNICAL.md",
-    "TUTORIAL.md",
     "LICENSE"
   ],
   "scripts": {
