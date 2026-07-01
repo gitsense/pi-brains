@@ -6,11 +6,11 @@
   Teach Pi what to remember and how to behave.
 </h3>
 
-pi-brains lets you teach [Pi](https://github.com/earendil-works/pi) by chatting with it.
+pi-brains lets you give [Pi](https://github.com/earendil-works/pi) durable project and personal context by chatting with it.
 
-Tell Pi what to remember, how to behave, or what to check before it acts. pi-brains turns that into durable knowledge tied to the right files, topics, events, or preferences.
+Tell Pi what to remember, what rules to follow, or what to check before it acts. pi-brains saves that as focused records: rules, notes, lessons, triggers, and knowledge indexes tied to the right files, topics, events, or preferences.
 
-GitSense powers the knowledge and behavior layer. pi-brains brings it into Pi so Pi can search what is already known, apply the right guidance, and verify against source before it acts.
+GitSense powers the knowledge and behavior layer. pi-brains brings it into Pi so Pi can query what is already known, apply the relevant guidance, and verify important findings against source before it acts.
 
 ## Install
 
