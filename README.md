@@ -79,6 +79,13 @@ You can try pi-brains in repos that already include GitSense knowledge.
 
 Use this repo to try rules, notes, lessons, and triggers.
 
+#### What You'll Learn
+
+- rules can change how Pi behaves before it acts
+- notes can teach Pi project-specific context, such as how to read ledger files
+- lessons can carry previous work into future sessions
+- triggers can warn, block, or run checks around tool actions
+
 ```bash
 git clone https://github.com/gitsense/gsc-rules-demos.git
 cd gsc-rules-demos
@@ -102,6 +109,21 @@ Show me what pi-brains can do in this repo.
 
 Use the GitSense Pi fork to try repository intelligence for Pi itself.
 
+#### Repository Intelligence
+
+Brains make structured knowledge available to Pi before it starts opening files. Instead of starting with blind grep and file loading, Pi can ask what is already known first.
+
+Pi can combine different kinds of knowledge:
+
+| Brain | What Pi learns before spending context |
+| --- | --- |
+| Docs | Which guide, section, or reference doc to read |
+| Code intent | Which files likely matter and why |
+| Dependency maps | Which files have high blast radius |
+| Implicit todos | Hidden debt, stubs, workarounds, or cleanup candidates |
+| Rules | What behavior must be followed |
+| Lessons | What previous work taught the team |
+
 ```bash
 git clone https://github.com/gitsense/pi.git
 cd pi
@@ -122,21 +144,6 @@ Ask Pi:
 ```text
 I want to build a Pi extension. Before reading code, use the brains in this repo to find the docs, APIs, gotchas, and examples I should know about.
 ```
-
-## Repository Intelligence
-
-Brains make structured knowledge available to Pi before it starts opening files. Instead of starting with blind grep and file loading, Pi can ask what is already known first.
-
-Pi can combine different kinds of knowledge:
-
-| Brain | What Pi learns before spending context |
-| --- | --- |
-| Docs | Which guide, section, or reference doc to read |
-| Code intent | Which files likely matter and why |
-| Dependency maps | Which files have high blast radius |
-| Implicit todos | Hidden debt, stubs, workarounds, or cleanup candidates |
-| Rules | What behavior must be followed |
-| Lessons | What previous work taught the team |
 
 Then Pi can verify the important findings against source before it acts.
 
