@@ -28,23 +28,32 @@ Start Pi in a workspace and run:
 
 If GitSense (`gsc`) is not installed, `/brains` will show install instructions.
 
-## What You Can Teach Pi
+## Why Pi + Brains
 
-pi-brains gives Pi scoped knowledge it can search, connect to the task, and use while it works.
+pi-brains gives Pi a scoped knowledge and behavior layer it can search, match to the task, and apply before it acts.
 
-| Knowledge | Example |
-| --- | --- |
-| Personal behavior | "Do not edit files until I approve the plan." |
-| Project conventions | "Generated files should be changed through schemas." |
-| Domain context | "Ledger files are pipe-delimited accounting data." |
-| File-specific context | "This file mixes billing totals and CSV export formatting." |
-| Lessons | "This refactor failed before because logic is split across two files." |
-| Brains | "Find gotchas, blast radius, hidden debt, or relevant files before planning." |
-| Triggers | "Block production config edits unless approval is present." |
+### How pi-brains Is Different
 
-## Start With Rules
+pi-brains is not trying to replace hooks, markdown instructions, or search.
 
-Rules are the easiest way to teach Pi new behavior. Tell Pi what should happen, and pi-brains can turn that into durable behavior for future sessions.
+It gives Pi a layer of scoped records it can query and apply while it works. A record can be personal, project-wide, file-specific, topic-specific, or event-triggered. That means Pi can pull in the right rule, note, lesson, or Brain result when the task calls for it, before it commits to the wrong path or spends context on the wrong files.
+
+### What This Means
+
+Pi can:
+
+- follow your personal preferences across sessions
+- apply project conventions without you repeating them
+- check notes before interpreting unfamiliar files
+- remember lessons from previous work
+- use repository intelligence before choosing files to inspect
+- run triggers when an action needs a guardrail
+
+The point is not that Pi stops reading code. The point is that Pi gets a better starting point, then verifies the important findings against source.
+
+## Dead Simple
+
+You teach Pi by telling it what you want in plain language. pi-brains handles turning that into durable behavior or knowledge.
 
 ### Catch Habit Commands
 
@@ -62,19 +71,13 @@ Make approval part of Pi's default behavior instead of repeating it every sessio
 Add a personal rule: do not write or edit files until I explicitly say to make the change. You can inspect files and propose a plan first.
 ```
 
-Rules are only the starting point. You can also teach Pi to:
+## Try It Yourself
 
-- remember project-specific file formats
-- look up notes before interpreting unfamiliar files
-- apply lessons from previous work
-- warn before high-risk edits
-- run triggers when a tool action needs a guardrail
+You can try pi-brains in repos that already include GitSense knowledge.
 
-The demo repo shows these pieces working together.
+### Rules Demo
 
-## See Rules In Action
-
-The demo repo ships with rules, notes, lessons, and triggers you can try immediately.
+Use this repo to try rules, notes, lessons, and triggers.
 
 ```bash
 git clone https://github.com/gitsense/gsc-rules-demos.git
@@ -83,33 +86,30 @@ pi install npm:@gitsense/pi-brains
 pi
 ```
 
+If this is your first time using `pi-brains`, run:
+
+```text
+/brains
+```
+
 Then ask Pi:
 
 ```text
 Show me what pi-brains can do in this repo.
 ```
 
-## Give Pi a Better Starting Point
+### Knowledge Demo
 
-GitSense makes it simple to capture and store knowledge: rules, notes, lessons, topics, and Brains. pi-brains makes it simple for Pi to use that knowledge while it works.
-
-Instead of starting with blind grep and file loading, Pi can ask what is already known first.
-
-## Pi + Brains
-
-Brains make structured knowledge available to Pi before it starts opening files.
-
-### Try Pi With Brains
-
-The [GitSense Pi fork](https://github.com/gitsense/pi) ships with Brain manifests for Pi itself:
+Use the GitSense Pi fork to try repository intelligence for Pi itself.
 
 ```bash
 git clone https://github.com/gitsense/pi.git
 cd pi
 pi install npm:@gitsense/pi-brains
+pi
 ```
 
-From a Pi session inside the cloned repo, build the Brains:
+Build the included Brains:
 
 ```text
 /brains build
@@ -122,6 +122,10 @@ Ask Pi:
 ```text
 I want to build a Pi extension. Before reading code, use the brains in this repo to find the docs, APIs, gotchas, and examples I should know about.
 ```
+
+## Repository Intelligence
+
+Brains make structured knowledge available to Pi before it starts opening files. Instead of starting with blind grep and file loading, Pi can ask what is already known first.
 
 Pi can combine different kinds of knowledge:
 
@@ -150,17 +154,7 @@ can become a focused plan:
 - A Brain may surface hidden maintenance work, such as an incomplete stub or deprecated compatibility path.
 - Pi can verify the relevant findings against source before proposing a plan.
 
-The point is not that Pi never reads code. The point is that Pi gets a better first pass before it spends context on the wrong files. Grep finds text. Vector search finds similar passages. Brains give Pi structured, queryable knowledge it can use to decide where to spend context.
-
-## What Makes pi-brains Different
-
-Hooks are good at reacting to events. Markdown files are good for a small amount of shared guidance. pi-brains is different because knowledge stays scoped, searchable, and durable as it grows.
-
-- **Knowledge stays queryable.** Pi can search Brains, rules, notes, and lessons by scope, summaries, topics, and tags, so it can pull in the relevant knowledge when it matters.
-- **Behavior can be taught in chat.** Tell Pi what to remember or enforce, and it can turn that into durable knowledge.
-- **Context is scoped.** Save knowledge as personal, project, file-specific, topic-specific, or trigger-backed.
-- **Lessons survive sessions.** Capture what went wrong once so future agents start smarter.
-- **Rules stay manageable.** Store focused records that can be matched by scope, updated, disabled, deleted, or applied only when they are relevant.
+Grep finds text. Vector search finds similar passages. Brains give Pi structured, queryable knowledge it can use to decide where to spend context.
 
 ## Commands
 
@@ -177,10 +171,6 @@ Hooks are good at reacting to events. Markdown files are good for a small amount
 | `/brains about` | Show what GitSense can do |
 | `/brains debug` | Toggle debug logging |
 | `/brains help` | Show available commands |
-
-## Demo Repository
-
-Use [gitsense/gsc-rules-demos](https://github.com/gitsense/gsc-rules-demos) to see the chat-first workflow for creating rules, notes, lessons, and triggers.
 
 ## Current Boundaries
 
