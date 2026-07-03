@@ -28,7 +28,7 @@ Start Pi in a workspace and run:
 /brains
 ```
 
-If GitSense (`gsc`) is not installed, `/brains` will show install instructions.
+If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
 
 ## How it works
 
