@@ -72,10 +72,9 @@ pi install npm:@gitsense/pi-brains
 pi
 ```
 
-Then run `/brains` and ask Pi:
+Then ask Pi:
 
 ```text
-/brains
 What rules are shipped with this repository?
 ```
 
