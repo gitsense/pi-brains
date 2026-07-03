@@ -19,7 +19,7 @@ Tell Pi what your domain knows, what rules to follow, what mistakes to avoid, or
 ## Install
 
 ```bash
-pi install npm:gitsense/pi-brains
+pi install npm:@gitsense/pi-brains
 ```
 
 Start Pi in a workspace and run:
