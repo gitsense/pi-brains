@@ -116,3 +116,16 @@ export class BrainsPanel implements Component {
     return this.theme.fg("borderMuted", "─".repeat(Math.max(1, width)));
   }
 }
+
+const plainTheme = {
+  fg: (_color: string, text: string) => text,
+} as Theme;
+
+export function renderBrainsPanelSnapshot(state: PanelState, config: PiBrainsConfig, width: number, theme: Theme = plainTheme): string {
+  const snapshot = new BrainsPanel(
+    () => state,
+    () => ({ ...config, visible: true }),
+    theme,
+  );
+  return snapshot.render(width).join("\n").trimEnd();
+}

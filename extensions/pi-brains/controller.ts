@@ -5,11 +5,13 @@ import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-wo
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
 import { DebugLogger } from "./debug.ts";
 import { readContextState, readModelState } from "./model-context.ts";
-import { BrainsPanel } from "./panel.ts";
+import { BrainsPanel, renderBrainsPanelSnapshot } from "./panel.ts";
 import { RepositoryResolver } from "./repositories.ts";
 import { RuleDeliveryTracker } from "./rules/delivery.ts";
 import { RuleEngine } from "./rules/engine.ts";
 import { GscRulesClient } from "./rules/gsc-client.ts";
+import type { ExecutionResult, ExecutionTriggerResult, LifecycleEvent, RulesJsonRule } from "./rules/types.ts";
+import { buildTelemetryEvent, RuleTelemetryWriter, type RuleTelemetryEventV1, type RuleTelemetrySession, type RuleTelemetryEvent, type RuleTelemetryRuleSnapshot, type RuleTelemetryMatch, type RuleTelemetryResult, resolveOutcome } from "./rules/telemetry.ts";
 import { TouchedFileTracker } from "./touched-files.ts";
 import type { PanelState, PiBrainsConfig } from "./types.ts";
 
@@ -47,6 +49,7 @@ export class PiBrainsController {
   private readonly rulesDelivery = new RuleDeliveryTracker();
   private readonly rulesEngine: RuleEngine;
   private readonly debug: DebugLogger;
+  private readonly telemetry: RuleTelemetryWriter;
   private context: PanelState["context"] = null;
   private model: PanelState["model"] = null;
   private gscStatus: PanelState["gscStatus"] = "checking";
@@ -59,12 +62,14 @@ export class PiBrainsController {
   private passiveSteerBuffer: string[] = [];
   private passiveSteerMaxLength = 5;
   private passiveSteerMaxChars = 2000;
+  private sessionId: string | null = null;
 
   constructor(pi: ExtensionAPI, config: PiBrainsConfig) {
     this.pi = pi;
     this.config = config;
     this.debug = new DebugLogger(() => this.config);
     this.repositories = new RepositoryResolver(pi);
+    this.telemetry = new RuleTelemetryWriter(this.debug);
     this.rulesEngine = new RuleEngine(
       new GscRulesClient(pi, this.backgroundAbort.signal, this.debug),
       this.rulesDelivery,
@@ -75,7 +80,14 @@ export class PiBrainsController {
 
   start(ctx: ExtensionContext): void {
     this.cwd = ctx.cwd;
+    // Get session ID directly from SessionManager
+    const getSessionId = (ctx.sessionManager as { getSessionId?: () => string | null }).getSessionId;
+    this.sessionId = getSessionId ? getSessionId.call(ctx.sessionManager) : null;
     this.tracker.replay(ctx.sessionManager.getBranch(), ctx.cwd);
+
+    // Initialize telemetry with session path
+    const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
+    this.telemetry.setSession(sessionFile);
     this.refreshSessionState(ctx);
     this.repositories.resolveFiles(this.tracker.getFiles(), () => this.requestRender());
     this.config.visible = false;
@@ -134,7 +146,9 @@ export class PiBrainsController {
     this.debug.log(`evaluating rules for tool result: toolName=${event.toolName}, isError=${event.isError}`);
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from tool result evaluation`);
@@ -142,6 +156,12 @@ export class PiBrainsController {
     }
 
     this.debug.log(`tool result result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    const input = event.input as Record<string, unknown>;
+    const filePath = (input?.path as string) ?? null;
+    const command = (input?.command as string) ?? null;
+    await this.writeTelemetry(ctx, "post_tool_use", event.toolName, command, filePath, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -180,7 +200,9 @@ export class PiBrainsController {
     this.clearPassiveSteerBuffer();
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from agent_end evaluation`);
@@ -188,6 +210,9 @@ export class PiBrainsController {
     }
 
     this.debug.log(`agent_end result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    await this.writeTelemetry(ctx, "agent_end", "agent_end", null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -223,7 +248,9 @@ export class PiBrainsController {
     this.debug.log("evaluating rules for agent_start event");
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from agent_start evaluation`);
@@ -231,6 +258,9 @@ export class PiBrainsController {
     }
 
     this.debug.log(`agent_start result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    await this.writeTelemetry(ctx, "agent_start", "agent_start", null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -263,10 +293,15 @@ export class PiBrainsController {
     const passive = this.drainPassiveSteerBuffer();
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     // Show notices from rules
     if (result) {
+      // Write telemetry
+      await this.writeTelemetry(ctx, "context", "context", null, null, null, result, durationMs);
+
       for (const notice of result.notices ?? []) {
         this.debug.log(`showing notice: ${notice}`);
         ctx.ui.notify(notice, "info");
@@ -323,7 +358,9 @@ export class PiBrainsController {
     this.debug.log("evaluating rules for session_before_compact event");
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from session_before_compact evaluation`);
@@ -331,6 +368,9 @@ export class PiBrainsController {
     }
 
     this.debug.log(`session_before_compact result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    await this.writeTelemetry(ctx, "session_before_compact", "session_before_compact", null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -360,7 +400,9 @@ export class PiBrainsController {
     this.debug.log("evaluating rules for session_compact event");
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from session_compact evaluation`);
@@ -368,6 +410,9 @@ export class PiBrainsController {
     }
 
     this.debug.log(`session_compact result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    await this.writeTelemetry(ctx, "session_compact", "session_compact", null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -392,7 +437,9 @@ export class PiBrainsController {
     if (!this.config.rulesEnabled) return undefined;
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from tool call evaluation`);
@@ -400,6 +447,12 @@ export class PiBrainsController {
     }
 
     this.debug.log(`tool call result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    const input = event.input as Record<string, unknown>;
+    const filePath = (input?.path as string) ?? null;
+    const command = (input?.command as string) ?? null;
+    await this.writeTelemetry(ctx, "pre_tool_use", event.toolName, command, filePath, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -425,7 +478,9 @@ export class PiBrainsController {
     this.debug.log(`evaluating rules for input event: text="${event.text}"`);
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from input evaluation`);
@@ -433,6 +488,9 @@ export class PiBrainsController {
     }
 
     this.debug.log(`input result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    await this.writeTelemetry(ctx, "user_prompt_submit", "prompt", null, null, null, result, durationMs);
 
     // Show notices
     const notices = result.notices ?? [];
@@ -464,7 +522,9 @@ export class PiBrainsController {
     this.debug.log("evaluating rules for before_agent_start event");
 
     // Use new gsc rules execute flow
+    const startTime = Date.now();
     const result = await this.rulesEngine.evaluateWithExecute(event, ctx, this.config.debug);
+    const durationMs = Date.now() - startTime;
 
     if (!result) {
       this.debug.log(`no result from before_agent_start evaluation`);
@@ -472,6 +532,9 @@ export class PiBrainsController {
     }
 
     this.debug.log(`before_agent_start result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
+
+    // Write telemetry
+    await this.writeTelemetry(ctx, "before_agent_start", "before_agent_start", null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -616,6 +679,10 @@ export class PiBrainsController {
 
   getConfig(): PiBrainsConfig {
     return this.config;
+  }
+
+  renderInsightsSnapshot(): string {
+    return renderBrainsPanelSnapshot(this.getState(), this.getConfig(), this.config.width);
   }
 
   async dismissNotice(): Promise<void> {
@@ -800,6 +867,20 @@ export class PiBrainsController {
     this.releaseOverlay();
   }
 
+  /**
+   * Get the current session ID.
+   */
+  getSessionId(): string | null {
+    return this.sessionId;
+  }
+
+  /**
+   * Get the current working directory.
+   */
+  getCwd(): string {
+    return this.cwd;
+  }
+
   private requestRender(): void {
     if (!this.disposed) this.tui?.requestRender();
   }
@@ -825,6 +906,115 @@ export class PiBrainsController {
       this.gscStatus = "missing";
     }
     this.requestRender();
+  }
+
+  /**
+   * Write telemetry events for each matched rule in the execution result.
+   */
+  private async writeTelemetry(
+    ctx: ExtensionContext,
+    lifecycle: LifecycleEvent,
+    toolName: string,
+    command: string | null,
+    filePath: string | null,
+    repoRoot: string | null,
+    result: ExecutionResult,
+    durationMs: number,
+  ): Promise<void> {
+    const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
+    const branch = ctx.sessionManager.getBranch();
+    const leafId = branch.length > 0 ? branch[branch.length - 1].id : null;
+    const parentId = branch.length > 1 ? branch[branch.length - 2].id : leafId;
+    const entryId = branch.length > 0 ? branch[branch.length - 1].id : null;
+
+    const session: RuleTelemetrySession = {
+      id: this.sessionId,
+      path: sessionFile ?? "unknown",
+      cwd: this.cwd,
+      entryId,
+      parentId,
+      leafId,
+    };
+
+    const baseEvent: RuleTelemetryEvent = {
+      lifecycle,
+      action: toolName,
+      toolName,
+      command,
+      filePath,
+      normalizedFile: filePath,
+      repoRoot,
+    };
+
+    // Write telemetry for each matched rule
+    for (const matchedRule of result.matchedRules) {
+      const triggerResult = result.triggerResults.find(tr => tr.ruleId === matchedRule.ruleId);
+      const error = result.errors?.find(e => e.ruleId === matchedRule.ruleId);
+
+      const hasError = !!error;
+      const blocked = triggerResult?.block ?? false;
+      const triggerMatched = triggerResult?.matched ?? false;
+      const executed = matchedRule.type === "executable";
+      const delivered = matchedRule.type === "declarative" || (triggerResult?.matched ?? false);
+      const matched = true;
+      const skipped = false; // Skipped rules are not in ExecutionResult yet
+
+      const outcome = resolveOutcome({
+        hasError,
+        blocked,
+        triggerMatched,
+        executed,
+        delivered,
+        matched,
+        skipped,
+      });
+
+      const ruleSnapshot: RuleTelemetryRuleSnapshot = {
+        id: matchedRule.ruleId,
+        hash: matchedRule.ruleHash,
+        triggerHash: matchedRule.triggerHash ?? null,
+        type: matchedRule.type,
+        source: "repo",
+        summary: matchedRule.summary,
+        instructions: matchedRule.instructions ?? [],
+        event: lifecycle,
+        priority: matchedRule.priority,
+        importance: "medium", // Default, not in ExecutionMatchedRule
+        frequencyMode: null,
+      };
+
+      const match: RuleTelemetryMatch = {
+        kind: matchedRule.match.kind,
+        value: matchedRule.match.value,
+        file: matchedRule.match.file ?? null,
+        action: matchedRule.match.action ?? null,
+      };
+
+      const telemetryResult: RuleTelemetryResult = {
+        outcome,
+        matched,
+        executed,
+        triggerMatched,
+        blocked,
+        skipped,
+        delivered,
+        deliveryMode: triggerResult?.deliveryMode ?? null,
+        durationMs,
+        notice: triggerResult?.notice ?? null,
+        message: triggerResult?.message ?? null,
+        error: error?.error ?? null,
+      };
+
+      const telemetryEvent = buildTelemetryEvent({
+        session,
+        event: baseEvent,
+        rule: ruleSnapshot,
+        match,
+        result: telemetryResult,
+      });
+
+      await this.telemetry.write(telemetryEvent);
+    }
   }
 
   private async persistConfig(): Promise<void> {

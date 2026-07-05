@@ -50,6 +50,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     return new Text(prefix + "\n\n" + content, 0, 0);
   });
 
+  pi.registerMessageRenderer("brains-hud", (message, _options, theme) => {
+    const content = typeof message.content === "string" ? message.content : "";
+    const prefix = theme.fg("accent", "[brains-hud]");
+    return new Text(prefix + "\n\n" + content, 0, 0);
+  });
+
   pi.on("session_start", (_event, ctx) => {
     controller.start(ctx);
   });
@@ -124,9 +130,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains insights - show session status
+      // /brains insights - show the current HUD state as a static message
       if (command === "insights") {
-        const output = await controller.runGscBrains();
+        const output = controller.renderInsightsSnapshot();
         pi.sendMessage({
           customType: "brains-insights",
           content: output || "No insights available",
@@ -144,6 +150,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains rules - show rules status
       if (command === "rules") {
         handleRulesCommand(value, controller, pi);
+        return;
+      }
+
+      // /brains hud - open/close HUD pane
+      if (command === "hud") {
+        await handleHudCommand(value, controller, pi);
         return;
       }
 
@@ -316,6 +328,43 @@ Managing rules:
   });
 }
 
+async function handleHudCommand(_value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
+  const sessionId = controller.getSessionId();
+  const cwd = controller.getCwd();
+
+  // Build the gsc command
+  const gscCmd = sessionId
+    ? `gsc pi hud ${sessionId}`
+    : `gsc pi hud --cwd ${cwd} --wait`;
+
+  // Detect OS for terminal shortcuts
+  const platform = process.platform;
+  const shortcuts: string[] = [];
+
+  if (platform === "darwin") {
+    shortcuts.push("iTerm2 / Ghostty: Cmd+D");
+    shortcuts.push("tmux: Ctrl-b %");
+    shortcuts.push("Terminal.app: Cmd+T (new tab)");
+  } else if (platform === "linux") {
+    shortcuts.push("tmux: Ctrl-b %");
+    shortcuts.push("Ghostty: Ctrl+Shift+D");
+  } else if (platform === "win32") {
+    shortcuts.push("Windows Terminal: Alt+Shift+=");
+  }
+
+  const shortcutBlock = shortcuts.length > 0
+    ? `\nSplit shortcuts:\n  ${shortcuts.join("\n  ")}`
+    : "";
+
+  const content = `Split your terminal and run the following command to create a companion view:\n\n  ${gscCmd}\n${shortcutBlock}`;
+
+  pi.sendMessage({
+    customType: "brains-hud",
+    content,
+    display: true,
+  });
+}
+
 async function handleBuildCommand(value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
   const args = (value ?? "").trim().split(/\s+/).filter(Boolean);
   const force = args.includes("--force");
@@ -398,7 +447,8 @@ function showHelp(pi: ExtensionAPI): void {
 
   /brains              Initialize expert context (gsc experts init)
   /brains build        Build/import a Brain manifest
-  /brains insights     Show session status and brain data
+  /brains hud          Show HUD companion view instructions
+  /brains insights     Show a static HUD snapshot
   /brains rules        Show rules status and options
   /brains rules status Show recent rule decisions
   /brains debug        Toggle debug mode

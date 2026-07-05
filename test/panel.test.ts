@@ -1,7 +1,7 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/pi-brains/config.ts";
-import { BrainsPanel } from "../extensions/pi-brains/panel.ts";
+import { BrainsPanel, renderBrainsPanelSnapshot } from "../extensions/pi-brains/panel.ts";
 import type { PanelState } from "../extensions/pi-brains/types.ts";
 
 const theme = {
@@ -60,5 +60,25 @@ describe("brains panel", () => {
       theme,
     );
     expect(panel.render(38)).toEqual([]);
+  });
+
+  it("renders a static snapshot even when the live panel is hidden", () => {
+    const output = renderBrainsPanelSnapshot(
+      {
+        context: { tokens: 20_000, contextWindow: 128_000, percent: 15.625 },
+        model: { id: "claude-opus-4-6", provider: "anthropic", thinkingLevel: "high" },
+        repositories: [{ root: "/repo", fileCount: 1, isInitialCwd: true, files: ["/repo/src/a.ts"] }],
+        outsideRepositoryCount: 0,
+        trackedFileCount: 1,
+        shellActivityObserved: false,
+        gscStatus: "available",
+      },
+      DEFAULT_CONFIG,
+      38,
+    );
+
+    expect(output).toContain("CONTEXT");
+    expect(output).toContain("20K / 128K");
+    expect(output).toContain("FILES TRACKED");
   });
 });
