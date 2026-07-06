@@ -487,6 +487,12 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
 
   // /brains guide checkpoint
   if (value === "checkpoint") {
+    // Check if guide mode is enabled
+    if (!controller.isGuideEnabled()) {
+      ctx.ui.notify("Guide mode is disabled. Run /brains guide on first.", "warning");
+      return;
+    }
+
     // Write checkpoint events
     const checkpointResult = controller.requestGuideCheckpoint("manual");
     
