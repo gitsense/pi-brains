@@ -543,17 +543,6 @@ async function createGuideCheckpointThread(
   const guideDebug = controller.getGuideDebugLogger();
   const { checkpointId, anchorLeafId, sessionId } = checkpointResult;
 
-  // Validate anchor leaf ID
-  if (!anchorLeafId) {
-    guideDebug.logCheckpointThreadFailed({
-      checkpointId,
-      anchorLeafId: null,
-      sourceSessionPath: null,
-      error: "No anchor leaf ID available",
-    });
-    return;
-  }
-
   // Capture original session path
   const sourceSessionPath = ctx.sessionManager.getSessionFile() ?? null;
 
@@ -568,15 +557,15 @@ async function createGuideCheckpointThread(
     // Wait for agent to finish streaming
     await ctx.waitForIdle();
 
-    // Fork to create checkpoint thread
-    const result = await ctx.fork(anchorLeafId, {
-      position: "at",
-      withSession: async (forkCtx) => {
+    // Create new session for checkpoint thread
+    const result = await ctx.newSession({
+      parentSession: sourceSessionPath ?? undefined,
+      withSession: async (newCtx) => {
         // Derive thread session path
-        const threadSessionPath = forkCtx.sessionManager.getSessionFile() ?? null;
+        const threadSessionPath = newCtx.sessionManager.getSessionFile() ?? null;
 
         // Append verification entry (no LLM trigger)
-        await forkCtx.sendMessage(
+        await newCtx.sendMessage(
           {
             customType: "guide-checkpoint-thread",
             display: false,
@@ -601,7 +590,7 @@ async function createGuideCheckpointThread(
         });
 
         // Switch back to original session
-        await forkCtx.switchSession(sourceSessionPath ?? "", {
+        await newCtx.switchSession(sourceSessionPath ?? "", {
           withSession: async (_restoredCtx) => {
             // Log thread restored
             guideDebug.logCheckpointThreadRestored({
@@ -618,7 +607,7 @@ async function createGuideCheckpointThread(
         checkpointId,
         anchorLeafId,
         sourceSessionPath,
-        error: "Fork cancelled by user or system",
+        error: "Session creation cancelled by user or system",
       });
     }
   } catch (error) {
