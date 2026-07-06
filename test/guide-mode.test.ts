@@ -271,9 +271,10 @@ describe("guide mode", () => {
       const dir = mkdtempSync(join(tmpdir(), "pi-brains-guide-workstate-"));
       try {
         const sessionFile = join(dir, "session.jsonl");
-        config.guideEnabled = true;
 
         controller.start(createContext(sessionFile));
+        // Enable guide mode after start (guide is session-only)
+        controller.setGuideEnabled(true);
 
         const message = {
           role: "assistant",
@@ -316,9 +317,10 @@ describe("guide mode", () => {
       const dir = mkdtempSync(join(tmpdir(), "pi-brains-guide-first-files-"));
       try {
         const sessionFile = join(dir, "session.jsonl");
-        config.guideEnabled = true;
 
         controller.start(createContext(sessionFile));
+        // Enable guide mode after start (guide is session-only)
+        controller.setGuideEnabled(true);
         const ctx = createContext(sessionFile);
         controller.recordToolResult({
           type: "tool_result",

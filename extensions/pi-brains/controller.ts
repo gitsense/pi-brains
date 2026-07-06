@@ -166,6 +166,12 @@ export class PiBrainsController {
       void this.persistConfig();
     }
 
+    // Disable guide mode on session start (guide is session-only)
+    if (this.config.guideEnabled) {
+      this.config.guideEnabled = false;
+      void this.persistConfig();
+    }
+
     // Refresh context after compaction
     this.pi.on("session_compact", () => {
       this.refreshSessionState(ctx);
