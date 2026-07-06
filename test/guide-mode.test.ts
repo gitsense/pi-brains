@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, expect, it, beforeEach } from "vitest";
 import { PiBrainsController } from "../extensions/pi-brains/controller.ts";
 import { DEFAULT_CONFIG } from "../extensions/pi-brains/config.ts";
@@ -48,7 +51,7 @@ function createBeforeAgentStartEvent(systemPrompt = "base system prompt"): Befor
   } as BeforeAgentStartEvent;
 }
 
-function createContext(): ExtensionContext {
+function createContext(sessionFile = "/repo/session.jsonl"): ExtensionContext {
   return {
     cwd: "/repo",
     getContextUsage: () => null,
@@ -56,7 +59,7 @@ function createContext(): ExtensionContext {
     sessionManager: {
       getBranch: () => [],
       getSessionId: () => "session-1",
-      getSessionFile: () => "/repo/session.jsonl",
+      getSessionFile: () => sessionFile,
       getLeafId: () => "leaf-1",
     },
     ui: { notify: () => {}, setWidget: () => {} },
@@ -70,6 +73,33 @@ describe("guide mode", () => {
   beforeEach(() => {
     config = { ...DEFAULT_CONFIG, guideEnabled: false };
     controller = new PiBrainsController(createMockPi(), config);
+  });
+
+  describe("debug logging", () => {
+    it("logs the initial guide state when the session starts", () => {
+      const dir = mkdtempSync(join(tmpdir(), "pi-brains-guide-"));
+      try {
+        const sessionFile = join(dir, "session.jsonl");
+        config.guideEnabled = true;
+
+        controller.start(createContext(sessionFile));
+
+        const logFile = join(dir, "session.guide-debug.jsonl");
+        const entries = readFileSync(logFile, "utf8")
+          .trim()
+          .split("\n")
+          .map(line => JSON.parse(line));
+        expect(entries[0]).toMatchObject({
+          type: "guide_log_initialized",
+          guideEnabled: true,
+          sessionId: "session-1",
+          leafId: "leaf-1",
+          logFilePath: logFile,
+        });
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
   });
 
   describe("guidance injection", () => {
@@ -236,6 +266,45 @@ describe("guide mode", () => {
       expect(result!.usage).toEqual(message.usage);
       expect(result!.stopReason).toBe("stop");
       expect(result!.timestamp).toBe(1234567890);
+    });
+    it("logs a work_state event when marker is detected and removed", () => {
+      const dir = mkdtempSync(join(tmpdir(), "pi-brains-guide-workstate-"));
+      try {
+        const sessionFile = join(dir, "session.jsonl");
+        config.guideEnabled = true;
+
+        controller.start(createContext(sessionFile));
+
+        const message = {
+          role: "assistant",
+          content: [{ type: "text", text: `Response\n${PI_WORKSTATE_MARKER}` }],
+          api: "anthropic",
+          provider: "anthropic",
+          model: "claude-sonnet-4-20250514",
+          usage: { input: 100, output: 50, cacheRead: 0, cacheWrite: 0, totalTokens: 150, cost: { input: 0.01, output: 0.02, cacheRead: 0, cacheWrite: 0, total: 0.03 } },
+          stopReason: "stop",
+          timestamp: Date.now(),
+        };
+        const result = controller.processAssistantMessageForMarker(message);
+        expect(result).toBeDefined();
+
+        const logFile = join(dir, "session.guide-debug.jsonl");
+        const entries = readFileSync(logFile, "utf8")
+          .trim()
+          .split("\n")
+          .map(line => JSON.parse(line));
+        const workState = entries.find((e: any) => e.type === "work_state");
+        expect(workState).toBeDefined();
+        expect(workState.reason).toBe("agent_requested");
+        expect(workState.phase).toBe("checkpoint_requested");
+        expect(workState.summary).toBe("Agent requested a Work State checkpoint.");
+        expect(workState.markersDetected).toBe(1);
+        expect(workState.markersRemoved).toBe(1);
+        expect(workState.trackedFileCount).toBe(0);
+        expect(workState.latestEventType).toBe("marker_removed");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     });
   });
 });

@@ -69,6 +69,17 @@ export class GuideDebugLogger {
   }
 
   /**
+   * Log when the guide debug log is initialized for a session.
+   */
+  logInitialized(guideEnabled: boolean): void {
+    this.logEvent({
+      type: "guide_log_initialized",
+      guideEnabled,
+      logFilePath: this.logFilePath,
+    });
+  }
+
+  /**
    * Log a guide enabled event.
    */
   logGuideEnabled(): void {
@@ -147,5 +158,33 @@ export class GuideDebugLogger {
     } catch {
       // Last resort - don't let debug logging failures break anything
     }
+  }
+
+  /**
+   * Log a deterministic Work State checkpoint event.
+   * Called when [PI_WORKSTATE_REQUEST] marker is detected and removed.
+   * No LLM involved — derived only from already-available facts.
+   */
+  logWorkStateRequested(data: {
+    latestEventType?: string;
+    markersDetected?: number;
+    markersRemoved?: number;
+    trackedFileCount?: number;
+    context?: { tokens: number | null; contextWindow: number; percent: number | null } | null;
+    model?: { id: string; provider: string; thinkingLevel: string } | null;
+  }): void {
+    this.logEvent({
+      type: "work_state",
+      guideEnabled: true,
+      reason: "agent_requested",
+      phase: "checkpoint_requested",
+      summary: "Agent requested a Work State checkpoint.",
+      latestEventType: data.latestEventType ?? null,
+      markersDetected: data.markersDetected ?? 0,
+      markersRemoved: data.markersRemoved ?? 0,
+      trackedFileCount: data.trackedFileCount ?? 0,
+      context: data.context ?? null,
+      model: data.model ?? null,
+    });
   }
 }

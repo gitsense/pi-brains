@@ -500,6 +500,7 @@ function formatGuideEnabledNotice(controller: PiBrainsController): string {
   return [
     "Guide mode enabled. Pi Brains will watch for Work State checkpoint requests.",
     "Guidance is injected on the next agent turn.",
+    "Run /brains inspect for instructions on monitoring guide events.",
     logPath ? `Debug log: ${logPath}` : "Debug log: unavailable until session starts",
   ].join("\n");
 }

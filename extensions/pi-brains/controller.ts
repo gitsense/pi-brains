@@ -96,6 +96,9 @@ export class PiBrainsController {
   private passiveSteerMaxLength = 5;
   private passiveSteerMaxChars = 2000;
   private sessionId: string | null = null;
+  private guideMarkersDetected = 0;
+  private guideMarkersRemoved = 0;
+  private guideLastEventType: string | undefined = undefined;
 
   constructor(pi: ExtensionAPI, config: PiBrainsConfig) {
     this.pi = pi;
@@ -126,6 +129,7 @@ export class PiBrainsController {
     // Initialize guide debug logger
     const leafId = ctx.sessionManager.getLeafId?.() ?? null;
     this.guideDebug.setSession(sessionFile, this.sessionId, leafId);
+    this.guideDebug.logInitialized(this.config.guideEnabled);
     
     this.refreshSessionState(ctx);
     this.repositories.resolveFiles(this.tracker.getFiles(), () => this.requestRender());
@@ -797,15 +801,31 @@ export class PiBrainsController {
     const content = message.content as string | Array<{ type: string; text?: string }>;
     const hasMarker = this.detectMarkerInContent(content);
     this.guideDebug.logMessageEndSeen("assistant", hasMarker);
+    this.guideLastEventType = "message_end_seen";
 
     if (!hasMarker) return undefined;
 
     this.guideDebug.logMarkerDetected("assistant");
+    this.guideMarkersDetected++;
+    this.guideLastEventType = "marker_detected";
 
     try {
       const cleanedContent = this.removeMarkerFromContent(content);
       const cleanedMessage = { ...message, content: cleanedContent };
       this.guideDebug.logMarkerRemoved(true);
+      this.guideMarkersRemoved++;
+      this.guideLastEventType = "marker_removed";
+
+      // Write deterministic Work State event (no LLM)
+      this.guideDebug.logWorkStateRequested({
+        latestEventType: this.guideLastEventType,
+        markersDetected: this.guideMarkersDetected,
+        markersRemoved: this.guideMarkersRemoved,
+        trackedFileCount: this.tracker.getFiles().size,
+        context: this.context,
+        model: this.model,
+      });
+
       return cleanedMessage;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
