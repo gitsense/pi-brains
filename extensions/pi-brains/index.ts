@@ -485,36 +485,6 @@ function handleGuideCommand(value: string | undefined, pi: ExtensionAPI, control
     return;
   }
 
-  // /brains guide checkpoint
-  if (value === "checkpoint") {
-    // Check if guide mode is enabled
-    if (!controller.isGuideEnabled()) {
-      ctx.ui.notify("Guide mode is disabled. Run /brains guide on first.", "warning");
-      return;
-    }
-
-    // Update leaf ID from current session state before checkpoint
-    const currentLeafId = ctx.sessionManager.getLeafId();
-    controller.updateGuideLeafId(currentLeafId);
-
-    // Write checkpoint events
-    const checkpointResult = controller.requestGuideCheckpoint("manual");
-    
-    // Create checkpoint message on scratch branch (verification phase)
-    // Note: We don't await this to avoid blocking the command handler
-    createGuideCheckpointMessage(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
-      // Error is already handled inside the function
-    });
-    
-    const msg = [
-      "Guide checkpoint written.",
-      "Run /brains inspect or gsc pi guide <session-id> to verify.",
-      checkpointResult.logPath ? `Debug log: ${checkpointResult.logPath}` : "",
-    ].filter(Boolean).join("\n");
-    ctx.ui.notify(msg, "info");
-    return;
-  }
-
   // /brains guide - toggle
   const newState = !controller.isGuideEnabled();
   controller.setGuideEnabled(newState);
@@ -656,7 +626,6 @@ function showHelp(pi: ExtensionAPI): void {
   /brains guide on        Enable guide mode
   /brains guide off       Disable guide mode
   /brains guide status    Show guide mode status
-  /brains guide checkpoint Create checkpoint message on scratch branch
   /brains inspect         Show inspect view instructions
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
