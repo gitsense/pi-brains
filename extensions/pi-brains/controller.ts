@@ -16,6 +16,17 @@ import { buildTelemetryEvent, RuleTelemetryWriter, type RuleTelemetryEventV1, ty
 import { TouchedFileTracker } from "./touched-files.ts";
 import type { PanelState, PiBrainsConfig } from "./types.ts";
 
+/**
+ * Result of a guide checkpoint request.
+ */
+export interface GuideCheckpointRequestResult {
+  logPath: string | null;
+  checkpointId: string;
+  previousCheckpointId: string | null;
+  anchorLeafId: string | null;
+  sessionId: string | null;
+}
+
 const PI_WORKSTATE_MARKER = "[PI_WORKSTATE_REQUEST]";
 
 const GUIDE_INSTRUCTION = `Guide mode is enabled by Pi Brains.
@@ -840,10 +851,17 @@ export class PiBrainsController {
   }
 
   /**
+   * Get the guide debug logger for external use.
+   */
+  getGuideDebugLogger(): GuideDebugLogger {
+    return this.guideDebug;
+  }
+
+  /**
    * Request a guide checkpoint. Creates a structured work_state event.
    * Called by /brains guide checkpoint (manual) or agent marker detection.
    */
-  requestGuideCheckpoint(source: GuideCheckpointSource): string | null {
+  requestGuideCheckpoint(source: GuideCheckpointSource): GuideCheckpointRequestResult {
     // Increment appropriate counter
     if (source === "manual") {
       this.guideManualCheckpoints++;
@@ -851,6 +869,9 @@ export class PiBrainsController {
 
     // Generate checkpoint ID
     const checkpointId = `chk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const previousCheckpointId = this.guideLastCheckpointId;
+    const anchorLeafId = this.guideDebug.getLeafId();
+    const sessionId = this.guideDebug.getSessionId();
 
     // Derive reason from source
     const reason: GuideCheckpointReason = source === "agent_marker" ? "agent_requested" : "manual_checkpoint";
@@ -954,7 +975,13 @@ export class PiBrainsController {
     this.guideToolsSinceCheckpoint = [];
     this.guideRulesSinceCheckpoint = [];
 
-    return this.guideDebug.getLogFilePath();
+    return {
+      logPath: this.guideDebug.getLogFilePath(),
+      checkpointId,
+      previousCheckpointId,
+      anchorLeafId,
+      sessionId,
+    };
   }
 
   /**

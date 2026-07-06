@@ -1,7 +1,7 @@
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { loadConfig } from "./config.ts";
-import { PiBrainsController } from "./controller.ts";
+import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
@@ -487,11 +487,19 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
 
   // /brains guide checkpoint
   if (value === "checkpoint") {
-    const logPath = controller.requestGuideCheckpoint("manual");
+    // Write checkpoint events
+    const checkpointResult = controller.requestGuideCheckpoint("manual");
+    
+    // Create checkpoint thread (verification phase)
+    // Note: We don't await this to avoid blocking the command handler
+    createGuideCheckpointThread(ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
+      // Error is already handled inside the function
+    });
+    
     const msg = [
       "Guide checkpoint written.",
       "Run /brains inspect or gsc pi guide <session-id> to verify.",
-      logPath ? `Debug log: ${logPath}` : "",
+      checkpointResult.logPath ? `Debug log: ${checkpointResult.logPath}` : "",
     ].filter(Boolean).join("\n");
     ctx.ui.notify(msg, "info");
     return;
@@ -515,6 +523,115 @@ function formatGuideEnabledNotice(controller: PiBrainsController): string {
     "Run /brains inspect for instructions on monitoring guide events.",
     logPath ? `Debug log: ${logPath}` : "Debug log: unavailable until session starts",
   ].join("\n");
+}
+
+/**
+ * Create a checkpoint thread from the current leaf.
+ * This is a verification phase - no LLM completion is triggered.
+ */
+async function createGuideCheckpointThread(
+  ctx: ExtensionCommandContext,
+  controller: PiBrainsController,
+  checkpointResult: GuideCheckpointRequestResult,
+): Promise<void> {
+  const guideDebug = controller.getGuideDebugLogger();
+  const { checkpointId, anchorLeafId, sessionId } = checkpointResult;
+
+  // Validate anchor leaf ID
+  if (!anchorLeafId) {
+    guideDebug.logCheckpointThreadFailed({
+      checkpointId,
+      anchorLeafId: null,
+      sourceSessionPath: null,
+      error: "No anchor leaf ID available",
+    });
+    return;
+  }
+
+  // Capture original session path
+  const sourceSessionPath = ctx.sessionManager.getSessionFile() ?? null;
+
+  // Log thread started
+  guideDebug.logCheckpointThreadStarted({
+    checkpointId,
+    anchorLeafId,
+    sourceSessionPath,
+  });
+
+  try {
+    // Wait for agent to finish streaming
+    await ctx.waitForIdle();
+
+    // Fork to create checkpoint thread
+    const result = await ctx.fork(anchorLeafId, {
+      position: "at",
+      withSession: async (forkCtx) => {
+        // Derive thread session path
+        const threadSessionPath = forkCtx.sessionManager.getSessionFile() ?? null;
+
+        // Append verification entry (no LLM trigger)
+        await forkCtx.sendMessage(
+          {
+            customType: "guide-checkpoint-thread",
+            display: false,
+            content: "Checkpoint thread verification entry.",
+            details: {
+              checkpointId,
+              anchorLeafId,
+              sourceSessionId: sessionId,
+              sourceSessionPath,
+              scratch: true,
+            },
+          },
+          { triggerTurn: false },
+        );
+
+        // Log thread created
+        guideDebug.logCheckpointThreadCreated({
+          checkpointId,
+          anchorLeafId,
+          sourceSessionPath,
+          threadSessionPath,
+        });
+
+        // Switch back to original session
+        await forkCtx.switchSession(sourceSessionPath ?? "", {
+          withSession: async (_restoredCtx) => {
+            // Log thread restored
+            guideDebug.logCheckpointThreadRestored({
+              checkpointId,
+              sourceSessionPath,
+            });
+          },
+        });
+      },
+    });
+
+    if (result.cancelled) {
+      guideDebug.logCheckpointThreadFailed({
+        checkpointId,
+        anchorLeafId,
+        sourceSessionPath,
+        error: "Fork cancelled by user or system",
+      });
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    
+    // Log failure
+    guideDebug.logCheckpointThreadFailed({
+      checkpointId,
+      anchorLeafId,
+      sourceSessionPath,
+      error: errorMsg,
+    });
+
+    // Notify user
+    ctx.ui.notify(
+      "Checkpoint thread creation failed. Your chat was restored and you can continue.",
+      "warning",
+    );
+  }
 }
 
 function showHelp(pi: ExtensionAPI): void {

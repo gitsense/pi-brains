@@ -324,4 +324,65 @@ export class GuideDebugLogger {
       guideEnabled: true,
     });
   }
+
+  /**
+   * Log checkpoint thread started event.
+   */
+  logCheckpointThreadStarted(data: {
+    checkpointId: string;
+    anchorLeafId: string | null;
+    sourceSessionPath: string | null;
+  }): void {
+    this.logEvent({
+      type: "checkpoint_thread_started",
+      guideEnabled: true,
+      ...data,
+    });
+  }
+
+  /**
+   * Log checkpoint thread created event.
+   */
+  logCheckpointThreadCreated(data: {
+    checkpointId: string;
+    anchorLeafId: string | null;
+    sourceSessionPath: string | null;
+    threadSessionPath: string | null;
+  }): void {
+    this.logEvent({
+      type: "checkpoint_thread_created",
+      guideEnabled: true,
+      ...data,
+    });
+  }
+
+  /**
+   * Log checkpoint thread restored event.
+   */
+  logCheckpointThreadRestored(data: {
+    checkpointId: string;
+    sourceSessionPath: string | null;
+  }): void {
+    this.logEvent({
+      type: "checkpoint_thread_restored",
+      guideEnabled: true,
+      ...data,
+    });
+  }
+
+  /**
+   * Log checkpoint thread failed event.
+   */
+  logCheckpointThreadFailed(data: {
+    checkpointId: string;
+    anchorLeafId: string | null;
+    sourceSessionPath: string | null;
+    error: string;
+  }): void {
+    this.logEvent({
+      type: "checkpoint_thread_failed",
+      guideEnabled: true,
+      ...data,
+    });
+  }
 }
