@@ -310,5 +310,40 @@ describe("guide mode", () => {
         rmSync(dir, { recursive: true, force: true });
       }
     });
+
+    it("counts tracked files as changed on the first checkpoint", () => {
+      const dir = mkdtempSync(join(tmpdir(), "pi-brains-guide-first-files-"));
+      try {
+        const sessionFile = join(dir, "session.jsonl");
+        config.guideEnabled = true;
+
+        controller.start(createContext(sessionFile));
+        const ctx = createContext(sessionFile);
+        controller.recordToolResult({
+          type: "tool_result",
+          toolCallId: "call-1",
+          toolName: "read",
+          input: { path: "internal/cli/pi/guide.go" },
+          content: [{ type: "text", text: "ok" }],
+          isError: false,
+        } as any, ctx);
+
+        controller.requestGuideCheckpoint("manual");
+
+        const logFile = join(dir, "session.guide-debug.jsonl");
+        const entries = readFileSync(logFile, "utf8")
+          .trim()
+          .split("\n")
+          .map(line => JSON.parse(line));
+        const workState = entries.findLast((e: any) => e.type === "work_state");
+        expect(workState).toBeDefined();
+        expect(workState.facts.trackedFileCount).toBe(1);
+        expect(workState.facts.filesChangedSinceLastCheckpoint).toBe(1);
+        expect(workState.facts.toolCallsSinceLastCheckpoint).toBe(1);
+        expect(workState.facts.latestToolName).toBe("read");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
   });
 });

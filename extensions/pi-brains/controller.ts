@@ -830,7 +830,9 @@ export class PiBrainsController {
     // Calculate files changed since last checkpoint
     const currentFiles = this.tracker.getFiles();
     let filesChangedSinceLastCheckpoint = 0;
-    if (this.guideLastCheckpointFiles.size > 0) {
+    if (this.guideLastCheckpointId === null) {
+      filesChangedSinceLastCheckpoint = currentFiles.size;
+    } else {
       for (const file of currentFiles) {
         if (!this.guideLastCheckpointFiles.has(file)) {
           filesChangedSinceLastCheckpoint++;
