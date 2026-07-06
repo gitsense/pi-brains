@@ -485,6 +485,18 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
     return;
   }
 
+  // /brains guide test
+  if (value === "test") {
+    const logPath = controller.testGuideWorkState();
+    const msg = [
+      "Guide test event written.",
+      "Run /brains inspect or gsc pi guide <session-id> to verify.",
+      logPath ? `Debug log: ${logPath}` : "",
+    ].filter(Boolean).join("\n");
+    ctx.ui.notify(msg, "info");
+    return;
+  }
+
   // /brains guide - toggle
   const newState = !controller.isGuideEnabled();
   controller.setGuideEnabled(newState);
@@ -514,6 +526,7 @@ function showHelp(pi: ExtensionAPI): void {
   /brains guide on     Enable guide mode
   /brains guide off    Disable guide mode
   /brains guide status Show guide mode status
+  /brains guide test   Write synthetic test event to verify pipeline
   /brains inspect      Show inspect view instructions
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options

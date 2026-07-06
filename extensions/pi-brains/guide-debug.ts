@@ -187,4 +187,24 @@ export class GuideDebugLogger {
       model: data.model ?? null,
     });
   }
+
+  /**
+   * Log a synthetic test work_state event for pipeline verification.
+   * Used by /brains guide test to verify write→parse→display works.
+   */
+  logTestWorkState(): void {
+    this.logEvent({
+      type: "work_state",
+      guideEnabled: true,
+      reason: "manual_test",
+      phase: "checkpoint_requested",
+      summary: "Manual guide test checkpoint.",
+      latestEventType: "guide_test",
+      markersDetected: 0,
+      markersRemoved: 0,
+      trackedFileCount: 0,
+      context: null,
+      model: null,
+    });
+  }
 }

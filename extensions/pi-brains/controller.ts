@@ -781,6 +781,15 @@ export class PiBrainsController {
   }
 
   /**
+   * Write a synthetic test work_state event for pipeline verification.
+   * Returns the debug log path for user notification.
+   */
+  testGuideWorkState(): string | null {
+    this.guideDebug.logTestWorkState();
+    return this.guideDebug.getLogFilePath();
+  }
+
+  /**
    * Get the guide instruction to inject into the system prompt.
    */
   getGuideInstruction(): string | null {
