@@ -301,8 +301,9 @@ describe("guide mode", () => {
         expect(workState.phase).toBe("checkpoint_requested");
         expect(workState.summary).toBe("Agent requested a Work State checkpoint.");
         expect(workState.checkpointId).toMatch(/^chk_/);
-        expect(workState.counters.markersDetected).toBe(1);
-        expect(workState.counters.markersRemoved).toBe(1);
+        expect(workState.counters.agentMarkersDetected).toBe(1);
+        expect(workState.counters.agentMarkersRemoved).toBe(1);
+        expect(workState.counters.manualCheckpoints).toBe(0);
         expect(workState.counters.checkpointsRequested).toBe(1);
         expect(workState.facts.trackedFileCount).toBe(0);
         expect(workState.facts.toolCallsSinceLastCheckpoint).toBe(0);

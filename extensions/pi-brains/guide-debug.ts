@@ -18,8 +18,9 @@ export interface GuideCheckpointFacts {
 }
 
 export interface GuideCheckpointCounters {
-  markersDetected: number;
-  markersRemoved: number;
+  agentMarkersDetected: number;
+  agentMarkersRemoved: number;
+  manualCheckpoints: number;
   checkpointsRequested: number;
 }
 

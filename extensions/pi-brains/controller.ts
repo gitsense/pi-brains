@@ -96,8 +96,9 @@ export class PiBrainsController {
   private passiveSteerMaxLength = 5;
   private passiveSteerMaxChars = 2000;
   private sessionId: string | null = null;
-  private guideMarkersDetected = 0;
-  private guideMarkersRemoved = 0;
+  private guideAgentMarkersDetected = 0;
+  private guideAgentMarkersRemoved = 0;
+  private guideManualCheckpoints = 0;
   private guideLastEventType: string | undefined = undefined;
   
   // Checkpoint tracking
@@ -814,11 +815,9 @@ export class PiBrainsController {
    * Called by /brains guide checkpoint (manual) or agent marker detection.
    */
   requestGuideCheckpoint(source: GuideCheckpointSource): string | null {
-    // For manual checkpoints, simulate marker events
+    // Increment appropriate counter
     if (source === "manual") {
-      this.guideDebug.logManualMarkerEvents();
-      this.guideMarkersDetected++;
-      this.guideMarkersRemoved++;
+      this.guideManualCheckpoints++;
     }
 
     // Generate checkpoint ID
@@ -853,8 +852,9 @@ export class PiBrainsController {
 
     // Build counters
     const counters: GuideCheckpointCounters = {
-      markersDetected: this.guideMarkersDetected,
-      markersRemoved: this.guideMarkersRemoved,
+      agentMarkersDetected: this.guideAgentMarkersDetected,
+      agentMarkersRemoved: this.guideAgentMarkersRemoved,
+      manualCheckpoints: this.guideManualCheckpoints,
       checkpointsRequested: this.guideCheckpointCount + 1,
     };
 
@@ -920,14 +920,14 @@ export class PiBrainsController {
     if (!hasMarker) return undefined;
 
     this.guideDebug.logMarkerDetected("assistant");
-    this.guideMarkersDetected++;
+    this.guideAgentMarkersDetected++;
     this.guideLastEventType = "marker_detected";
 
     try {
       const cleanedContent = this.removeMarkerFromContent(content);
       const cleanedMessage = { ...message, content: cleanedContent };
       this.guideDebug.logMarkerRemoved(true);
-      this.guideMarkersRemoved++;
+      this.guideAgentMarkersRemoved++;
       this.guideLastEventType = "marker_removed";
 
       // Write structured checkpoint
