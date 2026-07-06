@@ -4,7 +4,7 @@ import type { AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, BeforeAgent
 import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-works/pi-tui";
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
 import { DebugLogger } from "./debug.ts";
-import { GuideDebugLogger, type GuideCheckpointSource, type GuideCheckpointReason, type GuideWorkStateEventV1, type GuideCheckpointFacts, type GuideCheckpointCounters } from "./guide-debug.ts";
+import { GuideDebugLogger, type GuideCheckpointSource, type GuideCheckpointReason, type GuideWorkStateEventV1, type GuideCheckpointFacts, type GuideCheckpointCounters, type GuideCheckpointPayloadEventV1, type GuideCheckpointPayloadTool, type GuideCheckpointPayloadRule } from "./guide-debug.ts";
 import { readContextState, readModelState } from "./model-context.ts";
 import { BrainsPanel, renderBrainsPanelSnapshot } from "./panel.ts";
 import { RepositoryResolver } from "./repositories.ts";
@@ -110,6 +110,8 @@ export class PiBrainsController {
   private guideRulesTriggeredSinceCheckpoint = 0;
   private guideLatestToolName: string | null = null;
   private guideLatestRuleId: string | null = null;
+  private guideToolsSinceCheckpoint: GuideCheckpointPayloadTool[] = [];
+  private guideRulesSinceCheckpoint: GuideCheckpointPayloadRule[] = [];
 
   constructor(pi: ExtensionAPI, config: PiBrainsConfig) {
     this.pi = pi;
@@ -200,6 +202,24 @@ export class PiBrainsController {
       if (event.isError) {
         this.guideFailedToolCallsSinceCheckpoint++;
       }
+
+      // Derive target from input
+      const input = event.input as Record<string, unknown> | undefined;
+      let target: string | null = null;
+      if (event.toolName === "read" || event.toolName === "edit" || event.toolName === "write") {
+        target = (input?.path as string) ?? null;
+      } else if (event.toolName === "bash") {
+        target = (input?.command as string) ?? null;
+      }
+
+      // Add to tools since checkpoint
+      this.guideToolsSinceCheckpoint.push({
+        toolCallId: event.toolCallId ?? null,
+        toolName: event.toolName,
+        target,
+        isError: Boolean(event.isError),
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 
@@ -235,6 +255,15 @@ export class PiBrainsController {
         if (triggerResult.matched) {
           this.guideRulesTriggeredSinceCheckpoint++;
           this.guideLatestRuleId = triggerResult.ruleId ?? null;
+
+          // Add to rules since checkpoint
+          this.guideRulesSinceCheckpoint.push({
+            ruleId: triggerResult.ruleId ?? null,
+            ruleType: null, // Not easily available from trigger result
+            outcome: triggerResult.matched ? "matched" : null,
+            blocked: triggerResult.block ?? null,
+            timestamp: new Date().toISOString(),
+          });
         }
       }
     }
@@ -859,7 +888,7 @@ export class PiBrainsController {
     };
 
     // Build work_state event
-    const event: GuideWorkStateEventV1 = {
+    const workStateEvent: GuideWorkStateEventV1 = {
       type: "work_state",
       schemaVersion: 1,
       checkpointId,
@@ -878,8 +907,40 @@ export class PiBrainsController {
       model: this.model,
     };
 
-    // Write event
-    this.guideDebug.logWorkStateV1(event);
+    // Build checkpoint_payload event
+    const payloadEvent: GuideCheckpointPayloadEventV1 = {
+      type: "checkpoint_payload",
+      schemaVersion: 1,
+      checkpointId,
+      previousCheckpointId: this.guideLastCheckpointId,
+      source,
+      reason,
+      guideEnabled: true,
+      sessionId: this.guideDebug.getSessionId(),
+      leafId: this.guideDebug.getLeafId(),
+      anchorLeafId: this.guideDebug.getLeafId(),
+      files: {
+        tracked: [...currentFiles],
+        changedSinceLastCheckpoint: this.guideLastCheckpointId === null
+          ? [...currentFiles]
+          : [...currentFiles].filter(f => !this.guideLastCheckpointFiles.has(f)),
+      },
+      tools: {
+        sinceLastCheckpoint: [...this.guideToolsSinceCheckpoint],
+      },
+      rules: {
+        sinceLastCheckpoint: [...this.guideRulesSinceCheckpoint],
+      },
+      guideEvents: {
+        recent: this.guideDebug.getRecentEvents(),
+      },
+      context: this.context,
+      model: this.model,
+    };
+
+    // Write events (work_state first, then payload)
+    this.guideDebug.logWorkStateV1(workStateEvent);
+    this.guideDebug.logCheckpointPayloadV1(payloadEvent);
 
     // Update checkpoint state
     this.guideCheckpointCount++;
@@ -890,6 +951,8 @@ export class PiBrainsController {
     this.guideRulesTriggeredSinceCheckpoint = 0;
     this.guideLatestToolName = null;
     this.guideLatestRuleId = null;
+    this.guideToolsSinceCheckpoint = [];
+    this.guideRulesSinceCheckpoint = [];
 
     return this.guideDebug.getLogFilePath();
   }

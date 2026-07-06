@@ -43,6 +43,68 @@ export interface GuideWorkStateEventV1 {
   model: ModelState | null;
 }
 
+// Checkpoint payload types
+
+export interface GuideCheckpointPayloadTool {
+  toolCallId: string | null;
+  toolName: string;
+  target: string | null;
+  isError: boolean;
+  timestamp: string;
+}
+
+export interface GuideCheckpointPayloadRule {
+  ruleId: string | null;
+  ruleType: string | null;
+  outcome: string | null;
+  blocked: boolean | null;
+  timestamp: string;
+}
+
+export interface GuideCheckpointPayloadGuideEvent {
+  type: string;
+  timestamp: string;
+  leafId: string | null;
+}
+
+export interface GuideCheckpointPayloadFiles {
+  tracked: string[];
+  changedSinceLastCheckpoint: string[];
+}
+
+export interface GuideCheckpointPayloadTools {
+  sinceLastCheckpoint: GuideCheckpointPayloadTool[];
+}
+
+export interface GuideCheckpointPayloadRules {
+  sinceLastCheckpoint: GuideCheckpointPayloadRule[];
+}
+
+export interface GuideCheckpointPayloadGuideEvents {
+  recent: GuideCheckpointPayloadGuideEvent[];
+}
+
+export interface GuideCheckpointPayloadEventV1 {
+  type: "checkpoint_payload";
+  schemaVersion: 1;
+  checkpointId: string;
+  previousCheckpointId: string | null;
+  source: GuideCheckpointSource;
+  reason: GuideCheckpointReason;
+  guideEnabled: boolean;
+  sessionId: string | null;
+  leafId: string | null;
+  anchorLeafId: string | null;
+  files: GuideCheckpointPayloadFiles;
+  tools: GuideCheckpointPayloadTools;
+  rules: GuideCheckpointPayloadRules;
+  guideEvents: GuideCheckpointPayloadGuideEvents;
+  context: ContextState | null;
+  model: ModelState | null;
+}
+
+const MAX_RECENT_GUIDE_EVENTS = 20;
+
 /**
  * Debug logger specifically for guide mode.
  * Writes JSONL events to a deterministic path near the active session.
@@ -51,6 +113,7 @@ export class GuideDebugLogger {
   private logFilePath: string | null = null;
   private sessionId: string | null = null;
   private leafId: string | null = null;
+  private recentEvents: GuideCheckpointPayloadGuideEvent[] = [];
 
   /**
    * Set the session context for debug logging.
@@ -98,6 +161,29 @@ export class GuideDebugLogger {
   }
 
   /**
+   * Get recent guide events for checkpoint payload.
+   */
+  getRecentEvents(): GuideCheckpointPayloadGuideEvent[] {
+    return [...this.recentEvents];
+  }
+
+  /**
+   * Record a guide event in the recent events ring buffer.
+   */
+  private recordRecentEvent(type: string): void {
+    const event: GuideCheckpointPayloadGuideEvent = {
+      type,
+      timestamp: new Date().toISOString(),
+      leafId: this.leafId,
+    };
+
+    this.recentEvents.push(event);
+    if (this.recentEvents.length > MAX_RECENT_GUIDE_EVENTS) {
+      this.recentEvents.shift();
+    }
+  }
+
+  /**
    * Write a guide debug event.
    */
   logEvent(event: {
@@ -119,6 +205,9 @@ export class GuideDebugLogger {
       };
 
       appendFileSync(this.logFilePath, JSON.stringify(entry) + "\n");
+
+      // Record in recent events ring buffer
+      this.recordRecentEvent(event.type);
     } catch {
       // Silently fail - don't break the agent session
     }
@@ -227,19 +316,12 @@ export class GuideDebugLogger {
   }
 
   /**
-   * Log synthetic marker events for manual checkpoints.
+   * Log a schema v1 checkpoint_payload event.
    */
-  logManualMarkerEvents(): void {
+  logCheckpointPayloadV1(event: GuideCheckpointPayloadEventV1): void {
     this.logEvent({
-      type: "marker_detected",
+      ...event,
       guideEnabled: true,
-      messageRole: "assistant",
-    });
-
-    this.logEvent({
-      type: "marker_removed",
-      guideEnabled: true,
-      success: true,
     });
   }
 }
