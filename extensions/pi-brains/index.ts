@@ -500,9 +500,9 @@ function handleGuideCommand(value: string | undefined, pi: ExtensionAPI, control
     // Write checkpoint events
     const checkpointResult = controller.requestGuideCheckpoint("manual");
     
-    // Create checkpoint thread (verification phase)
+    // Create checkpoint message on scratch branch (verification phase)
     // Note: We don't await this to avoid blocking the command handler
-    createGuideCheckpointThread(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
+    createGuideCheckpointMessage(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
       // Error is already handled inside the function
     });
     
@@ -536,11 +536,11 @@ function formatGuideEnabledNotice(controller: PiBrainsController): string {
 }
 
 /**
- * Create a checkpoint thread from the current leaf.
+ * Create a checkpoint message on a scratch branch.
  * Uses in-session scratch branch (same session file, no separate file).
- * This is a verification phase - no LLM completion is triggered.
+ * Creates a custom_message that would enter scratch branch context but does not trigger LLM.
  */
-async function createGuideCheckpointThread(
+async function createGuideCheckpointMessage(
   pi: ExtensionAPI,
   ctx: ExtensionCommandContext,
   controller: PiBrainsController,
@@ -549,14 +549,15 @@ async function createGuideCheckpointThread(
   const guideDebug = controller.getGuideDebugLogger();
   const { checkpointId, anchorLeafId, sessionId } = checkpointResult;
 
-  // Capture original leaf ID
+  // Capture current leaf ID from session manager (not cached)
   const originalLeafId = ctx.sessionManager.getLeafId();
   const sourceSessionPath = ctx.sessionManager.getSessionFile() ?? null;
 
-  // Log thread started
-  guideDebug.logCheckpointThreadStarted({
+  // Log message started
+  guideDebug.logCheckpointMessageStarted({
     checkpointId,
     anchorLeafId,
+    originalLeafId,
     sourceSessionPath,
   });
 
@@ -569,21 +570,40 @@ async function createGuideCheckpointThread(
       await ctx.navigateTree(anchorLeafId, { summarize: false });
     }
 
-    // Append custom entry (does NOT enter LLM context)
-    pi.appendEntry("guide-checkpoint-thread", {
-      checkpointId,
-      anchorLeafId,
-      sourceSessionId: sessionId,
-      sourceSessionPath,
-      scratch: true,
-    });
+    // Create checkpoint custom_message on scratch branch
+    // triggerTurn: false prevents LLM completion
+    pi.sendMessage(
+      {
+        customType: "guide-checkpoint-request",
+        display: false,
+        content: JSON.stringify({
+          type: "guide_checkpoint_request",
+          schemaVersion: 1,
+          checkpointId,
+          anchorLeafId,
+          originalLeafId,
+          source: "manual",
+          scratch: true,
+          instruction:
+            "This is a staged checkpoint request for Work State generation. Do not treat this as part of the main user conversation.",
+        }),
+        details: {
+          checkpointId,
+          anchorLeafId,
+          originalLeafId,
+          source: "manual",
+          scratch: true,
+        },
+      },
+      { triggerTurn: false },
+    );
 
-    // Log thread created
-    guideDebug.logCheckpointThreadCreated({
+    // Log message created
+    guideDebug.logCheckpointMessageCreated({
       checkpointId,
       anchorLeafId,
+      originalLeafId,
       sourceSessionPath,
-      threadSessionPath: sourceSessionPath, // Same session file
     });
 
     // Navigate back to original leaf
@@ -591,9 +611,11 @@ async function createGuideCheckpointThread(
       await ctx.navigateTree(originalLeafId, { summarize: false });
     }
 
-    // Log thread restored
-    guideDebug.logCheckpointThreadRestored({
+    // Log message restored
+    guideDebug.logCheckpointMessageRestored({
       checkpointId,
+      anchorLeafId,
+      originalLeafId,
       sourceSessionPath,
     });
   } catch (error) {
@@ -609,16 +631,17 @@ async function createGuideCheckpointThread(
     }
 
     // Log failure
-    guideDebug.logCheckpointThreadFailed({
+    guideDebug.logCheckpointMessageFailed({
       checkpointId,
       anchorLeafId,
+      originalLeafId,
       sourceSessionPath,
       error: errorMsg,
     });
 
     // Notify user
     ctx.ui.notify(
-      "Checkpoint thread creation failed. Your chat was restored and you can continue.",
+      "Checkpoint message creation failed. Your chat was restored and you can continue.",
       "warning",
     );
   }
@@ -633,7 +656,7 @@ function showHelp(pi: ExtensionAPI): void {
   /brains guide on        Enable guide mode
   /brains guide off       Disable guide mode
   /brains guide status    Show guide mode status
-  /brains guide checkpoint Create checkpoint and verification thread
+  /brains guide checkpoint Create checkpoint message on scratch branch
   /brains inspect         Show inspect view instructions
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options

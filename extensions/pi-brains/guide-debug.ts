@@ -326,62 +326,74 @@ export class GuideDebugLogger {
   }
 
   /**
-   * Log checkpoint thread started event.
+   * Log checkpoint message started event.
    */
-  logCheckpointThreadStarted(data: {
+  logCheckpointMessageStarted(data: {
     checkpointId: string;
     anchorLeafId: string | null;
+    originalLeafId: string | null;
     sourceSessionPath: string | null;
   }): void {
     this.logEvent({
-      type: "checkpoint_thread_started",
+      type: "checkpoint_message_started",
       guideEnabled: true,
+      customType: "guide-checkpoint-request",
+      triggerTurn: false,
       ...data,
     });
   }
 
   /**
-   * Log checkpoint thread created event.
+   * Log checkpoint message created event.
    */
-  logCheckpointThreadCreated(data: {
+  logCheckpointMessageCreated(data: {
     checkpointId: string;
     anchorLeafId: string | null;
+    originalLeafId: string | null;
     sourceSessionPath: string | null;
-    threadSessionPath: string | null;
   }): void {
     this.logEvent({
-      type: "checkpoint_thread_created",
+      type: "checkpoint_message_created",
       guideEnabled: true,
+      customType: "guide-checkpoint-request",
+      triggerTurn: false,
       ...data,
     });
   }
 
   /**
-   * Log checkpoint thread restored event.
+   * Log checkpoint message restored event.
    */
-  logCheckpointThreadRestored(data: {
+  logCheckpointMessageRestored(data: {
     checkpointId: string;
+    anchorLeafId: string | null;
+    originalLeafId: string | null;
     sourceSessionPath: string | null;
   }): void {
     this.logEvent({
-      type: "checkpoint_thread_restored",
+      type: "checkpoint_message_restored",
       guideEnabled: true,
+      customType: "guide-checkpoint-request",
+      triggerTurn: false,
       ...data,
     });
   }
 
   /**
-   * Log checkpoint thread failed event.
+   * Log checkpoint message failed event.
    */
-  logCheckpointThreadFailed(data: {
+  logCheckpointMessageFailed(data: {
     checkpointId: string;
     anchorLeafId: string | null;
+    originalLeafId: string | null;
     sourceSessionPath: string | null;
     error: string;
   }): void {
     this.logEvent({
-      type: "checkpoint_thread_failed",
+      type: "checkpoint_message_failed",
       guideEnabled: true,
+      customType: "guide-checkpoint-request",
+      triggerTurn: false,
       ...data,
     });
   }
