@@ -193,6 +193,21 @@ export class GuideDebugLogger {
    * Used by /brains guide test to verify write→parse→display works.
    */
   logTestWorkState(): void {
+    // Simulate marker detection
+    this.logEvent({
+      type: "marker_detected",
+      guideEnabled: true,
+      messageRole: "assistant",
+    });
+
+    // Simulate marker removal
+    this.logEvent({
+      type: "marker_removed",
+      guideEnabled: true,
+      success: true,
+    });
+
+    // Write work_state event
     this.logEvent({
       type: "work_state",
       guideEnabled: true,

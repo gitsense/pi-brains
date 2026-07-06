@@ -786,6 +786,8 @@ export class PiBrainsController {
    */
   testGuideWorkState(): string | null {
     this.guideDebug.logTestWorkState();
+    this.guideMarkersDetected++;
+    this.guideMarkersRemoved++;
     return this.guideDebug.getLogFilePath();
   }
 
