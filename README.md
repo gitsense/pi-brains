@@ -146,7 +146,7 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains build <manifest-path-or-url>` | Build/import a Brain from a path or URL |
 | `/brains build --force` | Rebuild Brain manifests even if cached data exists |
 | `/brains build help` | Show Brain build help and current Brain status |
-| `/brains insights` | Show a static HUD snapshot |
+| `/brains insights` | Show a static inspect snapshot |
 | `/brains rules` | Show rule status and options |
 | `/brains rules on` | Enable rules checking |
 | `/brains rules off` | Disable rules checking |

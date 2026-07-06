@@ -50,9 +50,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     return new Text(prefix + "\n\n" + content, 0, 0);
   });
 
-  pi.registerMessageRenderer("brains-hud", (message, _options, theme) => {
+  pi.registerMessageRenderer("brains-inspect", (message, _options, theme) => {
     const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("accent", "[brains-hud]");
+    const prefix = theme.fg("accent", "[brains-inspect]");
     return new Text(prefix + "\n\n" + content, 0, 0);
   });
 
@@ -130,7 +130,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains insights - show the current HUD state as a static message
+      // /brains insights - show the current inspect state as a static message
       if (command === "insights") {
         const output = controller.renderInsightsSnapshot();
         pi.sendMessage({
@@ -153,9 +153,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains hud - open/close HUD pane
-      if (command === "hud") {
-        await handleHudCommand(value, controller, pi);
+      // /brains inspect - open/close inspect view
+      if (command === "inspect") {
+        await handleInspectCommand(value, controller, pi);
         return;
       }
 
@@ -328,14 +328,14 @@ Managing rules:
   });
 }
 
-async function handleHudCommand(_value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
+async function handleInspectCommand(_value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
   const sessionId = controller.getSessionId();
   const cwd = controller.getCwd();
 
   // Build the gsc command
   const gscCmd = sessionId
-    ? `gsc pi hud ${sessionId}`
-    : `gsc pi hud --cwd ${cwd} --wait`;
+    ? `gsc pi inspect ${sessionId}`
+    : `gsc pi inspect --cwd ${cwd} --wait`;
 
   // Detect OS for terminal shortcuts
   const platform = process.platform;
@@ -359,7 +359,7 @@ async function handleHudCommand(_value: string | undefined, controller: PiBrains
   const content = `Split your terminal and run the following command to create a companion view:\n\n  ${gscCmd}\n${shortcutBlock}`;
 
   pi.sendMessage({
-    customType: "brains-hud",
+    customType: "brains-inspect",
     content,
     display: true,
   });
@@ -447,8 +447,8 @@ function showHelp(pi: ExtensionAPI): void {
 
   /brains              Initialize expert context (gsc experts init)
   /brains build        Build/import a Brain manifest
-  /brains hud          Show HUD companion view instructions
-  /brains insights     Show a static HUD snapshot
+  /brains inspect      Show inspect view instructions
+  /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
   /brains rules status Show recent rule decisions
   /brains debug        Toggle debug mode
