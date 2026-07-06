@@ -643,7 +643,7 @@ function showHelp(pi: ExtensionAPI): void {
   /brains guide on        Enable guide mode
   /brains guide off       Disable guide mode
   /brains guide status    Show guide mode status
-  /brains guide checkpoint Write work state checkpoint to debug log
+  /brains guide checkpoint Create checkpoint and verification thread
   /brains inspect         Show inspect view instructions
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
