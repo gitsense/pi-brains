@@ -101,8 +101,21 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     controller.refreshSessionState(ctx);
   });
 
-  pi.on("message_end", (_event, ctx) => {
+  pi.on("message_end", async (event, ctx) => {
     controller.refreshSessionState(ctx);
+
+    // Guide mode: detect and remove Work State marker
+    if (controller.isGuideEnabled() && event.message.role === "assistant") {
+      const cleanedMessage = controller.processAssistantMessageForMarker(
+        event.message as unknown as Record<string, unknown>
+      );
+      if (cleanedMessage) {
+        ctx.ui.notify("Pi Brains guide: checkpoint marker detected", "info");
+        return { message: cleanedMessage as any };
+      }
+    }
+
+    return undefined;
   });
 
   pi.on("session_compact", (_event, ctx) => {
@@ -204,6 +217,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         } else {
           ctx.ui.notify("Debug disabled", "info");
         }
+        return;
+      }
+
+      // /brains guide - toggle guide mode
+      if (command === "guide") {
+        handleGuideCommand(value, controller, ctx as unknown as ExtensionContext);
         return;
       }
 
@@ -442,11 +461,49 @@ Run \`gsc --help\` for the full command reference.`;
   });
 }
 
+function handleGuideCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionContext): void {
+  // /brains guide on
+  if (value === "on") {
+    controller.setGuideEnabled(true);
+    ctx.ui.notify("Guide mode enabled. Pi Brains will watch for Work State checkpoint requests.", "info");
+    return;
+  }
+
+  // /brains guide off
+  if (value === "off") {
+    controller.setGuideEnabled(false);
+    ctx.ui.notify("Guide mode disabled.", "info");
+    return;
+  }
+
+  // /brains guide status
+  if (value === "status") {
+    const enabled = controller.isGuideEnabled();
+    const logPath = controller.getGuideDebugLogPath();
+    const status = `Guide mode: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : ""}`;
+    ctx.ui.notify(status, "info");
+    return;
+  }
+
+  // /brains guide - toggle
+  const newState = !controller.isGuideEnabled();
+  controller.setGuideEnabled(newState);
+  if (newState) {
+    ctx.ui.notify("Guide mode enabled. Pi Brains will watch for Work State checkpoint requests.", "info");
+  } else {
+    ctx.ui.notify("Guide mode disabled.", "info");
+  }
+}
+
 function showHelp(pi: ExtensionAPI): void {
   const help = `/brains commands:
 
   /brains              Initialize expert context (gsc experts init)
   /brains build        Build/import a Brain manifest
+  /brains guide        Toggle guide mode (Work State checkpoints)
+  /brains guide on     Enable guide mode
+  /brains guide off    Disable guide mode
+  /brains guide status Show guide mode status
   /brains inspect      Show inspect view instructions
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options

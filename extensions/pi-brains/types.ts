@@ -14,6 +14,7 @@ export interface PiBrainsConfig {
   dismissedNotices: string[];
   rulesEnabled: boolean;
   debug: boolean;
+  guideEnabled: boolean;
 }
 
 export interface ContextState {

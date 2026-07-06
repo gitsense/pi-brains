@@ -32,6 +32,7 @@ describe("configuration", () => {
       dismissedNotices: ["gsc-missing-v1"],
       rulesEnabled: true,
       debug: false,
+      guideEnabled: false,
     });
   });
 });

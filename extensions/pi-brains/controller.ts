@@ -4,6 +4,7 @@ import type { AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, BeforeAgent
 import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-works/pi-tui";
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
 import { DebugLogger } from "./debug.ts";
+import { GuideDebugLogger } from "./guide-debug.ts";
 import { readContextState, readModelState } from "./model-context.ts";
 import { BrainsPanel, renderBrainsPanelSnapshot } from "./panel.ts";
 import { RepositoryResolver } from "./repositories.ts";
@@ -14,6 +15,33 @@ import type { ExecutionResult, ExecutionTriggerResult, LifecycleEvent, RulesJson
 import { buildTelemetryEvent, RuleTelemetryWriter, type RuleTelemetryEventV1, type RuleTelemetrySession, type RuleTelemetryEvent, type RuleTelemetryRuleSnapshot, type RuleTelemetryMatch, type RuleTelemetryResult, resolveOutcome } from "./rules/telemetry.ts";
 import { TouchedFileTracker } from "./touched-files.ts";
 import type { PanelState, PiBrainsConfig } from "./types.ts";
+
+const PI_WORKSTATE_MARKER = "[PI_WORKSTATE_REQUEST]";
+
+const GUIDE_INSTRUCTION = `Guide mode is enabled.
+
+This is a difficult task and should be handled in a more inspectable way.
+Do not expose private chain-of-thought.
+
+When a compact Work State checkpoint would help the human understand or guide
+the work, emit this exact marker at the end of your assistant response:
+
+[PI_WORKSTATE_REQUEST]
+
+Do not explain the marker.
+Do not write the Work State yourself.
+
+Request a checkpoint after meaningful transitions such as:
+- finishing initial investigation
+- choosing or changing implementation approach
+- touching risky or central files
+- a command or test failure
+- a rule trigger
+- repeated uncertainty or repeated failed attempts
+- before final response
+
+Pi Brains will capture the marker and remove it from the visible/persisted
+assistant message.`;
 
 const OVERLAY_OWNER_WIDGET = "pi-brains-overlay-owner";
 type NoticeLevel = Parameters<ExtensionContext["ui"]["notify"]>[1];
@@ -49,6 +77,7 @@ export class PiBrainsController {
   private readonly rulesDelivery = new RuleDeliveryTracker();
   private readonly rulesEngine: RuleEngine;
   private readonly debug: DebugLogger;
+  private readonly guideDebug: GuideDebugLogger;
   private readonly telemetry: RuleTelemetryWriter;
   private context: PanelState["context"] = null;
   private model: PanelState["model"] = null;
@@ -68,6 +97,7 @@ export class PiBrainsController {
     this.pi = pi;
     this.config = config;
     this.debug = new DebugLogger(() => this.config);
+    this.guideDebug = new GuideDebugLogger();
     this.repositories = new RepositoryResolver(pi);
     this.telemetry = new RuleTelemetryWriter(this.debug);
     this.rulesEngine = new RuleEngine(
@@ -88,6 +118,11 @@ export class PiBrainsController {
     // Initialize telemetry with session path
     const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
     this.telemetry.setSession(sessionFile);
+    
+    // Initialize guide debug logger
+    const leafId = ctx.sessionManager.getLeafId?.() ?? null;
+    this.guideDebug.setSession(sessionFile, this.sessionId, leafId);
+    
     this.refreshSessionState(ctx);
     this.repositories.resolveFiles(this.tracker.getFiles(), () => this.requestRender());
     this.config.visible = false;
@@ -128,6 +163,9 @@ export class PiBrainsController {
   refreshSessionState(ctx: ExtensionContext): void {
     this.context = readContextState(ctx);
     this.model = readModelState(this.pi, ctx);
+    // Update leaf ID for guide debug logger
+    const leafId = ctx.sessionManager.getLeafId?.() ?? null;
+    this.guideDebug.setLeafId(leafId);
     this.requestRender();
   }
 
@@ -514,8 +552,14 @@ export class PiBrainsController {
   }
 
   async handleBeforeAgentStart(event: BeforeAgentStartEvent, ctx: ExtensionContext): Promise<BeforeAgentStartEventResult | undefined> {
+    const guideInstruction = this.getGuideInstruction();
+    const systemPromptParts = [event.systemPrompt, GITSENSE_SYSTEM_PROMPT];
+    if (guideInstruction) {
+      systemPromptParts.push(guideInstruction);
+    }
+
     const eventResult: BeforeAgentStartEventResult = {
-      systemPrompt: `${event.systemPrompt}\n\n${GITSENSE_SYSTEM_PROMPT}`,
+      systemPrompt: systemPromptParts.join("\n\n"),
     };
 
     if (!this.config.rulesEnabled) return eventResult;
@@ -706,6 +750,108 @@ export class PiBrainsController {
       outsideCount: this.repositories.getOutsideRepositoryCount(),
       repositories: this.repositories.getRepositories(this.cwd),
     };
+  }
+
+  // Guide mode methods
+
+  isGuideEnabled(): boolean {
+    return this.config.guideEnabled;
+  }
+
+  setGuideEnabled(enabled: boolean): void {
+    this.config.guideEnabled = enabled;
+    if (enabled) {
+      this.guideDebug.logGuideEnabled();
+    } else {
+      this.guideDebug.logGuideDisabled();
+    }
+    void this.persistConfig();
+  }
+
+  getGuideDebugLogPath(): string | null {
+    return this.guideDebug.getLogFilePath();
+  }
+
+  /**
+   * Get the guide instruction to inject into the system prompt.
+   */
+  getGuideInstruction(): string | null {
+    if (!this.config.guideEnabled) return null;
+    this.guideDebug.logGuidanceInjected();
+    return GUIDE_INSTRUCTION;
+  }
+
+  /**
+   * Process an assistant message for marker detection.
+   * Returns the cleaned message if marker was found and removed, undefined otherwise.
+   * Uses Record<string, unknown> to avoid importing AgentMessage type.
+   */
+  processAssistantMessageForMarker(message: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!this.config.guideEnabled) return undefined;
+    if (message.role !== "assistant") return undefined;
+
+    const content = message.content as string | Array<{ type: string; text?: string }>;
+    const hasMarker = this.detectMarkerInContent(content);
+    this.guideDebug.logMessageEndSeen("assistant", hasMarker);
+
+    if (!hasMarker) return undefined;
+
+    this.guideDebug.logMarkerDetected("assistant");
+
+    try {
+      const cleanedContent = this.removeMarkerFromContent(content);
+      const cleanedMessage = { ...message, content: cleanedContent };
+      this.guideDebug.logMarkerRemoved(true);
+      return cleanedMessage;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.guideDebug.logMarkerRemoveFailed(errorMsg);
+      return undefined;
+    }
+  }
+
+  /**
+   * Detect if marker exists in message content.
+   */
+  private detectMarkerInContent(content: string | Array<{ type: string; text?: string }>): boolean {
+    if (typeof content === "string") {
+      return content.includes(PI_WORKSTATE_MARKER);
+    }
+
+    if (Array.isArray(content)) {
+      for (const block of content) {
+        if (block.type === "text" && typeof block.text === "string") {
+          if (block.text.includes(PI_WORKSTATE_MARKER)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Remove marker from message content, preserving all other content.
+   */
+  private removeMarkerFromContent(content: string | Array<{ type: string; text?: string }>): string | Array<{ type: string; text?: string }> {
+    if (typeof content === "string") {
+      return content.replaceAll(PI_WORKSTATE_MARKER, "").trimEnd();
+    }
+
+    if (Array.isArray(content)) {
+      return content.map(block => {
+        if (block.type === "text" && typeof block.text === "string") {
+          return {
+            ...block,
+            text: block.text.replaceAll(PI_WORKSTATE_MARKER, "").trimEnd(),
+          };
+        }
+        return block;
+      });
+    }
+
+    return content;
   }
 
   getGscStatus(): "checking" | "available" | "missing" {
