@@ -1,5 +1,46 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import type { ContextState, ModelState } from "./types.ts";
+
+// Guide checkpoint types (schema v1)
+
+export type GuideCheckpointSource = "agent_marker" | "manual";
+export type GuideCheckpointReason = "agent_requested" | "manual_checkpoint";
+
+export interface GuideCheckpointFacts {
+  trackedFileCount: number;
+  filesChangedSinceLastCheckpoint: number;
+  toolCallsSinceLastCheckpoint: number;
+  failedToolCallsSinceLastCheckpoint: number;
+  rulesTriggeredSinceLastCheckpoint: number;
+  latestToolName: string | null;
+  latestRuleId: string | null;
+}
+
+export interface GuideCheckpointCounters {
+  markersDetected: number;
+  markersRemoved: number;
+  checkpointsRequested: number;
+}
+
+export interface GuideWorkStateEventV1 {
+  type: "work_state";
+  schemaVersion: 1;
+  checkpointId: string;
+  previousCheckpointId: string | null;
+  source: GuideCheckpointSource;
+  reason: GuideCheckpointReason;
+  phase: "checkpoint_requested";
+  summary: string;
+  guideEnabled: boolean;
+  sessionId: string | null;
+  leafId: string | null;
+  anchorLeafId: string | null;
+  facts: GuideCheckpointFacts;
+  counters: GuideCheckpointCounters;
+  context: ContextState | null;
+  model: ModelState | null;
+}
 
 /**
  * Debug logger specifically for guide mode.
@@ -39,6 +80,20 @@ export class GuideDebugLogger {
    */
   getLogFilePath(): string | null {
     return this.logFilePath;
+  }
+
+  /**
+   * Get the current session ID.
+   */
+  getSessionId(): string | null {
+    return this.sessionId;
+  }
+
+  /**
+   * Get the current leaf ID.
+   */
+  getLeafId(): string | null {
+    return this.leafId;
   }
 
   /**
@@ -161,65 +216,29 @@ export class GuideDebugLogger {
   }
 
   /**
-   * Log a deterministic Work State checkpoint event.
-   * Called when [PI_WORKSTATE_REQUEST] marker is detected and removed.
-   * No LLM involved — derived only from already-available facts.
+   * Log a schema v1 work_state checkpoint event.
    */
-  logWorkStateRequested(data: {
-    latestEventType?: string;
-    markersDetected?: number;
-    markersRemoved?: number;
-    trackedFileCount?: number;
-    context?: { tokens: number | null; contextWindow: number; percent: number | null } | null;
-    model?: { id: string; provider: string; thinkingLevel: string } | null;
-  }): void {
+  logWorkStateV1(event: GuideWorkStateEventV1): void {
     this.logEvent({
-      type: "work_state",
+      ...event,
       guideEnabled: true,
-      reason: "agent_requested",
-      phase: "checkpoint_requested",
-      summary: "Agent requested a Work State checkpoint.",
-      latestEventType: data.latestEventType ?? null,
-      markersDetected: data.markersDetected ?? 0,
-      markersRemoved: data.markersRemoved ?? 0,
-      trackedFileCount: data.trackedFileCount ?? 0,
-      context: data.context ?? null,
-      model: data.model ?? null,
     });
   }
 
   /**
-   * Log a synthetic test work_state event for pipeline verification.
-   * Used by /brains guide test to verify write→parse→display works.
+   * Log synthetic marker events for manual checkpoints.
    */
-  logTestWorkState(): void {
-    // Simulate marker detection
+  logManualMarkerEvents(): void {
     this.logEvent({
       type: "marker_detected",
       guideEnabled: true,
       messageRole: "assistant",
     });
 
-    // Simulate marker removal
     this.logEvent({
       type: "marker_removed",
       guideEnabled: true,
       success: true,
-    });
-
-    // Write work_state event
-    this.logEvent({
-      type: "work_state",
-      guideEnabled: true,
-      reason: "manual_test",
-      phase: "checkpoint_requested",
-      summary: "Manual guide test checkpoint.",
-      latestEventType: "guide_test",
-      markersDetected: 0,
-      markersRemoved: 0,
-      trackedFileCount: 0,
-      context: null,
-      model: null,
     });
   }
 }

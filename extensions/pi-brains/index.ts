@@ -487,7 +487,7 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
 
   // /brains guide checkpoint
   if (value === "checkpoint") {
-    const logPath = controller.testGuideWorkState();
+    const logPath = controller.requestGuideCheckpoint("manual");
     const msg = [
       "Guide checkpoint written.",
       "Run /brains inspect or gsc pi guide <session-id> to verify.",

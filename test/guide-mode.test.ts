@@ -295,13 +295,17 @@ describe("guide mode", () => {
           .map(line => JSON.parse(line));
         const workState = entries.find((e: any) => e.type === "work_state");
         expect(workState).toBeDefined();
+        expect(workState.schemaVersion).toBe(1);
+        expect(workState.source).toBe("agent_marker");
         expect(workState.reason).toBe("agent_requested");
         expect(workState.phase).toBe("checkpoint_requested");
         expect(workState.summary).toBe("Agent requested a Work State checkpoint.");
-        expect(workState.markersDetected).toBe(1);
-        expect(workState.markersRemoved).toBe(1);
-        expect(workState.trackedFileCount).toBe(0);
-        expect(workState.latestEventType).toBe("marker_removed");
+        expect(workState.checkpointId).toMatch(/^chk_/);
+        expect(workState.counters.markersDetected).toBe(1);
+        expect(workState.counters.markersRemoved).toBe(1);
+        expect(workState.counters.checkpointsRequested).toBe(1);
+        expect(workState.facts.trackedFileCount).toBe(0);
+        expect(workState.facts.toolCallsSinceLastCheckpoint).toBe(0);
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }

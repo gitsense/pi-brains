@@ -4,7 +4,7 @@ import type { AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, BeforeAgent
 import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-works/pi-tui";
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
 import { DebugLogger } from "./debug.ts";
-import { GuideDebugLogger } from "./guide-debug.ts";
+import { GuideDebugLogger, type GuideCheckpointSource, type GuideCheckpointReason, type GuideWorkStateEventV1, type GuideCheckpointFacts, type GuideCheckpointCounters } from "./guide-debug.ts";
 import { readContextState, readModelState } from "./model-context.ts";
 import { BrainsPanel, renderBrainsPanelSnapshot } from "./panel.ts";
 import { RepositoryResolver } from "./repositories.ts";
@@ -99,6 +99,16 @@ export class PiBrainsController {
   private guideMarkersDetected = 0;
   private guideMarkersRemoved = 0;
   private guideLastEventType: string | undefined = undefined;
+  
+  // Checkpoint tracking
+  private guideCheckpointCount = 0;
+  private guideLastCheckpointId: string | null = null;
+  private guideLastCheckpointFiles = new Set<string>();
+  private guideToolCallsSinceCheckpoint = 0;
+  private guideFailedToolCallsSinceCheckpoint = 0;
+  private guideRulesTriggeredSinceCheckpoint = 0;
+  private guideLatestToolName: string | null = null;
+  private guideLatestRuleId: string | null = null;
 
   constructor(pi: ExtensionAPI, config: PiBrainsConfig) {
     this.pi = pi;
@@ -181,6 +191,15 @@ export class PiBrainsController {
     const changed = this.tracker.recordResult(event, ctx.cwd);
     if (changed) this.repositories.resolveFiles(this.tracker.getFiles(), () => this.requestRender());
     if (changed || event.toolName === "bash") this.requestRender();
+
+    // Track tool facts for guide checkpoints
+    if (this.config.guideEnabled) {
+      this.guideToolCallsSinceCheckpoint++;
+      this.guideLatestToolName = event.toolName;
+      if (event.isError) {
+        this.guideFailedToolCallsSinceCheckpoint++;
+      }
+    }
   }
 
   async handleToolResult(event: ToolResultEvent, ctx: ExtensionContext): Promise<void> {
@@ -208,6 +227,16 @@ export class PiBrainsController {
     const filePath = (input?.path as string) ?? null;
     const command = (input?.command as string) ?? null;
     await this.writeTelemetry(ctx, "post_tool_use", event.toolName, command, filePath, null, result, durationMs);
+
+    // Track rule facts for guide checkpoints
+    if (this.config.guideEnabled && result.triggerResults) {
+      for (const triggerResult of result.triggerResults) {
+        if (triggerResult.matched) {
+          this.guideRulesTriggeredSinceCheckpoint++;
+          this.guideLatestRuleId = triggerResult.ruleId ?? null;
+        }
+      }
+    }
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -781,13 +810,85 @@ export class PiBrainsController {
   }
 
   /**
-   * Write a synthetic test work_state event for pipeline verification.
-   * Returns the debug log path for user notification.
+   * Request a guide checkpoint. Creates a structured work_state event.
+   * Called by /brains guide checkpoint (manual) or agent marker detection.
    */
-  testGuideWorkState(): string | null {
-    this.guideDebug.logTestWorkState();
-    this.guideMarkersDetected++;
-    this.guideMarkersRemoved++;
+  requestGuideCheckpoint(source: GuideCheckpointSource): string | null {
+    // For manual checkpoints, simulate marker events
+    if (source === "manual") {
+      this.guideDebug.logManualMarkerEvents();
+      this.guideMarkersDetected++;
+      this.guideMarkersRemoved++;
+    }
+
+    // Generate checkpoint ID
+    const checkpointId = `chk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    // Derive reason from source
+    const reason: GuideCheckpointReason = source === "agent_marker" ? "agent_requested" : "manual_checkpoint";
+
+    // Calculate files changed since last checkpoint
+    const currentFiles = this.tracker.getFiles();
+    let filesChangedSinceLastCheckpoint = 0;
+    if (this.guideLastCheckpointFiles.size > 0) {
+      for (const file of currentFiles) {
+        if (!this.guideLastCheckpointFiles.has(file)) {
+          filesChangedSinceLastCheckpoint++;
+        }
+      }
+    }
+
+    // Build facts
+    const facts: GuideCheckpointFacts = {
+      trackedFileCount: currentFiles.size,
+      filesChangedSinceLastCheckpoint,
+      toolCallsSinceLastCheckpoint: this.guideToolCallsSinceCheckpoint,
+      failedToolCallsSinceLastCheckpoint: this.guideFailedToolCallsSinceCheckpoint,
+      rulesTriggeredSinceLastCheckpoint: this.guideRulesTriggeredSinceCheckpoint,
+      latestToolName: this.guideLatestToolName,
+      latestRuleId: this.guideLatestRuleId,
+    };
+
+    // Build counters
+    const counters: GuideCheckpointCounters = {
+      markersDetected: this.guideMarkersDetected,
+      markersRemoved: this.guideMarkersRemoved,
+      checkpointsRequested: this.guideCheckpointCount + 1,
+    };
+
+    // Build work_state event
+    const event: GuideWorkStateEventV1 = {
+      type: "work_state",
+      schemaVersion: 1,
+      checkpointId,
+      previousCheckpointId: this.guideLastCheckpointId,
+      source,
+      reason,
+      phase: "checkpoint_requested",
+      summary: source === "agent_marker" ? "Agent requested a Work State checkpoint." : "Manual guide checkpoint.",
+      guideEnabled: true,
+      sessionId: this.guideDebug.getSessionId(),
+      leafId: this.guideDebug.getLeafId(),
+      anchorLeafId: this.guideDebug.getLeafId(),
+      facts,
+      counters,
+      context: this.context,
+      model: this.model,
+    };
+
+    // Write event
+    this.guideDebug.logWorkStateV1(event);
+
+    // Update checkpoint state
+    this.guideCheckpointCount++;
+    this.guideLastCheckpointId = checkpointId;
+    this.guideLastCheckpointFiles = new Set(currentFiles);
+    this.guideToolCallsSinceCheckpoint = 0;
+    this.guideFailedToolCallsSinceCheckpoint = 0;
+    this.guideRulesTriggeredSinceCheckpoint = 0;
+    this.guideLatestToolName = null;
+    this.guideLatestRuleId = null;
+
     return this.guideDebug.getLogFilePath();
   }
 
@@ -827,15 +928,8 @@ export class PiBrainsController {
       this.guideMarkersRemoved++;
       this.guideLastEventType = "marker_removed";
 
-      // Write deterministic Work State event (no LLM)
-      this.guideDebug.logWorkStateRequested({
-        latestEventType: this.guideLastEventType,
-        markersDetected: this.guideMarkersDetected,
-        markersRemoved: this.guideMarkersRemoved,
-        trackedFileCount: this.tracker.getFiles().size,
-        context: this.context,
-        model: this.model,
-      });
+      // Write structured checkpoint
+      this.requestGuideCheckpoint("agent_marker");
 
       return cleanedMessage;
     } catch (error) {
