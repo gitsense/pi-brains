@@ -493,6 +493,10 @@ function handleGuideCommand(value: string | undefined, pi: ExtensionAPI, control
       return;
     }
 
+    // Update leaf ID from current session state before checkpoint
+    const currentLeafId = ctx.sessionManager.getLeafId();
+    controller.updateGuideLeafId(currentLeafId);
+
     // Write checkpoint events
     const checkpointResult = controller.requestGuideCheckpoint("manual");
     

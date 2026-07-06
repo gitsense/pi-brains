@@ -864,6 +864,13 @@ export class PiBrainsController {
   }
 
   /**
+   * Update the guide debug logger's leaf ID from current session state.
+   */
+  updateGuideLeafId(leafId: string | null): void {
+    this.guideDebug.setLeafId(leafId);
+  }
+
+  /**
    * Request a guide checkpoint. Creates a structured work_state event.
    * Called by /brains guide checkpoint (manual) or agent marker detection.
    */
