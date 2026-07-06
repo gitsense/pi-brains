@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { PiBrainsController } from "../extensions/pi-brains/controller.ts";
 import { DEFAULT_CONFIG } from "../extensions/pi-brains/config.ts";
+import type { BeforeAgentStartEvent, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { PiBrainsConfig } from "../extensions/pi-brains/types.ts";
 
 const PI_WORKSTATE_MARKER = "[PI_WORKSTATE_REQUEST]";
@@ -33,6 +34,35 @@ function createMockPi(): any {
   };
 }
 
+function createBeforeAgentStartEvent(systemPrompt = "base system prompt"): BeforeAgentStartEvent {
+  return {
+    type: "before_agent_start",
+    prompt: "hard task",
+    systemPrompt,
+    systemPromptOptions: {
+      cwd: "/repo",
+      selectedTools: [],
+      activeTools: [],
+      availableTools: [],
+    },
+  } as BeforeAgentStartEvent;
+}
+
+function createContext(): ExtensionContext {
+  return {
+    cwd: "/repo",
+    getContextUsage: () => null,
+    model: null,
+    sessionManager: {
+      getBranch: () => [],
+      getSessionId: () => "session-1",
+      getSessionFile: () => "/repo/session.jsonl",
+      getLeafId: () => "leaf-1",
+    },
+    ui: { notify: () => {}, setWidget: () => {} },
+  } as unknown as ExtensionContext;
+}
+
 describe("guide mode", () => {
   let controller: PiBrainsController;
   let config: PiBrainsConfig;
@@ -40,6 +70,30 @@ describe("guide mode", () => {
   beforeEach(() => {
     config = { ...DEFAULT_CONFIG, guideEnabled: false };
     controller = new PiBrainsController(createMockPi(), config);
+  });
+
+  describe("guidance injection", () => {
+    it("injects guide instructions into the next agent turn when guide mode is enabled", async () => {
+      config.guideEnabled = true;
+      config.rulesEnabled = false;
+
+      const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), createContext());
+
+      expect(result?.systemPrompt).toContain("base system prompt");
+      expect(result?.systemPrompt).toContain("Guide mode is enabled by Pi Brains.");
+      expect(result?.systemPrompt).toContain(PI_WORKSTATE_MARKER);
+    });
+
+    it("does not inject guide instructions when guide mode is disabled", async () => {
+      config.guideEnabled = false;
+      config.rulesEnabled = false;
+
+      const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), createContext());
+
+      expect(result?.systemPrompt).toContain("base system prompt");
+      expect(result?.systemPrompt).not.toContain("Guide mode is enabled.");
+      expect(result?.systemPrompt).not.toContain(PI_WORKSTATE_MARKER);
+    });
   });
 
   describe("marker detection", () => {

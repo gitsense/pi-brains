@@ -465,7 +465,7 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
   // /brains guide on
   if (value === "on") {
     controller.setGuideEnabled(true);
-    ctx.ui.notify("Guide mode enabled. Pi Brains will watch for Work State checkpoint requests.", "info");
+    ctx.ui.notify(formatGuideEnabledNotice(controller), "info");
     return;
   }
 
@@ -480,7 +480,7 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
   if (value === "status") {
     const enabled = controller.isGuideEnabled();
     const logPath = controller.getGuideDebugLogPath();
-    const status = `Guide mode: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : ""}`;
+    const status = `Guide mode: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : "\nDebug log: unavailable until session starts"}`;
     ctx.ui.notify(status, "info");
     return;
   }
@@ -489,10 +489,19 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
   const newState = !controller.isGuideEnabled();
   controller.setGuideEnabled(newState);
   if (newState) {
-    ctx.ui.notify("Guide mode enabled. Pi Brains will watch for Work State checkpoint requests.", "info");
+    ctx.ui.notify(formatGuideEnabledNotice(controller), "info");
   } else {
     ctx.ui.notify("Guide mode disabled.", "info");
   }
+}
+
+function formatGuideEnabledNotice(controller: PiBrainsController): string {
+  const logPath = controller.getGuideDebugLogPath();
+  return [
+    "Guide mode enabled. Pi Brains will watch for Work State checkpoint requests.",
+    "Guidance is injected on the next agent turn.",
+    logPath ? `Debug log: ${logPath}` : "Debug log: unavailable until session starts",
+  ].join("\n");
 }
 
 function showHelp(pi: ExtensionAPI): void {
