@@ -222,7 +222,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
       // /brains guide - toggle guide mode
       if (command === "guide") {
-        handleGuideCommand(value, controller, ctx as unknown as ExtensionContext);
+        handleGuideCommand(value, pi, controller, ctx as unknown as ExtensionContext);
         return;
       }
 
@@ -461,7 +461,7 @@ Run \`gsc --help\` for the full command reference.`;
   });
 }
 
-function handleGuideCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionContext): void {
+function handleGuideCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): void {
   // /brains guide on
   if (value === "on") {
     controller.setGuideEnabled(true);
@@ -498,7 +498,7 @@ function handleGuideCommand(value: string | undefined, controller: PiBrainsContr
     
     // Create checkpoint thread (verification phase)
     // Note: We don't await this to avoid blocking the command handler
-    createGuideCheckpointThread(ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
+    createGuideCheckpointThread(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
       // Error is already handled inside the function
     });
     
@@ -533,9 +533,11 @@ function formatGuideEnabledNotice(controller: PiBrainsController): string {
 
 /**
  * Create a checkpoint thread from the current leaf.
+ * Uses in-session scratch branch (same session file, no separate file).
  * This is a verification phase - no LLM completion is triggered.
  */
 async function createGuideCheckpointThread(
+  pi: ExtensionAPI,
   ctx: ExtensionCommandContext,
   controller: PiBrainsController,
   checkpointResult: GuideCheckpointRequestResult,
@@ -543,7 +545,8 @@ async function createGuideCheckpointThread(
   const guideDebug = controller.getGuideDebugLogger();
   const { checkpointId, anchorLeafId, sessionId } = checkpointResult;
 
-  // Capture original session path
+  // Capture original leaf ID
+  const originalLeafId = ctx.sessionManager.getLeafId();
   const sourceSessionPath = ctx.sessionManager.getSessionFile() ?? null;
 
   // Log thread started
@@ -557,62 +560,50 @@ async function createGuideCheckpointThread(
     // Wait for agent to finish streaming
     await ctx.waitForIdle();
 
-    // Create new session for checkpoint thread
-    const result = await ctx.newSession({
-      parentSession: sourceSessionPath ?? undefined,
-      withSession: async (newCtx) => {
-        // Derive thread session path
-        const threadSessionPath = newCtx.sessionManager.getSessionFile() ?? null;
+    // Navigate to anchor leaf (creates in-session branch)
+    if (anchorLeafId) {
+      await ctx.navigateTree(anchorLeafId, { summarize: false });
+    }
 
-        // Append verification entry (no LLM trigger)
-        await newCtx.sendMessage(
-          {
-            customType: "guide-checkpoint-thread",
-            display: false,
-            content: "Checkpoint thread verification entry.",
-            details: {
-              checkpointId,
-              anchorLeafId,
-              sourceSessionId: sessionId,
-              sourceSessionPath,
-              scratch: true,
-            },
-          },
-          { triggerTurn: false },
-        );
-
-        // Log thread created
-        guideDebug.logCheckpointThreadCreated({
-          checkpointId,
-          anchorLeafId,
-          sourceSessionPath,
-          threadSessionPath,
-        });
-
-        // Switch back to original session
-        await newCtx.switchSession(sourceSessionPath ?? "", {
-          withSession: async (_restoredCtx) => {
-            // Log thread restored
-            guideDebug.logCheckpointThreadRestored({
-              checkpointId,
-              sourceSessionPath,
-            });
-          },
-        });
-      },
+    // Append custom entry (does NOT enter LLM context)
+    pi.appendEntry("guide-checkpoint-thread", {
+      checkpointId,
+      anchorLeafId,
+      sourceSessionId: sessionId,
+      sourceSessionPath,
+      scratch: true,
     });
 
-    if (result.cancelled) {
-      guideDebug.logCheckpointThreadFailed({
-        checkpointId,
-        anchorLeafId,
-        sourceSessionPath,
-        error: "Session creation cancelled by user or system",
-      });
+    // Log thread created
+    guideDebug.logCheckpointThreadCreated({
+      checkpointId,
+      anchorLeafId,
+      sourceSessionPath,
+      threadSessionPath: sourceSessionPath, // Same session file
+    });
+
+    // Navigate back to original leaf
+    if (originalLeafId) {
+      await ctx.navigateTree(originalLeafId, { summarize: false });
     }
+
+    // Log thread restored
+    guideDebug.logCheckpointThreadRestored({
+      checkpointId,
+      sourceSessionPath,
+    });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    
+
+    // Try to restore original leaf on failure
+    try {
+      if (originalLeafId) {
+        await ctx.navigateTree(originalLeafId, { summarize: false });
+      }
+    } catch {
+      // Best effort restore
+    }
+
     // Log failure
     guideDebug.logCheckpointThreadFailed({
       checkpointId,
