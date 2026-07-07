@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { GuideDebugLogger } from "../extensions/pi-brains/guide-debug.ts";
+import { CheckpointLog } from "../extensions/pi-brains/checkpoint-log.ts";
 import type { GuideCheckpointRequestResult } from "../extensions/pi-brains/controller.ts";
 
 // Mock types for testing
@@ -25,7 +25,7 @@ describe("guide checkpoint message", () => {
       getSessionFile: () => "/path/to/session.jsonl",
     };
 
-    const guideDebug = new GuideDebugLogger();
+    const guideDebug = new CheckpointLog();
     const logEvents: Array<{ type: string; [key: string]: unknown }> = [];
     guideDebug.logEvent = (event) => {
       logEvents.push(event as { type: string; [key: string]: unknown });
@@ -152,7 +152,7 @@ describe("guide checkpoint message", () => {
       throw new Error("Send failed");
     });
 
-    const guideDebug = new GuideDebugLogger();
+    const guideDebug = new CheckpointLog();
     const logEvents: Array<{ type: string; [key: string]: unknown }> = [];
     guideDebug.logEvent = (event) => {
       logEvents.push(event as { type: string; [key: string]: unknown });

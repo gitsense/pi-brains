@@ -109,7 +109,7 @@ const MAX_RECENT_GUIDE_EVENTS = 20;
  * Checkpoint event logger.
  * Writes JSONL events to a deterministic path near the active session.
  */
-export class GuideDebugLogger {
+export class CheckpointLog {
   private logFilePath: string | null = null;
   private sessionId: string | null = null;
   private leafId: string | null = null;

@@ -4,7 +4,7 @@ import type { AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, BeforeAgent
 import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-works/pi-tui";
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
 import { DebugLogger } from "./debug.ts";
-import { GuideDebugLogger, type GuideCheckpointSource, type GuideCheckpointReason, type GuideWorkStateEventV1, type GuideCheckpointFacts, type GuideCheckpointCounters, type GuideCheckpointPayloadEventV1, type GuideCheckpointPayloadTool, type GuideCheckpointPayloadRule } from "./guide-debug.ts";
+import { CheckpointLog, type GuideCheckpointSource, type GuideCheckpointReason, type GuideWorkStateEventV1, type GuideCheckpointFacts, type GuideCheckpointCounters, type GuideCheckpointPayloadEventV1, type GuideCheckpointPayloadTool, type GuideCheckpointPayloadRule } from "./checkpoint-log.ts";
 import { readContextState, readModelState } from "./model-context.ts";
 import { BrainsPanel, renderBrainsPanelSnapshot } from "./panel.ts";
 import { RepositoryResolver } from "./repositories.ts";
@@ -93,7 +93,7 @@ export class PiBrainsController {
   private readonly rulesDelivery = new RuleDeliveryTracker();
   private readonly rulesEngine: RuleEngine;
   private readonly debug: DebugLogger;
-  private readonly guideDebug: GuideDebugLogger;
+  private readonly guideDebug: CheckpointLog;
   private readonly telemetry: RuleTelemetryWriter;
   private context: PanelState["context"] = null;
   private model: PanelState["model"] = null;
@@ -138,7 +138,7 @@ export class PiBrainsController {
     this.pi = pi;
     this.config = config;
     this.debug = new DebugLogger(() => this.config);
-    this.guideDebug = new GuideDebugLogger();
+    this.guideDebug = new CheckpointLog();
     this.repositories = new RepositoryResolver(pi);
     this.telemetry = new RuleTelemetryWriter(this.debug);
     this.rulesEngine = new RuleEngine(
@@ -869,7 +869,7 @@ export class PiBrainsController {
   /**
    * Get the checkpoint log logger for external use.
    */
-  getGuideDebugLogger(): GuideDebugLogger {
+  getGuideDebugLogger(): CheckpointLog {
     return this.guideDebug;
   }
 
