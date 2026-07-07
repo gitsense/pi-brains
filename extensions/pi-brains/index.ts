@@ -110,7 +110,13 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         event.message as unknown as Record<string, unknown>
       );
       if (cleanedMessage) {
-        ctx.ui.notify("Checkpoint suggested by agent. Run /brains checkpoint to create.", "info");
+        // Record pending checkpoint suggestion
+        const leafId = ctx.sessionManager.getLeafId();
+        controller.recordCheckpointSuggestion(leafId, leafId);
+        
+        const suggestionCount = controller.getSuggestionCount();
+        const countText = suggestionCount > 1 ? ` (${suggestionCount})` : "";
+        ctx.ui.notify(`Checkpoint suggested${countText}. Run /brains checkpoint to create.`, "info");
         return { message: cleanedMessage as any };
       }
     }
@@ -545,6 +551,12 @@ function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, co
   createGuideCheckpointMessage(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
     // Error is already handled inside the function
   });
+  
+  // Consume pending suggestion if exists
+  const pendingSuggestion = controller.getPendingSuggestion();
+  if (pendingSuggestion) {
+    controller.consumePendingSuggestion(checkpointResult.checkpointId);
+  }
   
   const msg = [
     "Checkpoint created.",

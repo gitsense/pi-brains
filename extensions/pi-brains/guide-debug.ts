@@ -397,4 +397,51 @@ export class GuideDebugLogger {
       ...data,
     });
   }
+
+  /**
+   * Log checkpoint suggested event (when agent emits marker).
+   */
+  logCheckpointSuggested(data: {
+    suggestionId: string;
+    leafId: string | null;
+    anchorLeafId: string | null;
+    pending: boolean;
+    suggestionCount: number;
+  }): void {
+    this.logEvent({
+      type: "checkpoint_suggested",
+      guideEnabled: true,
+      source: "agent_marker",
+      ...data,
+    });
+  }
+
+  /**
+   * Log checkpoint suggestion consumed event.
+   */
+  logCheckpointSuggestionConsumed(data: {
+    suggestionId: string;
+    checkpointId: string;
+  }): void {
+    this.logEvent({
+      type: "checkpoint_suggestion_consumed",
+      guideEnabled: true,
+      ...data,
+    });
+  }
+
+  /**
+   * Log checkpoint failed event.
+   */
+  logCheckpointFailed(data: {
+    checkpointId: string;
+    error: string;
+    pendingSuggestion: boolean;
+  }): void {
+    this.logEvent({
+      type: "checkpoint_failed",
+      guideEnabled: true,
+      ...data,
+    });
+  }
 }

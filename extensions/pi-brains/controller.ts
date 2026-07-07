@@ -113,6 +113,15 @@ export class PiBrainsController {
   private guideManualCheckpoints = 0;
   private guideLastEventType: string | undefined = undefined;
   
+  // Pending suggestion tracking
+  private guidePendingSuggestion: {
+    suggestionId: string;
+    leafId: string | null;
+    anchorLeafId: string | null;
+    timestamp: string;
+  } | null = null;
+  private guideSuggestionCount = 0;
+  
   // Checkpoint tracking
   private guideCheckpointCount = 0;
   private guideLastCheckpointId: string | null = null;
@@ -869,6 +878,56 @@ export class PiBrainsController {
    */
   updateGuideLeafId(leafId: string | null): void {
     this.guideDebug.setLeafId(leafId);
+  }
+
+  /**
+   * Record a pending checkpoint suggestion from agent marker.
+   */
+  recordCheckpointSuggestion(leafId: string | null, anchorLeafId: string | null): void {
+    const suggestionId = `sug_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    this.guideSuggestionCount++;
+    
+    this.guidePendingSuggestion = {
+      suggestionId,
+      leafId,
+      anchorLeafId,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.guideDebug.logCheckpointSuggested({
+      suggestionId,
+      leafId,
+      anchorLeafId,
+      pending: true,
+      suggestionCount: this.guideSuggestionCount,
+    });
+  }
+
+  /**
+   * Get the current pending suggestion.
+   */
+  getPendingSuggestion(): typeof this.guidePendingSuggestion {
+    return this.guidePendingSuggestion;
+  }
+
+  /**
+   * Get the suggestion count.
+   */
+  getSuggestionCount(): number {
+    return this.guideSuggestionCount;
+  }
+
+  /**
+   * Consume the pending suggestion after successful checkpoint.
+   */
+  consumePendingSuggestion(checkpointId: string): void {
+    if (this.guidePendingSuggestion) {
+      this.guideDebug.logCheckpointSuggestionConsumed({
+        suggestionId: this.guidePendingSuggestion.suggestionId,
+        checkpointId,
+      });
+      this.guidePendingSuggestion = null;
+    }
   }
 
   /**
