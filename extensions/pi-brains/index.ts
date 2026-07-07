@@ -533,8 +533,25 @@ function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, co
   }
 
   // /brains checkpoint - create checkpoint now
-  // TODO: Implement checkpoint creation
-  ctx.ui.notify("Checkpoint creation not yet implemented.", "info");
+  // Update leaf ID from current session state before checkpoint
+  const currentLeafId = ctx.sessionManager.getLeafId();
+  controller.updateGuideLeafId(currentLeafId);
+
+  // Write checkpoint events
+  const checkpointResult = controller.requestGuideCheckpoint("manual");
+  
+  // Create checkpoint message on scratch branch
+  // Note: We don't await this to avoid blocking the command handler
+  createGuideCheckpointMessage(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
+    // Error is already handled inside the function
+  });
+  
+  const msg = [
+    "Checkpoint created.",
+    "Run /brains inspect or gsc pi guide <session-id> to verify.",
+    checkpointResult.logPath ? `Debug log: ${checkpointResult.logPath}` : "",
+  ].filter(Boolean).join("\n");
+  ctx.ui.notify(msg, "info");
 }
 
 function formatCheckpointSuggestionNotice(controller: PiBrainsController): string {
