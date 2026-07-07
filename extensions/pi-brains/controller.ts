@@ -33,7 +33,7 @@ const GUIDE_INSTRUCTION = `Checkpoint suggestions are enabled.
 
 Pi Brains is a Pi extension that helps the user inspect and steer agent work.
 It can capture private checkpoint request markers, remove them from the visible
-assistant message, and write guide debug events for gsc pi inspect.
+assistant message, and write checkpoint events for gsc pi inspect.
 
 The user wants this work to be easier to inspect and steer. Do not expose
 private chain-of-thought.
@@ -160,7 +160,7 @@ export class PiBrainsController {
     const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
     this.telemetry.setSession(sessionFile);
     
-    // Initialize guide debug logger
+    // Initialize checkpoint log
     const leafId = ctx.sessionManager.getLeafId?.() ?? null;
     this.guideDebug.setSession(sessionFile, this.sessionId, leafId);
     this.guideDebug.logInitialized(this.config.guideEnabled);
@@ -211,7 +211,7 @@ export class PiBrainsController {
   refreshSessionState(ctx: ExtensionContext): void {
     this.context = readContextState(ctx);
     this.model = readModelState(this.pi, ctx);
-    // Update leaf ID for guide debug logger
+    // Update leaf ID for checkpoint log
     const leafId = ctx.sessionManager.getLeafId?.() ?? null;
     this.guideDebug.setLeafId(leafId);
     this.requestRender();
@@ -867,14 +867,14 @@ export class PiBrainsController {
   }
 
   /**
-   * Get the guide debug logger for external use.
+   * Get the checkpoint log logger for external use.
    */
   getGuideDebugLogger(): GuideDebugLogger {
     return this.guideDebug;
   }
 
   /**
-   * Update the guide debug logger's leaf ID from current session state.
+   * Update the checkpoint log's leaf ID from current session state.
    */
   updateGuideLeafId(leafId: string | null): void {
     this.guideDebug.setLeafId(leafId);

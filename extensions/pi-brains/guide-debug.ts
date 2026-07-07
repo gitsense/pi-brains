@@ -106,7 +106,7 @@ export interface GuideCheckpointPayloadEventV1 {
 const MAX_RECENT_GUIDE_EVENTS = 20;
 
 /**
- * Debug logger specifically for guide mode.
+ * Checkpoint event logger.
  * Writes JSONL events to a deterministic path near the active session.
  */
 export class GuideDebugLogger {
@@ -123,8 +123,8 @@ export class GuideDebugLogger {
     this.leafId = leafId;
 
     if (sessionFile) {
-      // Use deterministic path: <session-file-without-.jsonl>.guide-debug.jsonl
-      this.logFilePath = sessionFile.replace(/\.jsonl$/, ".guide-debug.jsonl");
+      // Use deterministic path: <session-file-without-.jsonl>.checkpoints.jsonl
+      this.logFilePath = sessionFile.replace(/\.jsonl$/, ".checkpoints.jsonl");
     } else {
       // Fallback to timestamp-based path
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -214,11 +214,12 @@ export class GuideDebugLogger {
   }
 
   /**
-   * Log when the guide debug log is initialized for a session.
+   * Log when the checkpoint log is initialized for a session.
+   * Uses checkpoint_log_initialized for new sessions.
    */
   logInitialized(guideEnabled: boolean): void {
     this.logEvent({
-      type: "guide_log_initialized",
+      type: "checkpoint_log_initialized",
       guideEnabled,
       logFilePath: this.logFilePath,
     });

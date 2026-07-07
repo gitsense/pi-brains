@@ -84,13 +84,13 @@ describe("guide mode", () => {
 
         controller.start(createContext(sessionFile));
 
-        const logFile = join(dir, "session.guide-debug.jsonl");
+        const logFile = join(dir, "session.checkpoints.jsonl");
         const entries = readFileSync(logFile, "utf8")
           .trim()
           .split("\n")
           .map(line => JSON.parse(line));
         expect(entries[0]).toMatchObject({
-          type: "guide_log_initialized",
+          type: "checkpoint_log_initialized",
           guideEnabled: true,
           sessionId: "session-1",
           leafId: "leaf-1",
@@ -289,7 +289,7 @@ describe("guide mode", () => {
         const result = controller.processAssistantMessageForMarker(message);
         expect(result).toBeDefined();
 
-        const logFile = join(dir, "session.guide-debug.jsonl");
+        const logFile = join(dir, "session.checkpoints.jsonl");
         const entries = readFileSync(logFile, "utf8")
           .trim()
           .split("\n")
@@ -333,7 +333,7 @@ describe("guide mode", () => {
 
         controller.requestGuideCheckpoint("manual");
 
-        const logFile = join(dir, "session.guide-debug.jsonl");
+        const logFile = join(dir, "session.checkpoints.jsonl");
         const entries = readFileSync(logFile, "utf8")
           .trim()
           .split("\n")

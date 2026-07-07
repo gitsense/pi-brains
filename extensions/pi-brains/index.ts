@@ -493,7 +493,7 @@ function handleDeprecatedGuideCommand(value: string | undefined, pi: ExtensionAP
   if (value === "status") {
     const enabled = controller.isGuideEnabled();
     const logPath = controller.getGuideDebugLogPath();
-    const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : "\nDebug log: unavailable until session starts"}`;
+    const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nCheckpoint log: ${logPath}` : "\nCheckpoint log: unavailable until session starts"}`;
     ctx.ui.notify(status, "info");
     return;
   }
@@ -528,7 +528,7 @@ function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, co
     if (suggestValue === "status") {
       const enabled = controller.isGuideEnabled();
       const logPath = controller.getGuideDebugLogPath();
-      const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : "\nDebug log: unavailable until session starts"}`;
+      const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nCheckpoint log: ${logPath}` : "\nCheckpoint log: unavailable until session starts"}`;
       ctx.ui.notify(status, "info");
       return;
     }
@@ -561,7 +561,7 @@ function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, co
   const msg = [
     "Checkpoint created.",
     "Run /brains inspect or gsc pi guide <session-id> to verify.",
-    checkpointResult.logPath ? `Debug log: ${checkpointResult.logPath}` : "",
+    checkpointResult.logPath ? `Checkpoint log: ${checkpointResult.logPath}` : "",
   ].filter(Boolean).join("\n");
   ctx.ui.notify(msg, "info");
 }
@@ -572,7 +572,7 @@ function formatCheckpointSuggestionNotice(controller: PiBrainsController): strin
     "Checkpoint suggestions enabled.",
     "The agent will suggest useful checkpoint moments.",
     "Run '/brains inspect' to monitor checkpoint suggestions.",
-    logPath ? `Debug log: ${logPath}` : "Debug log: unavailable until session starts",
+    logPath ? `Checkpoint log: ${logPath}` : "Checkpoint log: unavailable until session starts",
   ].join("\n");
 }
 
