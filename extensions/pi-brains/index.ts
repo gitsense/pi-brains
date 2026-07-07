@@ -705,10 +705,7 @@ function showHelp(pi: ExtensionAPI): void {
   /brains debug off    Disable debug mode
   /brains debug file   Show debug log file path
   /brains about        What GitSense can do
-  /brains help         This message
-
-Deprecated:
-  /brains guide        Use /brains checkpoint suggest on|off|status`;
+  /brains help         This message`;
   pi.sendMessage({
     customType: "brains-help",
     content: help,
