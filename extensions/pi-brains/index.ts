@@ -571,7 +571,7 @@ function formatCheckpointSuggestionNotice(controller: PiBrainsController): strin
   return [
     "Checkpoint suggestions enabled.",
     "The agent will suggest useful checkpoint moments.",
-    "Run /brains inspect to monitor checkpoint suggestions.",
+    "Run '/brains inspect' to monitor checkpoint suggestions.",
     logPath ? `Debug log: ${logPath}` : "Debug log: unavailable until session starts",
   ].join("\n");
 }
