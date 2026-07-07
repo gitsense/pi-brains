@@ -110,7 +110,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         event.message as unknown as Record<string, unknown>
       );
       if (cleanedMessage) {
-        ctx.ui.notify("Pi Brains guide: checkpoint marker detected", "info");
+        ctx.ui.notify("Checkpoint suggested by agent. Run /brains checkpoint to create.", "info");
         return { message: cleanedMessage as any };
       }
     }
@@ -220,9 +220,15 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains guide - toggle guide mode
+      // /brains guide - deprecated (alias for checkpoint suggest)
       if (command === "guide") {
-        handleGuideCommand(value, pi, controller, ctx as unknown as ExtensionContext);
+        handleDeprecatedGuideCommand(value, pi, controller, ctx as unknown as ExtensionContext);
+        return;
+      }
+
+      // /brains checkpoint - create checkpoint or manage suggestions
+      if (command === "checkpoint") {
+        handleCheckpointCommand(value, pi, controller, ctx as unknown as ExtensionContext);
         return;
       }
 
@@ -461,46 +467,82 @@ Run \`gsc --help\` for the full command reference.`;
   });
 }
 
-function handleGuideCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): void {
-  // /brains guide on
+function handleDeprecatedGuideCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): void {
+  // Show deprecation notice
+  ctx.ui.notify("/brains guide is deprecated. Use /brains checkpoint suggest on|off|status.", "warning");
+
+  // Map to new commands
   if (value === "on") {
     controller.setGuideEnabled(true);
-    ctx.ui.notify(formatGuideEnabledNotice(controller), "info");
+    ctx.ui.notify(formatCheckpointSuggestionNotice(controller), "info");
     return;
   }
 
-  // /brains guide off
   if (value === "off") {
     controller.setGuideEnabled(false);
-    ctx.ui.notify("Guide mode disabled.", "info");
+    ctx.ui.notify("Checkpoint suggestions disabled.", "info");
     return;
   }
 
-  // /brains guide status
   if (value === "status") {
     const enabled = controller.isGuideEnabled();
     const logPath = controller.getGuideDebugLogPath();
-    const status = `Guide mode: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : "\nDebug log: unavailable until session starts"}`;
+    const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : "\nDebug log: unavailable until session starts"}`;
     ctx.ui.notify(status, "info");
     return;
   }
 
-  // /brains guide - toggle
+  // Toggle behavior for compatibility
   const newState = !controller.isGuideEnabled();
   controller.setGuideEnabled(newState);
   if (newState) {
-    ctx.ui.notify(formatGuideEnabledNotice(controller), "info");
+    ctx.ui.notify(formatCheckpointSuggestionNotice(controller), "info");
   } else {
-    ctx.ui.notify("Guide mode disabled.", "info");
+    ctx.ui.notify("Checkpoint suggestions disabled.", "info");
   }
 }
 
-function formatGuideEnabledNotice(controller: PiBrainsController): string {
+function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): void {
+  // /brains checkpoint suggest on|off|status
+  if (value?.startsWith("suggest")) {
+    const suggestValue = value.slice("suggest".length).trim();
+    
+    if (suggestValue === "on") {
+      controller.setGuideEnabled(true);
+      ctx.ui.notify(formatCheckpointSuggestionNotice(controller), "info");
+      return;
+    }
+    
+    if (suggestValue === "off") {
+      controller.setGuideEnabled(false);
+      ctx.ui.notify("Checkpoint suggestions disabled.", "info");
+      return;
+    }
+    
+    if (suggestValue === "status") {
+      const enabled = controller.isGuideEnabled();
+      const logPath = controller.getGuideDebugLogPath();
+      const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nDebug log: ${logPath}` : "\nDebug log: unavailable until session starts"}`;
+      ctx.ui.notify(status, "info");
+      return;
+    }
+    
+    // Show suggest help
+    ctx.ui.notify("Usage: /brains checkpoint suggest on|off|status", "info");
+    return;
+  }
+
+  // /brains checkpoint - create checkpoint now
+  // TODO: Implement checkpoint creation
+  ctx.ui.notify("Checkpoint creation not yet implemented.", "info");
+}
+
+function formatCheckpointSuggestionNotice(controller: PiBrainsController): string {
   const logPath = controller.getGuideDebugLogPath();
   return [
-    "Guide mode enabled. Pi Brains will watch for Work State checkpoint requests.",
-    "Guidance is injected on the next agent turn.",
-    "Run /brains inspect for instructions on monitoring guide events.",
+    "Checkpoint suggestions enabled.",
+    "The agent will suggest useful checkpoint moments.",
+    "Run /brains inspect to monitor checkpoint suggestions.",
     logPath ? `Debug log: ${logPath}` : "Debug log: unavailable until session starts",
   ].join("\n");
 }
@@ -622,11 +664,10 @@ function showHelp(pi: ExtensionAPI): void {
 
   /brains              Initialize expert context (gsc experts init)
   /brains build        Build/import a Brain manifest
-  /brains guide        Toggle guide mode (Work State checkpoints)
-  /brains guide on        Enable guide mode
-  /brains guide off       Disable guide mode
-  /brains guide status    Show guide mode status
-  /brains inspect         Show inspect view instructions
+  /brains checkpoint   Create a review checkpoint now
+  /brains checkpoint suggest on|off|status
+    Ask the agent to suggest useful checkpoint moments
+  /brains inspect      Show inspect view instructions
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
   /brains rules status Show recent rule decisions
@@ -635,7 +676,10 @@ function showHelp(pi: ExtensionAPI): void {
   /brains debug off    Disable debug mode
   /brains debug file   Show debug log file path
   /brains about        What GitSense can do
-  /brains help         This message`;
+  /brains help         This message
+
+Deprecated:
+  /brains guide        Use /brains checkpoint suggest on|off|status`;
   pi.sendMessage({
     customType: "brains-help",
     content: help,

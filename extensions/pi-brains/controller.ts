@@ -29,7 +29,7 @@ export interface GuideCheckpointRequestResult {
 
 const PI_WORKSTATE_MARKER = "[PI_WORKSTATE_REQUEST]";
 
-const GUIDE_INSTRUCTION = `Guide mode is enabled by Pi Brains.
+const GUIDE_INSTRUCTION = `Checkpoint suggestions are enabled.
 
 Pi Brains is a Pi extension that helps the user inspect and steer agent work.
 It can capture private checkpoint request markers, remove them from the visible
@@ -38,15 +38,15 @@ assistant message, and write guide debug events for gsc pi inspect.
 The user wants this work to be easier to inspect and steer. Do not expose
 private chain-of-thought.
 
-When a compact Work State checkpoint would help Pi Brains capture the current
-state of the work, emit this exact marker at the end of your assistant response:
+When a compact checkpoint would help the user review progress, emit this exact
+marker at the end of your assistant response:
 
 [PI_WORKSTATE_REQUEST]
 
 Do not explain the marker.
-Do not write the Work State yourself.
+Do not write the checkpoint yourself.
 
-Request a checkpoint after meaningful transitions such as:
+Suggest a checkpoint after meaningful transitions such as:
 - finishing initial investigation
 - choosing or changing implementation approach
 - touching risky or central files
@@ -56,7 +56,8 @@ Request a checkpoint after meaningful transitions such as:
 - before final response
 
 Pi Brains will capture the marker, remove it from the visible/persisted
-assistant message, and use it to update the guide debug log and inspect view.`;
+assistant message, and record a pending checkpoint suggestion.
+The user will be notified and can run /brains checkpoint to create the checkpoint.`;
 
 const OVERLAY_OWNER_WIDGET = "pi-brains-overlay-owner";
 type NoticeLevel = Parameters<ExtensionContext["ui"]["notify"]>[1];

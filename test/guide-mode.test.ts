@@ -110,7 +110,7 @@ describe("guide mode", () => {
       const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), createContext());
 
       expect(result?.systemPrompt).toContain("base system prompt");
-      expect(result?.systemPrompt).toContain("Guide mode is enabled by Pi Brains.");
+      expect(result?.systemPrompt).toContain("Checkpoint suggestions are enabled.");
       expect(result?.systemPrompt).toContain(PI_WORKSTATE_MARKER);
     });
 
@@ -121,7 +121,7 @@ describe("guide mode", () => {
       const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), createContext());
 
       expect(result?.systemPrompt).toContain("base system prompt");
-      expect(result?.systemPrompt).not.toContain("Guide mode is enabled.");
+      expect(result?.systemPrompt).not.toContain("Checkpoint suggestions are enabled.");
       expect(result?.systemPrompt).not.toContain(PI_WORKSTATE_MARKER);
     });
   });
