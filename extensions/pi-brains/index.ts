@@ -840,33 +840,30 @@ function buildCheckpointInstructions(
   instructions += `   gsc sessions checkpoints list --session ${sessionId || "unknown"}\n`;
   instructions += `   \`\`\`\n\n`;
   
-  instructions += `2. **Create a checkpoint JSON file** at \`.gitsense/sessions/checkpoint-${checkpointId}.json\`:\n`;
-  instructions += `   \`\`\`json\n`;
-  instructions += `   {\n`;
-  instructions += `     "type": "checkpoint_recorded",\n`;
-  instructions += `     "schemaVersion": 1,\n`;
-  instructions += `     "checkpointId": "${checkpointId}",\n`;
-  instructions += `     "sessionId": "${sessionId || "unknown"}",\n`;
-  instructions += `     "source": {\n`;
-  instructions += `       "agent": "pi",\n`;
-  instructions += `       "anchorLeafId": "${anchorLeafId || "unknown"}"\n`;
-  instructions += `     },\n`;
-  instructions += `     "createdAt": "<ISO 8601 timestamp>",\n`;
-  instructions += `     "problem": "<describe the problem you were solving>",\n`;
-  instructions += `     "reasoning": "<describe your reasoning>",\n`;
-  instructions += `     "decisions": ["<decision 1>", "<decision 2>"],\n`;
-  instructions += `     "risks": ["<risk 1>", "<risk 2>"],\n`;
-  instructions += `     "files": ["<file1>", "<file2>"],\n`;
-  instructions += `     "tools": ["<tool1>", "<tool2>"],\n`;
-  instructions += `     "privacy": {\n`;
-  instructions += `       "containsTranscript": false,\n`;
-  instructions += `       "containsRawToolOutput": false,\n`;
-  instructions += `       "safeToCommit": false\n`;
-  instructions += `     }\n`;
-  instructions += `   }\n`;
+  instructions += `2. **Generate a checkpoint template**:\n`;
+  instructions += `   \`\`\`bash\n`;
+  instructions += `   gsc sessions checkpoints template \\\n`;
+  instructions += `     --session ${sessionId || "unknown"} \\\n`;
+  instructions += `     --agent pi \\\n`;
+  instructions += `     --anchor-leaf ${anchorLeafId || "unknown"} \\\n`;
+  instructions += `     --out .gitsense/sessions/checkpoint-${checkpointId}.json\n`;
   instructions += `   \`\`\`\n\n`;
   
-  instructions += `3. **Create the checkpoint** from the JSON file:\n`;
+  instructions += `3. **Edit the template** and fill in the placeholder values:\n`;
+  instructions += `   - problem: What were you trying to accomplish?\n`;
+  instructions += `   - reasoning: What was your thought process?\n`;
+  instructions += `   - decisions: What key decisions did you make?\n`;
+  instructions += `   - risks: What risks or uncertainties did you identify?\n`;
+  instructions += `   - files: What files did you touch?\n`;
+  instructions += `   - tools: What tools did you use?\n\n`;
+  
+  instructions += `4. **Validate the checkpoint**:\n`;
+  instructions += `   \`\`\`bash\n`;
+  instructions += `   gsc sessions checkpoints validate \\\n`;
+  instructions += `     --from-file .gitsense/sessions/checkpoint-${checkpointId}.json\n`;
+  instructions += `   \`\`\`\n\n`;
+  
+  instructions += `5. **Create the checkpoint** from the JSON file:\n`;
   instructions += `   \`\`\`bash\n`;
   instructions += `   gsc sessions checkpoints append \\\n`;
   instructions += `     --from-file .gitsense/sessions/checkpoint-${checkpointId}.json \\\n`;
@@ -874,7 +871,7 @@ function buildCheckpointInstructions(
   instructions += `     --target personal\n`;
   instructions += `   \`\`\`\n\n`;
   
-  instructions += `4. **Verify the checkpoint was created**:\n`;
+  instructions += `6. **Verify the checkpoint was created**:\n`;
   instructions += `   \`\`\`bash\n`;
   instructions += `   gsc sessions checkpoints show ${checkpointId}\n`;
   instructions += `   \`\`\`\n\n`;
