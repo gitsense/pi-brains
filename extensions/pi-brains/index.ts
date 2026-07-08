@@ -555,7 +555,6 @@ async function handleCheckpointCommand(value: string | undefined, pi: ExtensionA
   confirmMessage += "\n• Send checkpoint instructions to the agent";
   confirmMessage += "\n• The agent will review previous checkpoints and create a new one";
   confirmMessage += "\n• Your main conversation will be restored afterward";
-  confirmMessage += "\n\nScope: personal (default)";
   
   if (suggestionCount > 0) {
     confirmMessage += `\n\n${suggestionCount} pending suggestion(s) will be consumed after success.`;
@@ -831,13 +830,12 @@ function buildCheckpointInstructions(
   instructions += `## Context\n`;
   instructions += `- ${sessionInfo}\n`;
   instructions += `- ${anchorInfo}\n`;
-  instructions += `- Checkpoint ID: ${checkpointId}\n`;
-  instructions += `- Scope: personal (default)\n\n`;
+  instructions += `- Checkpoint ID: ${checkpointId}\n\n`;
   
   instructions += `## Instructions\n\n`;
   instructions += `1. **Review previous checkpoints** (if any):\n`;
   instructions += `   \`\`\`bash\n`;
-  instructions += `   gsc sessions checkpoints list --scope personal\n`;
+  instructions += `   gsc sessions checkpoints list --session ${sessionId || "unknown"}\n`;
   instructions += `   \`\`\`\n\n`;
   
   instructions += `2. **Create a new checkpoint** with the following information:\n`;
@@ -853,7 +851,6 @@ function buildCheckpointInstructions(
   instructions += `   gsc sessions checkpoints create \\\n`;
   instructions += `     --agent pi \\\n`;
   instructions += `     --session ${sessionId || "unknown"} \\\n`;
-  instructions += `     --scope personal \\\n`;
   instructions += `     --problem "<describe the problem you were solving>" \\\n`;
   instructions += `     --reasoning "<describe your reasoning>" \\\n`;
   instructions += `     --decision "<describe key decisions>" \\\n`;
