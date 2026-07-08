@@ -838,30 +838,37 @@ function buildCheckpointInstructions(
   instructions += `   gsc sessions checkpoints list --session ${sessionId || "unknown"}\n`;
   instructions += `   \`\`\`\n\n`;
   
-  instructions += `2. **Create a new checkpoint** with the following information:\n`;
-  instructions += `   - Problem: What were you trying to accomplish?\n`;
-  instructions += `   - Reasoning: What was your thought process?\n`;
-  instructions += `   - Decisions: What key decisions did you make?\n`;
-  instructions += `   - Risks: What risks or uncertainties did you identify?\n`;
-  instructions += `   - Files: What files did you touch?\n`;
-  instructions += `   - Tools: What tools did you use?\n\n`;
+  instructions += `2. **Create a checkpoint JSON file** at \`.gitsense/sessions/checkpoint-${checkpointId}.json\`:\n`;
+  instructions += `   \`\`\`json\n`;
+  instructions += `   {\n`;
+  instructions += `     "type": "checkpoint",\n`;
+  instructions += `     "schemaVersion": 1,\n`;
+  instructions += `     "checkpointId": "${checkpointId}",\n`;
+  instructions += `     "sessionId": "${sessionId || "unknown"}",\n`;
+  instructions += `     "source": {\n`;
+  instructions += `       "agent": "pi",\n`;
+  instructions += `       "anchorLeafId": "${anchorLeafId || "unknown"}"\n`;
+  instructions += `     },\n`;
+  instructions += `     "problem": "<describe the problem you were solving>",\n`;
+  instructions += `     "reasoning": "<describe your reasoning>",\n`;
+  instructions += `     "decisions": ["<decision 1>", "<decision 2>"],\n`;
+  instructions += `     "risks": ["<risk 1>", "<risk 2>"],\n`;
+  instructions += `     "files": ["<file1>", "<file2>"],\n`;
+  instructions += `     "tools": ["<tool1>", "<tool2>"]\n`;
+  instructions += `   }\n`;
+  instructions += `   \`\`\`\n\n`;
   
-  instructions += `3. **Create the checkpoint** using:\n`;
+  instructions += `3. **Create the checkpoint** from the JSON file:\n`;
   instructions += `   \`\`\`bash\n`;
-  instructions += `   gsc sessions checkpoints create \\\n`;
-  instructions += `     --agent pi \\\n`;
-  instructions += `     --session ${sessionId || "unknown"} \\\n`;
-  instructions += `     --problem "<describe the problem you were solving>" \\\n`;
-  instructions += `     --reasoning "<describe your reasoning>" \\\n`;
-  instructions += `     --decision "<describe key decisions>" \\\n`;
-  instructions += `     --risk "<describe risks or uncertainties>" \\\n`;
-  instructions += `     --file "<file1>" --file "<file2>" \\\n`;
-  instructions += `     --tool "<tool1>" --tool "<tool2>"\n`;
+  instructions += `   gsc sessions checkpoints append \\\n`;
+  instructions += `     --from-file .gitsense/sessions/checkpoint-${checkpointId}.json \\\n`;
+  instructions += `     --repo $(git rev-parse --show-toplevel) \\\n`;
+  instructions += `     --target personal\n`;
   instructions += `   \`\`\`\n\n`;
   
   instructions += `4. **Verify the checkpoint was created**:\n`;
   instructions += `   \`\`\`bash\n`;
-  instructions += `   gsc sessions checkpoints show <checkpoint-id>\n`;
+  instructions += `   gsc sessions checkpoints show ${checkpointId}\n`;
   instructions += `   \`\`\`\n\n`;
   
   instructions += `## Important Notes\n`;
