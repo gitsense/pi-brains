@@ -823,6 +823,7 @@ function buildCheckpointInstructions(
 ): string {
   const sessionInfo = sessionId ? `Session ID: ${sessionId}` : "Session ID: (not available)";
   const anchorInfo = anchorLeafId ? `Anchor Leaf ID: ${anchorLeafId}` : "Anchor Leaf ID: (not available)";
+  const repoPath = controller.getCwd();
   
   // Build the instructions
   let instructions = `# Checkpoint Creation Request\n\n`;
@@ -830,7 +831,8 @@ function buildCheckpointInstructions(
   instructions += `## Context\n`;
   instructions += `- ${sessionInfo}\n`;
   instructions += `- ${anchorInfo}\n`;
-  instructions += `- Checkpoint ID: ${checkpointId}\n\n`;
+  instructions += `- Checkpoint ID: ${checkpointId}\n`;
+  instructions += `- Repository: ${repoPath}\n\n`;
   
   instructions += `## Instructions\n\n`;
   instructions += `1. **Review previous checkpoints** (if any):\n`;
@@ -862,7 +864,7 @@ function buildCheckpointInstructions(
   instructions += `   \`\`\`bash\n`;
   instructions += `   gsc sessions checkpoints append \\\n`;
   instructions += `     --from-file .gitsense/sessions/checkpoint-${checkpointId}.json \\\n`;
-  instructions += `     --repo $(git rev-parse --show-toplevel) \\\n`;
+  instructions += `     --repo ${repoPath} \\\n`;
   instructions += `     --target personal\n`;
   instructions += `   \`\`\`\n\n`;
   
