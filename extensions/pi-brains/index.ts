@@ -843,7 +843,7 @@ function buildCheckpointInstructions(
   instructions += `2. **Create a checkpoint JSON file** at \`.gitsense/sessions/checkpoint-${checkpointId}.json\`:\n`;
   instructions += `   \`\`\`json\n`;
   instructions += `   {\n`;
-  instructions += `     "type": "checkpoint",\n`;
+  instructions += `     "type": "checkpoint_recorded",\n`;
   instructions += `     "schemaVersion": 1,\n`;
   instructions += `     "checkpointId": "${checkpointId}",\n`;
   instructions += `     "sessionId": "${sessionId || "unknown"}",\n`;
@@ -851,12 +851,18 @@ function buildCheckpointInstructions(
   instructions += `       "agent": "pi",\n`;
   instructions += `       "anchorLeafId": "${anchorLeafId || "unknown"}"\n`;
   instructions += `     },\n`;
+  instructions += `     "createdAt": "<ISO 8601 timestamp>",\n`;
   instructions += `     "problem": "<describe the problem you were solving>",\n`;
   instructions += `     "reasoning": "<describe your reasoning>",\n`;
   instructions += `     "decisions": ["<decision 1>", "<decision 2>"],\n`;
   instructions += `     "risks": ["<risk 1>", "<risk 2>"],\n`;
   instructions += `     "files": ["<file1>", "<file2>"],\n`;
-  instructions += `     "tools": ["<tool1>", "<tool2>"]\n`;
+  instructions += `     "tools": ["<tool1>", "<tool2>"],\n`;
+  instructions += `     "privacy": {\n`;
+  instructions += `       "containsTranscript": false,\n`;
+  instructions += `       "containsRawToolOutput": false,\n`;
+  instructions += `       "safeToCommit": false\n`;
+  instructions += `     }\n`;
   instructions += `   }\n`;
   instructions += `   \`\`\`\n\n`;
   
