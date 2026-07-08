@@ -174,7 +174,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
       // /brains inspect - open/close inspect view
       if (command === "inspect") {
-        await handleInspectCommand(value, controller, pi);
+        await handleInspectCommand(value, controller, ctx);
         return;
       }
 
@@ -359,7 +359,7 @@ Managing rules:
   });
 }
 
-async function handleInspectCommand(_value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
+async function handleInspectCommand(_value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
   const sessionId = controller.getSessionId();
   const cwd = controller.getCwd();
 
@@ -389,11 +389,7 @@ async function handleInspectCommand(_value: string | undefined, controller: PiBr
 
   const content = `Split your terminal and run the following command to create a companion view:\n\n  ${gscCmd}\n${shortcutBlock}`;
 
-  pi.sendMessage({
-    customType: "brains-inspect",
-    content,
-    display: true,
-  });
+  ctx.ui.notify(content, "info");
 }
 
 async function handleBuildCommand(value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
@@ -881,6 +877,27 @@ function buildCheckpointInstructions(
   instructions += `- Summarize problem, reasoning, decisions, risks, files, and tools\n`;
   instructions += `- The checkpoint should be concise and code-review friendly\n`;
   instructions += `- After creating the checkpoint, inform the user of the result\n`;
+  instructions += `\n`;
+  instructions += `## Flag Reference\n`;
+  instructions += `\n`;
+  instructions += `| Flag | Purpose |\n`;
+  instructions += `| :--- | :--- |\n`;
+  instructions += `| \`--repo <path>\` | Repository path for git metadata (always required) |\n`;
+  instructions += `| \`--target personal\` | Write to personal scope (default, not committed to repo) |\n`;
+  instructions += `| \`--target repo\` | Write to repo scope (committed, must have safeToCommit: true) |\n`;
+  instructions += `\n`;
+  instructions += `## Privacy Fields for Personal Scope\n`;
+  instructions += `\n`;
+  instructions += `When using \`--target personal\`, the JSON must include:\n`;
+  instructions += `\`\`\`json\n`;
+  instructions += `{\n`;
+  instructions += `  "privacy": {\n`;
+  instructions += `    "containsTranscript": false,\n`;
+  instructions += `    "containsRawToolOutput": false,\n`;
+  instructions += `    "safeToCommit": false\n`;
+  instructions += `  }\n`;
+  instructions += `}\n`;
+  instructions += `\`\`\`\n`;
   
   return instructions;
 }
