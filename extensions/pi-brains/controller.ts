@@ -145,6 +145,10 @@ export class PiBrainsController {
       new GscRulesClient(pi, this.backgroundAbort.signal, this.debug),
       this.rulesDelivery,
       () => this.pi.getThinkingLevel(),
+      () => this.pi.getCommands(),
+      () => this.pi.getActiveTools(),
+      () => this.pi.getAllTools(),
+      () => this.pi.getSessionName(),
       this.debug
     );
   }

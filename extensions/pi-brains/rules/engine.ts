@@ -4,7 +4,7 @@ import { getAgentStartRuleQueries, getBeforeAgentStartRuleQueries, getContextRul
 import { buildDeliveryKey, buildTriggerDeliveryKey, createRuleEvent, hashString, RuleDeliveryTracker } from "./delivery.ts";
 import { GscRulesClient } from "./gsc-client.ts";
 import { renderInstructionTemplate } from "./instructions.ts";
-import type { AgentContext, BeforeAgentStartTriggerResult, ExecutionResult, GscRulesResponse, GscTriggerRunResult, LifecycleEvent, MatchedGscRule, PostToolUseTriggerResult, RuleAction, RuleEngineResult, RuleQuery, RulesJsonRule, RulesJsonResponse, TriggerDeliveryMode, V1ExecutionContext, V1TriggerContext } from "./types.ts";
+import type { AgentContext, BeforeAgentStartTriggerResult, ExecutionResult, GscRulesResponse, GscTriggerRunResult, LifecycleEvent, MatchedGscRule, PiContext, PostToolUseTriggerResult, RuleAction, RuleEngineResult, RuleQuery, RulesJsonRule, RulesJsonResponse, TriggerDeliveryMode, V1ExecutionContext, V1TriggerContext } from "./types.ts";
 import { DEFAULT_LIFECYCLE_EVENT } from "./types.ts";
 
 interface MatchedRulePacket {
@@ -35,17 +35,29 @@ export class RuleEngine {
   private readonly client: GscRulesClient;
   private readonly delivery: RuleDeliveryTracker;
   private readonly getThinkingLevel: () => string;
+  private readonly getCommands: () => Array<{ name: string; description?: string; source: string }>;
+  private readonly getActiveTools: () => string[];
+  private readonly getAllTools: () => Array<{ name: string; description: string; parameters?: unknown; promptGuidelines?: string[] }>;
+  private readonly getSessionName: () => string | undefined;
   private readonly debug: DebugLogger;
 
   constructor(
     client: GscRulesClient,
     delivery: RuleDeliveryTracker,
     getThinkingLevel: () => string,
+    getCommands: () => Array<{ name: string; description?: string; source: string }>,
+    getActiveTools: () => string[],
+    getAllTools: () => Array<{ name: string; description: string; parameters?: unknown; promptGuidelines?: string[] }>,
+    getSessionName: () => string | undefined,
     debug: DebugLogger
   ) {
     this.client = client;
     this.delivery = delivery;
     this.getThinkingLevel = getThinkingLevel;
+    this.getCommands = getCommands;
+    this.getActiveTools = getActiveTools;
+    this.getAllTools = getAllTools;
+    this.getSessionName = getSessionName;
     this.debug = debug;
   }
 
@@ -1337,6 +1349,68 @@ export class RuleEngine {
           },
         },
       };
+    }
+
+    // Populate agent-specific context if rule has contextFields
+    if (matchedRule.rule.contextFields && matchedRule.rule.contextFields.length > 0) {
+      const piContext: PiContext = {};
+      for (const field of matchedRule.rule.contextFields) {
+        if (!field.startsWith("pi.")) continue;
+        const fieldName = field.slice(3);
+        try {
+          switch (fieldName) {
+            case "commands":
+              piContext.commands = this.getCommands();
+              break;
+            case "activeTools":
+              piContext.activeTools = this.getActiveTools();
+              break;
+            case "allTools":
+              piContext.allTools = this.getAllTools();
+              break;
+            case "thinkingLevel":
+              piContext.thinkingLevel = this.getThinkingLevel();
+              break;
+            case "model": {
+              const model = ctx.model;
+              if (model) {
+                piContext.model = {
+                  provider: model.provider || "unknown",
+                  id: model.id || "unknown",
+                  name: model.name,
+                  reasoning: model.reasoning,
+                  contextWindow: model.contextWindow,
+                  maxTokens: model.maxTokens,
+                };
+              }
+              break;
+            }
+            case "sessionName":
+              piContext.sessionName = this.getSessionName();
+              break;
+            case "isProjectTrusted":
+              piContext.isProjectTrusted = ctx.isProjectTrusted();
+              break;
+            case "contextUsage": {
+              const usage = ctx.getContextUsage();
+              if (usage) {
+                piContext.contextUsage = {
+                  tokens: usage.tokens ?? 0,
+                  maxTokens: usage.contextWindow,
+                  percentage: usage.percent ?? 0,
+                };
+              }
+              break;
+            }
+          }
+        } catch (error) {
+          // Log but don't fail
+          console.error(`Failed to populate ${field}:`, error);
+        }
+      }
+      if (Object.keys(piContext).length > 0) {
+        baseContext.pi = piContext;
+      }
     }
 
     return baseContext;

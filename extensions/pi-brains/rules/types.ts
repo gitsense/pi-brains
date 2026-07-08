@@ -66,6 +66,7 @@ export interface GscRule {
   instructions?: string[];
   trigger?: TriggerConfig;
   frequency?: FrequencyConfig;
+  contextFields?: string[];
 }
 
 export interface MatchedGscRule {
@@ -85,6 +86,51 @@ export interface GscRulesResponse {
   };
   git_root?: string;
   rules: MatchedGscRule[];
+}
+
+// Agent-specific context fields
+export interface PiContext {
+  commands?: Array<{
+    name: string;
+    description?: string;
+    source: string;
+    sourceInfo?: {
+      path: string;
+      source: string;
+      scope: string;
+      origin: string;
+      baseDir?: string;
+    };
+  }>;
+  activeTools?: string[];
+  allTools?: Array<{
+    name: string;
+    description: string;
+    parameters?: unknown;
+    promptGuidelines?: string[];
+    sourceInfo?: {
+      path: string;
+      source: string;
+      scope: string;
+      origin: string;
+    };
+  }>;
+  thinkingLevel?: string;
+  model?: {
+    provider: string;
+    id: string;
+    name?: string;
+    reasoning?: boolean;
+    contextWindow?: number;
+    maxTokens?: number;
+  };
+  sessionName?: string | null;
+  isProjectTrusted?: boolean;
+  contextUsage?: {
+    tokens: number;
+    maxTokens: number;
+    percentage: number;
+  } | null;
 }
 
 // V1 Trigger Context (sent to trigger stdin)
@@ -176,6 +222,8 @@ export interface V1TriggerContext {
     triggerHash: string;
     event: LifecycleEvent;
   };
+  // Agent-specific context (available when rule requests contextFields)
+  pi?: PiContext;
 }
 
 // V1 Trigger Result (received from trigger stdout)
