@@ -82,7 +82,11 @@ const GITSENSE_SYSTEM_PROMPT = `GitSense / pi-brains context:
   gsc experts guide rules
   gsc experts guide trigger-creation
   gsc experts guide pi
-- For a request like "prevent the agent from running gsc rules/notes/query before it has loaded the correct guide", treat it as a GitSense executable trigger creation task and start with gsc experts init.`;
+- For a request like "prevent the agent from running gsc rules/notes/query before it has loaded the correct guide", treat it as a GitSense executable trigger creation task and start with gsc experts init.
+- To debug rule/trigger evaluation, the user can enable debug logging: /brains debug on
+- Debug logs are written to a file for the user to review: /brains debug file
+- Debug logging does not make notices visible to the agent. The user must check the log file and share relevant output with the agent if needed.
+- Disable debug logging: /brains debug off`
 
 export class PiBrainsController {
   private readonly pi: ExtensionAPI;
