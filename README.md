@@ -156,6 +156,11 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains debug on` | Enable debug logging |
 | `/brains debug off` | Disable debug logging |
 | `/brains debug file` | Show the debug log file path |
+| `/brains checkpoint` | Create a review checkpoint |
+| `/brains checkpoint suggest on` | Enable checkpoint suggestions |
+| `/brains checkpoint suggest off` | Disable checkpoint suggestions |
+| `/brains checkpoint suggest status` | Show checkpoint suggestion status |
+| `/brains inspect` | Show inspect view instructions |
 | `/brains dismiss` | Dismiss the GitSense unavailable notice |
 | `/brains help` | Show available commands |
 
