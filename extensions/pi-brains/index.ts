@@ -508,7 +508,7 @@ function handleDeprecatedGuideCommand(value: string | undefined, pi: ExtensionAP
   }
 }
 
-function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): void {
+async function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): Promise<void> {
   // /brains checkpoint suggest on|off|status
   if (value?.startsWith("suggest")) {
     const suggestValue = value.slice("suggest".length).trim();
@@ -543,27 +543,55 @@ function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, co
   const currentLeafId = ctx.sessionManager.getLeafId();
   controller.updateGuideLeafId(currentLeafId);
 
+  // Get session info for the confirmation dialog
+  const sessionId = controller.getSessionId();
+  const pendingSuggestion = controller.getPendingSuggestion();
+  const suggestionCount = controller.getSuggestionCount();
+  
+  // Build confirmation message
+  let confirmMessage = "Pi Brains will create a checkpoint of your current work.";
+  confirmMessage += "\n\nThis will:";
+  confirmMessage += "\n• Create a scratch branch from your current position";
+  confirmMessage += "\n• Send checkpoint instructions to the agent";
+  confirmMessage += "\n• The agent will review previous checkpoints and create a new one";
+  confirmMessage += "\n• Your main conversation will be restored afterward";
+  confirmMessage += "\n\nScope: personal (default)";
+  
+  if (suggestionCount > 0) {
+    confirmMessage += `\n\n${suggestionCount} pending suggestion(s) will be consumed after success.`;
+  }
+  
+  // Show confirmation dialog
+  const confirmed = await ctx.ui.confirm(
+    "Create Checkpoint",
+    confirmMessage,
+    { timeout: 30000 } // 30 second timeout
+  );
+  
+  if (!confirmed) {
+    ctx.ui.notify("Checkpoint cancelled.", "info");
+    return;
+  }
+
   // Write checkpoint events
   const checkpointResult = controller.requestGuideCheckpoint("manual");
   
-  // Create checkpoint message on scratch branch
-  // Note: We don't await this to avoid blocking the command handler
-  createGuideCheckpointMessage(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
+  // Log checkpoint requested
+  controller.getGuideDebugLogger().logEvent({
+    type: "checkpoint_requested",
+    guideEnabled: true,
+    checkpointId: checkpointResult.checkpointId,
+    source: "manual",
+    pendingSuggestionCount: suggestionCount,
+  });
+  
+  // Create checkpoint message on scratch branch with triggerTurn: true
+  // This will trigger the LLM to create the checkpoint
+  createCheckpointWithAgent(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
     // Error is already handled inside the function
   });
   
-  // Consume pending suggestion if exists
-  const pendingSuggestion = controller.getPendingSuggestion();
-  if (pendingSuggestion) {
-    controller.consumePendingSuggestion(checkpointResult.checkpointId);
-  }
-  
-  const msg = [
-    "Checkpoint created.",
-    "Run /brains inspect or gsc pi guide <session-id> to verify.",
-    checkpointResult.logPath ? `Checkpoint log: ${checkpointResult.logPath}` : "",
-  ].filter(Boolean).join("\n");
-  ctx.ui.notify(msg, "info");
+  ctx.ui.notify("Creating checkpoint...", "info");
 }
 
 function formatCheckpointSuggestionNotice(controller: PiBrainsController): string {
@@ -686,6 +714,166 @@ async function createGuideCheckpointMessage(
       "warning",
     );
   }
+}
+
+/**
+ * Create a checkpoint with the agent on a scratch branch.
+ * Uses in-session scratch branch (same session file, no separate file).
+ * Sends a user message with checkpoint instructions that triggers the LLM.
+ */
+async function createCheckpointWithAgent(
+  pi: ExtensionAPI,
+  ctx: ExtensionCommandContext,
+  controller: PiBrainsController,
+  checkpointResult: GuideCheckpointRequestResult,
+): Promise<void> {
+  const guideDebug = controller.getGuideDebugLogger();
+  const { checkpointId, anchorLeafId, sessionId } = checkpointResult;
+
+  // Capture current leaf ID from session manager (not cached)
+  const originalLeafId = ctx.sessionManager.getLeafId();
+  const sourceSessionPath = ctx.sessionManager.getSessionFile() ?? null;
+
+  // Log message started
+  guideDebug.logCheckpointMessageStarted({
+    checkpointId,
+    anchorLeafId,
+    originalLeafId,
+    sourceSessionPath,
+  });
+
+  try {
+    // Wait for agent to finish streaming
+    await ctx.waitForIdle();
+
+    // Navigate to anchor leaf (creates in-session branch)
+    if (anchorLeafId) {
+      await ctx.navigateTree(anchorLeafId, { summarize: false });
+    }
+
+    // Build checkpoint instructions for the agent
+    const checkpointInstructions = buildCheckpointInstructions(
+      checkpointId,
+      sessionId,
+      originalLeafId,
+      controller,
+    );
+
+    // Send user message with checkpoint instructions
+    // followUp will deliver the message after the current turn completes
+    pi.sendUserMessage(checkpointInstructions, { deliverAs: "followUp" });
+
+    // Log message created
+    guideDebug.logCheckpointMessageCreated({
+      checkpointId,
+      anchorLeafId,
+      originalLeafId,
+      sourceSessionPath,
+    });
+
+    // Navigate back to original leaf
+    if (originalLeafId) {
+      await ctx.navigateTree(originalLeafId, { summarize: false });
+    }
+
+    // Log message restored
+    guideDebug.logCheckpointMessageRestored({
+      checkpointId,
+      anchorLeafId,
+      originalLeafId,
+      sourceSessionPath,
+    });
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    // Try to restore original leaf on failure
+    try {
+      if (originalLeafId) {
+        await ctx.navigateTree(originalLeafId, { summarize: false });
+      }
+    } catch {
+      // Best effort restore
+    }
+
+    // Log failure
+    guideDebug.logCheckpointMessageFailed({
+      checkpointId,
+      anchorLeafId,
+      originalLeafId,
+      sourceSessionPath,
+      error: errorMsg,
+    });
+
+    // Notify user
+    ctx.ui.notify(
+      "Checkpoint creation failed. Your chat was restored and you can continue.",
+      "warning",
+    );
+  }
+}
+
+/**
+ * Build checkpoint instructions for the agent.
+ * These instructions tell the agent how to create a checkpoint using gsc sessions.
+ */
+function buildCheckpointInstructions(
+  checkpointId: string,
+  sessionId: string | null,
+  anchorLeafId: string | null,
+  controller: PiBrainsController,
+): string {
+  const sessionInfo = sessionId ? `Session ID: ${sessionId}` : "Session ID: (not available)";
+  const anchorInfo = anchorLeafId ? `Anchor Leaf ID: ${anchorLeafId}` : "Anchor Leaf ID: (not available)";
+  
+  // Build the instructions
+  let instructions = `# Checkpoint Creation Request\n\n`;
+  instructions += `A checkpoint has been requested to capture your current work state.\n\n`;
+  instructions += `## Context\n`;
+  instructions += `- ${sessionInfo}\n`;
+  instructions += `- ${anchorInfo}\n`;
+  instructions += `- Checkpoint ID: ${checkpointId}\n`;
+  instructions += `- Scope: personal (default)\n\n`;
+  
+  instructions += `## Instructions\n\n`;
+  instructions += `1. **Review previous checkpoints** (if any):\n`;
+  instructions += `   \`\`\`bash\n`;
+  instructions += `   gsc sessions checkpoints list --scope personal\n`;
+  instructions += `   \`\`\`\n\n`;
+  
+  instructions += `2. **Create a new checkpoint** with the following information:\n`;
+  instructions += `   - Problem: What were you trying to accomplish?\n`;
+  instructions += `   - Reasoning: What was your thought process?\n`;
+  instructions += `   - Decisions: What key decisions did you make?\n`;
+  instructions += `   - Risks: What risks or uncertainties did you identify?\n`;
+  instructions += `   - Files: What files did you touch?\n`;
+  instructions += `   - Tools: What tools did you use?\n\n`;
+  
+  instructions += `3. **Create the checkpoint** using:\n`;
+  instructions += `   \`\`\`bash\n`;
+  instructions += `   gsc sessions checkpoints create \\\n`;
+  instructions += `     --agent pi \\\n`;
+  instructions += `     --session ${sessionId || "unknown"} \\\n`;
+  instructions += `     --scope personal \\\n`;
+  instructions += `     --problem "<describe the problem you were solving>" \\\n`;
+  instructions += `     --reasoning "<describe your reasoning>" \\\n`;
+  instructions += `     --decision "<describe key decisions>" \\\n`;
+  instructions += `     --risk "<describe risks or uncertainties>" \\\n`;
+  instructions += `     --file "<file1>" --file "<file2>" \\\n`;
+  instructions += `     --tool "<tool1>" --tool "<tool2>"\n`;
+  instructions += `   \`\`\`\n\n`;
+  
+  instructions += `4. **Verify the checkpoint was created**:\n`;
+  instructions += `   \`\`\`bash\n`;
+  instructions += `   gsc sessions checkpoints show <checkpoint-id>\n`;
+  instructions += `   \`\`\`\n\n`;
+  
+  instructions += `## Important Notes\n`;
+  instructions += `- Do NOT include raw transcripts or tool output\n`;
+  instructions += `- Summarize problem, reasoning, decisions, risks, files, and tools\n`;
+  instructions += `- The checkpoint should be concise and code-review friendly\n`;
+  instructions += `- After creating the checkpoint, inform the user of the result\n`;
+  
+  return instructions;
 }
 
 function showHelp(pi: ExtensionAPI): void {
