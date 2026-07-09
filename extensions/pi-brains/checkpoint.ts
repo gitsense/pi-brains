@@ -376,6 +376,12 @@ Steps:
    
    - summary: Short human-readable one-line recap (max 300 chars)
      Example: "Updated checkpoint schema to v2 with branch-aware filtering support"
+   
+   - health: Self-assessed health at checkpoint time (optional)
+     - status: focused | exploring | validating | blocked | drifting | unknown
+     - focus: high | medium | low | unknown
+     - reason: Why you chose this status and focus
+     Example: {"status": "focused", "focus": "high", "reason": "Recent work remains centered on checkpoint schema"}
 
 4. Run: gsc sessions checkpoints validate --from-file checkpoint.json
    Validate the checkpoint.
