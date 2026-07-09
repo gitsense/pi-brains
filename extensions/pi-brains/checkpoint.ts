@@ -343,11 +343,10 @@ IMPORTANT RULES:
 
 You are creating a checkpoint for this session. Follow ALL steps in order.
 
-STEP 1: Create template file
-Run: gsc sessions checkpoints template --session ${sessionId} --agent pi --entry-id ${leafId} --workspace-repo-id "${repoId}" --workspace-repo-source "git_remote_origin" --scope personal --out /tmp/checkpoint-${checkpointId}.json
-
-STEP 2: Fill AI-generated fields
-Edit /tmp/checkpoint-${checkpointId}.json and replace placeholder values with actual content based on the conversation.
+STEP 1: Write checkpoint JSON
+Write the complete checkpoint JSON to /tmp/checkpoint-${checkpointId}.json based on the conversation.
+Do NOT use the template command - write the JSON directly from scratch.
+This avoids unicode escape issues and makes the file easier to edit if needed.
 
 REQUIRED FIELDS:
 
