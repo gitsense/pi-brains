@@ -3,11 +3,14 @@
  * 
  * Handles the /brains checkpoint command.
  * Creates a checkpoint by:
- * 1. Showing confirmation UI (BorderedLoader)
- * 2. Navigating to scratch branch
- * 3. Running pi -p --session (hidden subprocess)
- * 4. Verifying checkpoint was created
- * 5. Navigating back to main branch
+ * 1. Showing confirmation UI
+ * 2. Building context packet (orchestrator)
+ * 3. Creating template (orchestrator)
+ * 4. Calling complete() to fill AI-generated fields (agent)
+ * 5. Validating checkpoint (orchestrator)
+ * 6. Appending checkpoint (orchestrator)
+ * 7. Verifying checkpoint (orchestrator)
+ * 8. Navigating back to main branch
  */
 
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
@@ -310,6 +313,15 @@ async function runPiSubprocess(
 
 /**
  * Build checkpoint instructions for the agent
+ * 
+ * This is the orchestrator layer - it handles:
+ * 1. Building context packet
+ * 2. Loading previous visible checkpoint
+ * 3. Creating template
+ * 4. Calling complete() to fill AI-generated fields
+ * 5. Validating checkpoint
+ * 6. Appending checkpoint
+ * 7. Verifying checkpoint
  */
 function buildCheckpointInstructions(
   sessionId: string,
@@ -322,83 +334,102 @@ function buildCheckpointInstructions(
   
   return `Create a checkpoint for this session.
 
+ORCHESTRATOR STEPS (handled by pi-brains):
+1. Build context packet from session history
+2. Load previous visible checkpoint (if any)
+3. Create template with metadata fields pre-filled
+4. Call complete() to fill AI-generated fields
+5. Validate checkpoint
+6. Append checkpoint to personal scope
+7. Verify checkpoint can be shown and listed
+
+AGENT INSTRUCTIONS (fill AI-generated fields only):
+Fill the checkpoint content fields using only the provided context.
+Return valid JSON only.
+Do not run commands.
+Do not invent unsupported facts.
+
 IMPORTANT RULES:
 - Only include facts, decisions, risks, and evidence supported by the provided context.
 - Do not invent file purposes, decisions, tests, risks, or next steps.
 - If something is unknown, omit it or use an empty array.
 - If a previous checkpoint exists, carry forward any decisions, risks, or open questions that still matter. Do not include resolved items unless they remain relevant.
+- Do not leave placeholder values. For optional array fields, use [] when there are no supported items. For optional string fields, omit the field or use "" only if the schema requires it.
 
-Steps:
-1. Run: gsc sessions checkpoints list --session ${sessionId}
-   Review what checkpoints already exist.
+FIELDS TO FILL:
 
-2. Run: gsc sessions checkpoints template --session ${sessionId} --agent pi --entry-id ${leafId} --workspace-repo-id "${repoId}" --workspace-repo-source "git_remote_origin" --scope personal
-   Get the checkpoint template structure.
+REQUIRED FIELDS:
 
-3. Fill in the template based on the conversation.
-   Replace the placeholder values with actual content:
-   
-   REQUIRED FIELDS:
-   
-   - goal: The broader objective of the work (max 240 chars)
-     Example: "Update checkpoint schema to v2 with branch-aware filtering"
-   
-   - current_understanding: What you currently believe is true about the work state (max 1200 chars)
-     Example: "The checkpoint schema needs to support branch-aware filtering so that checkpoints created on scratch branches are not visible on the main branch."
-   
-   - next_action: The immediate next concrete step (max 240 chars)
-     Example: "Test the new schema with a real checkpoint creation"
-   
-   OPTIONAL FIELDS (omit if not applicable):
-   
-   - current_task: The active subtask right now (max 240 chars)
-     Example: "Updating gsc-cli to support the new checkpoint schema"
-   
-   - topics: List of topics with states (max 7 items)
-     STRONGLY RECOMMENDED: Include 1-5 topics if the context provides enough information. Use at most one primary topic.
-     Use short kebab-case topic names. Topics power search, clustering, drift detection, checkpoint navigation, and session overview.
-     Example: [{"name": "checkpoint-schema", "state": "primary"}, {"name": "branch-aware-filtering", "state": "primary"}]
-   
-   - decisions: Key decisions made (0-8 items)
-     Example: ["Use workspace_repository instead of repo", "Store entryId for branch-aware filtering"]
-   
-   - evidence: Observable facts from context (0-10 items)
-     STRONGLY RECOMMENDED: If current_understanding is non-empty, try to include at least one evidence item.
-     Evidence should be observable: user decisions, schema contents, validation results, file traces, command results, or explicit prior checkpoint content.
-     A checkpoint without evidence is still a summary. A checkpoint with evidence becomes reviewable.
-     Example: ["Current schema v1 has 6 fields", "Proposed hybrid schema has 11 fields"]
-   
-   - risks: Risks or uncertainties identified (0-7 items)
-     Example: ["Agent might not fill in all fields correctly"]
-   
-   - open_questions: Questions remaining (0-7 items)
-     Example: ["How to handle backward compatibility with v1 checkpoints?"]
-   
-   - summary: Short human-readable one-line recap (max 300 chars)
-     Example: "Updated checkpoint schema to v2 with branch-aware filtering support"
-   
-   - health: Self-assessed health at checkpoint time (optional)
-     - status: focused | exploring | validating | blocked | drifting | unknown
-     - focus: high | medium | low | unknown
-     - reason: Why you chose this status and focus
-     Example: {"status": "focused", "focus": "high", "reason": "Recent work remains centered on checkpoint schema"}
+- goal: The broader objective of the work (max 240 chars)
+  Example: "Update checkpoint schema to v2 with branch-aware filtering"
 
-4. Run: gsc sessions checkpoints validate --from-file checkpoint.json
-   Validate the checkpoint.
+- current_understanding: What you currently believe is true about the work state (max 1200 chars)
+  Example: "The checkpoint schema needs to support branch-aware filtering so that checkpoints created on scratch branches are not visible on the main branch."
 
-5. If validation fails, fix the issues and re-validate (up to 2 attempts).
+- next_action: The immediate next concrete step (max 240 chars)
+  Example: "Test the new schema with a real checkpoint creation"
 
-6. Run: gsc sessions checkpoints append --from-file checkpoint.json --repo ${repoPath} --target personal
-   Create the checkpoint.
+OPTIONAL FIELDS (omit if not applicable):
 
-7. Verify the checkpoint was created:
-   - Run: gsc sessions checkpoints show ${checkpointId}
-   - Confirm JSON parsed successfully
-   - Confirm schema validation passed
-   - Confirm checkpoint was appended
-   - Confirm checkpoint can be listed: gsc sessions checkpoints list --session ${sessionId}
+- current_task: The active subtask right now (max 240 chars)
+  Example: "Updating gsc-cli to support the new checkpoint schema"
 
-8. Report success or failure.`;
+- topics: List of topics with states (max 7 items)
+  STRONGLY RECOMMENDED: Include 1-5 topics if the context provides enough information. Use at most one primary topic.
+  Use short kebab-case topic names. Topics power search, clustering, drift detection, checkpoint navigation, and session overview.
+  Example: [{"name": "checkpoint-schema", "state": "primary"}, {"name": "branch-aware-filtering", "state": "supporting"}]
+
+- decisions: Key decisions made (0-8 items)
+  Example: ["Use workspace_repository instead of repo", "Store entryId for branch-aware filtering"]
+
+- evidence: Observable facts from context (0-10 items)
+  STRONGLY RECOMMENDED: If current_understanding is non-empty, try to include at least one evidence item.
+  Evidence should be observable: user decisions, schema contents, validation results, file traces, command results, or explicit prior checkpoint content.
+  A checkpoint without evidence is still a summary. A checkpoint with evidence becomes reviewable.
+  Example: ["Current schema v1 has 6 fields", "Proposed hybrid schema has 11 fields"]
+
+- risks: Risks or uncertainties identified (0-7 items)
+  Example: ["Agent might not fill in all fields correctly"]
+
+- open_questions: Questions remaining (0-7 items)
+  Example: ["How to handle backward compatibility with v1 checkpoints?"]
+
+- summary: Short human-readable one-line recap (max 300 chars)
+  Example: "Updated checkpoint schema to v2 with branch-aware filtering support"
+
+- health: Self-assessed health at checkpoint time (optional)
+  Health describes the state at checkpoint creation time. It is not a live status after more messages, tool calls, or file changes occur.
+  - status: focused | exploring | validating | blocked | drifting | unknown
+    - focused: Work is centered on a single task or goal
+    - exploring: Investigating multiple options or directions
+    - validating: Testing or verifying something
+    - blocked: Unable to make progress
+    - drifting: Work has moved away from the original goal
+    - unknown: Unable to determine
+  - focus: high | medium | low | unknown
+    - high: Most recent work is directly related to the goal
+    - medium: Some work is related, some is tangential
+    - low: Most work is tangential or exploratory
+    - unknown: Unable to determine
+  - reason: Why you chose this status and focus (max 300 chars)
+  Example: {"status": "focused", "focus": "high", "reason": "Recent work remains centered on checkpoint schema"}
+
+METADATA FIELDS (pre-filled by orchestrator, do not modify):
+- type: "checkpoint_recorded"
+- schemaVersion: 2
+- checkpointId: "${checkpointId}"
+- sessionId: "${sessionId}"
+- entryId: "${leafId}"
+- source: {"agent": "pi"}
+- scope: "personal"
+- createdAt: <current timestamp>
+- workspace_repository: {"id": "${repoId}", "source": "git_remote_origin"}
+- privacy: {"containsTranscript": false, "containsRawToolOutput": false, "safeToCommit": false}
+
+VERIFICATION (branch-aware):
+- Confirm checkpoint appears in: gsc sessions checkpoints list --session ${sessionId}
+- Confirm checkpoint appears in: gsc sessions checkpoints list --session ${sessionId} --all
+- Confirm checkpoint can be shown: gsc sessions checkpoints show ${checkpointId}`;
 }
 
 // Verification
