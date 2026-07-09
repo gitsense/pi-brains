@@ -2,10 +2,15 @@ import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@e
 import { Text } from "@earendil-works/pi-tui";
 import { loadConfig } from "./config.ts";
 import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
+import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
+import { debugLog } from "./debug-log.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
   const controller = new PiBrainsController(pi, config);
+
+  // Initialize checkpoint event handlers
+  initCheckpointHandlers(pi);
 
   // Register message renderers for brains output
   pi.registerMessageRenderer("brains-install", (message, _options, theme) => {
@@ -534,59 +539,81 @@ async function handleCheckpointCommand(value: string | undefined, pi: ExtensionA
     return;
   }
 
+  // /brains checkpoint exit - return to main branch
+  if (value === "exit") {
+    const sessionId = controller.getSessionId();
+    const sessionFile = ctx.sessionManager.getSessionFile();
+    const leafId = ctx.sessionManager.getLeafId();
+    const cwd = ctx.cwd;
+    
+    if (!sessionId) {
+      ctx.ui.notify("No active session", "error");
+      return;
+    }
+    
+    const result = await handleCheckpointExit({
+      pi,
+      ctx: ctx as unknown as ExtensionCommandContext,
+      controller,
+      sessionId,
+      sessionFile: sessionFile ?? null,
+      leafId: leafId ?? null,
+      cwd,
+    });
+    
+    if (!result.success) {
+      ctx.ui.notify(`Failed to exit checkpoint: ${result.error}`, "error");
+    }
+    return;
+  }
+
   // /brains checkpoint - create checkpoint now
+  debugLog("Starting checkpoint command");
+  
   // Update leaf ID from current session state before checkpoint
   const currentLeafId = ctx.sessionManager.getLeafId();
   controller.updateGuideLeafId(currentLeafId);
 
-  // Get session info for the confirmation dialog
+  // Get session info
   const sessionId = controller.getSessionId();
-  const pendingSuggestion = controller.getPendingSuggestion();
-  const suggestionCount = controller.getSuggestionCount();
+  const sessionFile = ctx.sessionManager.getSessionFile();
+  const leafId = ctx.sessionManager.getLeafId();
+  const cwd = ctx.cwd;
   
-  // Build confirmation message
-  let confirmMessage = "Pi Brains will create a checkpoint of your current work.";
-  confirmMessage += "\n\nThis will:";
-  confirmMessage += "\n• Create a scratch branch from your current position";
-  confirmMessage += "\n• Send checkpoint instructions to the agent";
-  confirmMessage += "\n• The agent will review previous checkpoints and create a new one";
-  confirmMessage += "\n• Your main conversation will be restored afterward";
+  debugLog("Session info", { sessionId, sessionFile: sessionFile?.slice(-50), leafId, cwd });
   
-  if (suggestionCount > 0) {
-    confirmMessage += `\n\n${suggestionCount} pending suggestion(s) will be consumed after success.`;
-  }
-  
-  // Show confirmation dialog
-  const confirmed = await ctx.ui.confirm(
-    "Create Checkpoint",
-    confirmMessage,
-    { timeout: 30000 } // 30 second timeout
-  );
-  
-  if (!confirmed) {
-    ctx.ui.notify("Checkpoint cancelled.", "info");
+  // Validate session
+  if (!sessionId) {
+    debugLog("No session ID, aborting");
+    ctx.ui.notify("No active session. Start a conversation first.", "error");
     return;
   }
-
-  // Write checkpoint events
-  const checkpointResult = controller.requestGuideCheckpoint("manual");
   
-  // Log checkpoint requested
-  controller.getGuideDebugLogger().logEvent({
-    type: "checkpoint_requested",
-    guideEnabled: true,
-    checkpointId: checkpointResult.checkpointId,
-    source: "manual",
-    pendingSuggestionCount: suggestionCount,
+  // Hand off to checkpoint handler
+  debugLog("Calling handleCheckpoint");
+  
+  const result = await handleCheckpoint({
+    pi,
+    ctx: ctx as unknown as ExtensionCommandContext,
+    controller,
+    sessionId,
+    sessionFile: sessionFile ?? null,
+    leafId,
+    cwd,
   });
   
-  // Create checkpoint message on scratch branch with triggerTurn: true
-  // This will trigger the LLM to create the checkpoint
-  createCheckpointWithAgent(pi, ctx as unknown as ExtensionCommandContext, controller, checkpointResult).catch(() => {
-    // Error is already handled inside the function
-  });
+  debugLog("handleCheckpoint result", result);
   
-  ctx.ui.notify("Creating checkpoint...", "info");
+  // Handle result
+  if (result.success) {
+    debugLog("Success, notifying user");
+    ctx.ui.notify(`✓ Checkpoint created: ${result.checkpointId}`, "info");
+  } else if (result.error !== "cancelled") {
+    debugLog("Failed", { error: result.error });
+    ctx.ui.notify(`✗ Checkpoint failed: ${result.error}`, "error");
+  } else {
+    debugLog("Cancelled by user");
+  }
 }
 
 function formatCheckpointSuggestionNotice(controller: PiBrainsController): string {
