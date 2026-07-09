@@ -334,21 +334,6 @@ function buildCheckpointInstructions(
   
   return `Create a checkpoint for this session.
 
-ORCHESTRATOR STEPS (handled by pi-brains):
-1. Build context packet from session history
-2. Load previous visible checkpoint (if any)
-3. Create template with metadata fields pre-filled
-4. Call complete() to fill AI-generated fields
-5. Validate checkpoint
-6. Append checkpoint to personal scope
-7. Verify checkpoint can be shown and listed
-
-AGENT INSTRUCTIONS (fill AI-generated fields only):
-Fill the checkpoint content fields using only the provided context.
-Return valid JSON only.
-Do not run commands.
-Do not invent unsupported facts.
-
 IMPORTANT RULES:
 - Only include facts, decisions, risks, and evidence supported by the provided context.
 - Do not invent file purposes, decisions, tests, risks, or next steps.
@@ -356,7 +341,13 @@ IMPORTANT RULES:
 - If a previous checkpoint exists, carry forward any decisions, risks, or open questions that still matter. Do not include resolved items unless they remain relevant.
 - Do not leave placeholder values. For optional array fields, use [] when there are no supported items. For optional string fields, omit the field or use "" only if the schema requires it.
 
-FIELDS TO FILL:
+You are creating a checkpoint for this session. Follow ALL steps in order.
+
+STEP 1: Create template file
+Run: gsc sessions checkpoints template --session ${sessionId} --agent pi --entry-id ${leafId} --workspace-repo-id "${repoId}" --workspace-repo-source "git_remote_origin" --scope personal --out /tmp/checkpoint-${checkpointId}.json
+
+STEP 2: Fill AI-generated fields
+Edit /tmp/checkpoint-${checkpointId}.json and replace placeholder values with actual content based on the conversation.
 
 REQUIRED FIELDS:
 
@@ -414,22 +405,21 @@ OPTIONAL FIELDS (omit if not applicable):
   - reason: Why you chose this status and focus (max 300 chars)
   Example: {"status": "focused", "focus": "high", "reason": "Recent work remains centered on checkpoint schema"}
 
-METADATA FIELDS (pre-filled by orchestrator, do not modify):
-- type: "checkpoint_recorded"
-- schemaVersion: 1
-- checkpointId: "${checkpointId}"
-- sessionId: "${sessionId}"
-- entryId: "${leafId}"
-- source: {"agent": "pi"}
-- scope: "personal"
-- createdAt: <current timestamp>
-- workspace_repository: {"id": "${repoId}", "source": "git_remote_origin"}
-- privacy: {"containsTranscript": false, "containsRawToolOutput": false, "safeToCommit": false}
+STEP 3: Validate checkpoint
+Run: gsc sessions checkpoints validate --from-file /tmp/checkpoint-${checkpointId}.json
+If validation fails, fix the errors and re-validate (up to 2 attempts).
 
-VERIFICATION (branch-aware):
-- Confirm checkpoint appears in: gsc sessions checkpoints list --session ${sessionId}
-- Confirm checkpoint appears in: gsc sessions checkpoints list --session ${sessionId} --all
-- Confirm checkpoint can be shown: gsc sessions checkpoints show ${checkpointId}`;
+STEP 4: Append checkpoint
+Run: gsc sessions checkpoints append --from-file /tmp/checkpoint-${checkpointId}.json --repo ${repoPath} --target personal
+
+STEP 5: Verify checkpoint
+Run: gsc sessions checkpoints list --session ${sessionId}
+Confirm the checkpoint appears in the list.
+Run: gsc sessions checkpoints show ${checkpointId}
+Confirm the checkpoint can be shown.
+
+STEP 6: Report result
+Report the checkpoint ID and confirmation that all verification steps passed.`;
 }
 
 // Verification
