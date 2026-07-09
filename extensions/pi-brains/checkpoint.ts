@@ -361,7 +361,7 @@ FIELDS TO FILL:
 REQUIRED FIELDS:
 
 - goal: The broader objective of the work (max 240 chars)
-  Example: "Update checkpoint schema to v2 with branch-aware filtering"
+  Example: "Update checkpoint schema to v1 with branch-aware filtering"
 
 - current_understanding: What you currently believe is true about the work state (max 1200 chars)
   Example: "The checkpoint schema needs to support branch-aware filtering so that checkpoints created on scratch branches are not visible on the main branch."
@@ -395,7 +395,7 @@ OPTIONAL FIELDS (omit if not applicable):
   Example: ["How to handle backward compatibility with v1 checkpoints?"]
 
 - summary: Short human-readable one-line recap (max 300 chars)
-  Example: "Updated checkpoint schema to v2 with branch-aware filtering support"
+  Example: "Updated checkpoint schema to v1 with branch-aware filtering support"
 
 - health: Self-assessed health at checkpoint time (optional)
   Health describes the state at checkpoint creation time. It is not a live status after more messages, tool calls, or file changes occur.
@@ -416,7 +416,7 @@ OPTIONAL FIELDS (omit if not applicable):
 
 METADATA FIELDS (pre-filled by orchestrator, do not modify):
 - type: "checkpoint_recorded"
-- schemaVersion: 2
+- schemaVersion: 1
 - checkpointId: "${checkpointId}"
 - sessionId: "${sessionId}"
 - entryId: "${leafId}"
