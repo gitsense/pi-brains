@@ -343,12 +343,38 @@ IMPORTANT RULES:
 
 You are creating a checkpoint for this session. Follow ALL steps in order.
 
+STEP 0: Review previous checkpoints
+Run: gsc sessions checkpoints list --session ${sessionId} --branch ${leafId}
+If checkpoints exist:
+- Read them in order (oldest to newest)
+- Note what was already decided
+- Note what risks were identified
+- Note what open questions remain
+- Note what the current understanding was
+Carry forward any decisions, risks, or open questions that still matter.
+Do not include resolved items unless they remain relevant.
+If no checkpoints exist, proceed without review.
+
 STEP 1: Write checkpoint JSON
 Write the complete checkpoint JSON to /tmp/checkpoint-${checkpointId}.json based on the conversation.
 Do NOT use the template command - write the JSON directly from scratch.
 This avoids unicode escape issues and makes the file easier to edit if needed.
 
-REQUIRED FIELDS:
+The JSON must include ALL of these fields:
+
+METADATA FIELDS (use these exact values):
+- type: "checkpoint_recorded"
+- schemaVersion: 1
+- checkpointId: "${checkpointId}"
+- sessionId: "${sessionId}"
+- entryId: "${leafId}"
+- source: {"agent": "pi"}
+- scope: "personal"
+- createdAt: <current ISO timestamp>
+- workspace_repository: {"id": "${repoId}", "source": "git_remote_origin"}
+- privacy: {"containsTranscript": false, "containsRawToolOutput": false, "safeToCommit": false}
+
+REQUIRED AI-GENERATED FIELDS:
 
 - goal: The broader objective of the work (max 240 chars)
   Example: "Update checkpoint schema to v1 with branch-aware filtering"
@@ -412,7 +438,7 @@ STEP 4: Append checkpoint
 Run: gsc sessions checkpoints append --from-file /tmp/checkpoint-${checkpointId}.json --repo ${repoPath} --target personal
 
 STEP 5: Verify checkpoint
-Run: gsc sessions checkpoints list --session ${sessionId}
+Run: gsc sessions checkpoints list --session ${sessionId} --branch ${leafId}
 Confirm the checkpoint appears in the list.
 Run: gsc sessions checkpoints show ${checkpointId}
 Confirm the checkpoint can be shown.
