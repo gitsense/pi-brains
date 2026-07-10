@@ -12,52 +12,10 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   // Initialize checkpoint event handlers
   initCheckpointHandlers(pi);
 
-  // Register message renderers for brains output
-  pi.registerMessageRenderer("brains-install", (message, _options, theme) => {
-    const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("warning", "[brains-install]");
-    return new Text(prefix + "\n\n" + content, 0, 0);
-  });
-
-  pi.registerMessageRenderer("brains-insights", (message, _options, theme) => {
-    const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("accent", "[brains-insights]");
-    return new Text(prefix + "\n\n" + content, 0, 0);
-  });
-
-  pi.registerMessageRenderer("brains-help", (message, _options, theme) => {
-    const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("accent", "[brains-help]");
-    return new Text(prefix + "\n\n" + content, 0, 0);
-  });
-
-  pi.registerMessageRenderer("brains-rules", (message, _options, theme) => {
-    const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("accent", "[brains-rules]");
-    return new Text(prefix + "\n\n" + content, 0, 0);
-  });
-
-  pi.registerMessageRenderer("brains-about", (message, _options, theme) => {
-    const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("accent", "[brains-about]");
-    return new Text(prefix + "\n\n" + content, 0, 0);
-  });
-
+  // Register message renderer for context injection (agent-visible)
   pi.registerMessageRenderer("brains-context", (message, _options, theme) => {
     const content = typeof message.content === "string" ? message.content : "";
     const prefix = theme.fg("accent", "[brains-context]");
-    return new Text(prefix + "\n\n" + content, 0, 0);
-  });
-
-  pi.registerMessageRenderer("brains-build", (message, _options, theme) => {
-    const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("accent", "[brains-build]");
-    return new Text(prefix + "\n\n" + content, 0, 0);
-  });
-
-  pi.registerMessageRenderer("brains-inspect", (message, _options, theme) => {
-    const content = typeof message.content === "string" ? message.content : "";
-    const prefix = theme.fg("accent", "[brains-inspect]");
     return new Text(prefix + "\n\n" + content, 0, 0);
   });
 
@@ -137,26 +95,22 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains insights - show the current inspect state as a static message
+      // /brains insights - show the current inspect state as a notification
       if (command === "insights") {
         const output = controller.renderInsightsSnapshot();
-        pi.sendMessage({
-          customType: "brains-insights",
-          content: output || "No insights available",
-          display: true,
-        });
+        ctx.ui.notify(output || "No insights available", "info");
         return;
       }
 
       // /brains build - build/import a Brain manifest
       if (command === "build") {
-        await handleBuildCommand(value, controller, pi);
+        await handleBuildCommand(value, controller, ctx as unknown as ExtensionCommandContext);
         return;
       }
 
       // /brains rules - show rules status
       if (command === "rules") {
-        handleRulesCommand(value, controller, pi);
+        handleRulesCommand(value, controller, ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -168,13 +122,13 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
       // /brains about - what GitSense can do
       if (command === "about") {
-        showAbout(pi);
+        showAbout(ctx as unknown as ExtensionCommandContext);
         return;
       }
 
       // /brains help - show available commands
       if (command === "help") {
-        showHelp(pi);
+        showHelp(ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -263,17 +217,13 @@ Build from source (Go 1.21+):
   git clone https://github.com/gitsense/gsc-cli && cd gsc-cli && make build
 
 Once installed, run /brains again to enable expert context.`;
-    pi.sendMessage({
-      customType: "brains-install",
-      content: installMsg,
-      display: true,
-    });
+    ctx.ui.notify(installMsg, "warning");
     return;
   }
 
   // Check if agent has already run gsc experts init
   if (controller.hasRunExpertsInit(ctx)) {
-    showHelp(pi);
+    showHelp(ctx as unknown as ExtensionCommandContext);
     return;
   }
 
@@ -281,38 +231,26 @@ Once installed, run /brains again to enable expert context.`;
   controller.sendUserMessage("run `gsc experts init` and follow instructions");
 }
 
-function handleRulesCommand(value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): void {
+function handleRulesCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): void {
   const rulesEnabled = controller.isRulesEnabled();
 
   // /brains rules on
   if (value === "on") {
     controller.setRulesEnabled(true);
-    pi.sendMessage({
-      customType: "brains-rules",
-      content: "Rules checking enabled",
-      display: true,
-    });
+    ctx.ui.notify("Rules checking enabled", "info");
     return;
   }
 
   // /brains rules off
   if (value === "off") {
     controller.setRulesEnabled(false);
-    pi.sendMessage({
-      customType: "brains-rules",
-      content: "Rules checking disabled",
-      display: true,
-    });
+    ctx.ui.notify("Rules checking disabled", "info");
     return;
   }
 
   // /brains rules status
   if (value === "status") {
-    pi.sendMessage({
-      customType: "brains-rules",
-      content: controller.getRulesStatus(),
-      display: true,
-    });
+    ctx.ui.notify(controller.getRulesStatus(), "info");
     return;
   }
 
@@ -334,11 +272,7 @@ Managing rules:
     "Add a rule for packages/ai/src that requires running npm run check"
     "Update rule <id> to include test files"
     "Delete rule <id>"`;
-  pi.sendMessage({
-    customType: "brains-rules",
-    content: rulesHelp,
-    display: true,
-  });
+  ctx.ui.notify(rulesHelp, "info");
 }
 
 async function handleInspectCommand(_value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
@@ -374,7 +308,7 @@ async function handleInspectCommand(_value: string | undefined, controller: PiBr
   ctx.ui.notify(content, "info");
 }
 
-async function handleBuildCommand(value: string | undefined, controller: PiBrainsController, pi: ExtensionAPI): Promise<void> {
+async function handleBuildCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
   const args = (value ?? "").trim().split(/\s+/).filter(Boolean);
   const force = args.includes("--force");
   const manifest = args.find(arg => arg !== "--force");
@@ -402,25 +336,17 @@ For a name like "code-intent", gsc looks for .gitsense/manifests/code-intent.jso
 Current Brains:
 
 ${brains || "No active Brains found."}`;
-    pi.sendMessage({
-      customType: "brains-build",
-      content: help,
-      display: true,
-    });
+    ctx.ui.notify(help, "info");
     return;
   }
 
   const output = manifest
     ? await controller.buildBrain(manifest, { force })
     : await controller.buildAllBrains({ force });
-  pi.sendMessage({
-    customType: "brains-build",
-    content: output || `Brain build completed${manifest ? ` for ${manifest}` : ""}`,
-    display: true,
-  });
+  ctx.ui.notify(output || `Brain build completed${manifest ? ` for ${manifest}` : ""}`, "info");
 }
 
-function showAbout(pi: ExtensionAPI): void {
+function showAbout(ctx: ExtensionCommandContext): void {
   const about = `GitSense (gsc) turns domain knowledge into queryable intelligence for coding agents.
 
 What gsc can do:
@@ -444,11 +370,7 @@ Source and documentation:
   GitSense Chat          https://github.com/gitsense/chat
 
 Run \`gsc --help\` for the full command reference.`;
-  pi.sendMessage({
-    customType: "brains-about",
-    content: about,
-    display: true,
-  });
+  ctx.ui.notify(about, "info");
 }
 
 async function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): Promise<void> {
@@ -832,7 +754,7 @@ function buildCheckpointInstructions(
   return instructions;
 }
 
-function showHelp(pi: ExtensionAPI): void {
+function showHelp(ctx: ExtensionCommandContext): void {
   const help = `/brains commands:
 
   /brains              Initialize expert context (gsc experts init)
@@ -848,9 +770,5 @@ function showHelp(pi: ExtensionAPI): void {
   /brains debug file   Show debug log file path
   /brains about        What GitSense can do
   /brains help         This message`;
-  pi.sendMessage({
-    customType: "brains-help",
-    content: help,
-    display: true,
-  });
+  ctx.ui.notify(help, "info");
 }
