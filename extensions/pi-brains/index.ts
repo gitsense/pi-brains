@@ -109,23 +109,6 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   pi.on("message_end", async (event, ctx) => {
     controller.refreshSessionState(ctx);
 
-    // Guide mode: detect and remove Work State marker
-    if (controller.isGuideEnabled() && event.message.role === "assistant") {
-      const cleanedMessage = controller.processAssistantMessageForMarker(
-        event.message as unknown as Record<string, unknown>
-      );
-      if (cleanedMessage) {
-        // Record pending checkpoint suggestion
-        const leafId = ctx.sessionManager.getLeafId();
-        controller.recordCheckpointSuggestion(leafId, leafId);
-        
-        const suggestionCount = controller.getSuggestionCount();
-        const countText = suggestionCount > 1 ? ` (${suggestionCount})` : "";
-        ctx.ui.notify(`Checkpoint suggested${countText}. Run /brains checkpoint to create.`, "info");
-        return { message: cleanedMessage as any };
-      }
-    }
-
     return undefined;
   });
 
@@ -231,13 +214,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains guide - deprecated (alias for checkpoint suggest)
-      if (command === "guide") {
-        handleDeprecatedGuideCommand(value, pi, controller, ctx as unknown as ExtensionContext);
-        return;
-      }
-
-      // /brains checkpoint - create checkpoint or manage suggestions
+      // /brains checkpoint - create checkpoint
       if (command === "checkpoint") {
         handleCheckpointCommand(value, pi, controller, ctx as unknown as ExtensionContext);
         return;
@@ -474,71 +451,7 @@ Run \`gsc --help\` for the full command reference.`;
   });
 }
 
-function handleDeprecatedGuideCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): void {
-  // Show deprecation notice
-  ctx.ui.notify("/brains guide is deprecated. Use /brains checkpoint suggest on|off|status.", "warning");
-
-  // Map to new commands
-  if (value === "on") {
-    controller.setGuideEnabled(true);
-    ctx.ui.notify(formatCheckpointSuggestionNotice(controller), "info");
-    return;
-  }
-
-  if (value === "off") {
-    controller.setGuideEnabled(false);
-    ctx.ui.notify("Checkpoint suggestions disabled.", "info");
-    return;
-  }
-
-  if (value === "status") {
-    const enabled = controller.isGuideEnabled();
-    const logPath = controller.getGuideDebugLogPath();
-    const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nCheckpoint log: ${logPath}` : "\nCheckpoint log: unavailable until session starts"}`;
-    ctx.ui.notify(status, "info");
-    return;
-  }
-
-  // Toggle behavior for compatibility
-  const newState = !controller.isGuideEnabled();
-  controller.setGuideEnabled(newState);
-  if (newState) {
-    ctx.ui.notify(formatCheckpointSuggestionNotice(controller), "info");
-  } else {
-    ctx.ui.notify("Checkpoint suggestions disabled.", "info");
-  }
-}
-
 async function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): Promise<void> {
-  // /brains checkpoint suggest on|off|status
-  if (value?.startsWith("suggest")) {
-    const suggestValue = value.slice("suggest".length).trim();
-    
-    if (suggestValue === "on") {
-      controller.setGuideEnabled(true);
-      ctx.ui.notify(formatCheckpointSuggestionNotice(controller), "info");
-      return;
-    }
-    
-    if (suggestValue === "off") {
-      controller.setGuideEnabled(false);
-      ctx.ui.notify("Checkpoint suggestions disabled.", "info");
-      return;
-    }
-    
-    if (suggestValue === "status") {
-      const enabled = controller.isGuideEnabled();
-      const logPath = controller.getGuideDebugLogPath();
-      const status = `Checkpoint suggestions: ${enabled ? "ON" : "OFF"}${logPath ? `\nCheckpoint log: ${logPath}` : "\nCheckpoint log: unavailable until session starts"}`;
-      ctx.ui.notify(status, "info");
-      return;
-    }
-    
-    // Show suggest help
-    ctx.ui.notify("Usage: /brains checkpoint suggest on|off|status", "info");
-    return;
-  }
-
   // /brains checkpoint exit - return to main branch
   if (value === "exit") {
     const sessionId = controller.getSessionId();
@@ -614,16 +527,6 @@ async function handleCheckpointCommand(value: string | undefined, pi: ExtensionA
   } else {
     debugLog("Cancelled by user");
   }
-}
-
-function formatCheckpointSuggestionNotice(controller: PiBrainsController): string {
-  const logPath = controller.getGuideDebugLogPath();
-  return [
-    "Checkpoint suggestions enabled.",
-    "The agent will suggest useful checkpoint moments.",
-    "Run '/brains inspect' to monitor checkpoint suggestions.",
-    logPath ? `Checkpoint log: ${logPath}` : "Checkpoint log: unavailable until session starts",
-  ].join("\n");
 }
 
 /**
@@ -935,8 +838,6 @@ function showHelp(pi: ExtensionAPI): void {
   /brains              Initialize expert context (gsc experts init)
   /brains build        Build/import a Brain manifest
   /brains checkpoint   Create a review checkpoint now
-  /brains checkpoint suggest on|off|status
-    Ask the agent to suggest useful checkpoint moments
   /brains inspect      Show inspect view instructions
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
