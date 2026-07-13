@@ -1229,6 +1229,21 @@ export class PiBrainsController {
     }
   }
 
+  async runGscCommand(...args: string[]): Promise<{ code: number; stdout: string; stderr: string } | null> {
+    try {
+      this.debug.log(`gsc ${args.join(" ")}`);
+      const result = await this.pi.exec("gsc", args, {
+        signal: this.backgroundAbort.signal,
+        timeout: 30_000,
+      });
+      if (this.disposed) return null;
+      return result;
+    } catch (error) {
+      if (this.disposed) return null;
+      return null;
+    }
+  }
+
   async buildAllBrains(options?: { force?: boolean }): Promise<string> {
     const manifestDir = join(this.cwd || process.cwd(), ".gitsense", "manifests");
     let manifestNames: string[];

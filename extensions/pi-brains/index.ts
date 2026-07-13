@@ -12,6 +12,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   // Initialize checkpoint event handlers
   initCheckpointHandlers(pi);
 
+  // Initialize post-compact event handlers
+  initPostCompactHandlers(pi);
+
   // Register message renderer for context injection (agent-visible)
   pi.registerMessageRenderer("brains-context", (message, _options, theme) => {
     const content = typeof message.content === "string" ? message.content : "";
@@ -171,6 +174,18 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains checkpoint - create checkpoint
       if (command === "checkpoint") {
         handleCheckpointCommand(value, pi, controller, ctx as unknown as ExtensionContext);
+        return;
+      }
+
+      // /brains show-compact-messages (scm) - show compacted messages
+      if (command === "show-compact-messages" || command === "scm") {
+        await handleShowCompactMessages(controller, ctx as unknown as ExtensionCommandContext);
+        return;
+      }
+
+      // /brains post-compact (pc) - enrich compaction with checkpoint + brain metadata
+      if (command === "post-compact" || command === "pc") {
+        await handlePostCompact(pi, controller, ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -754,6 +769,354 @@ function buildCheckpointInstructions(
   return instructions;
 }
 
+// /brains show-compact-messages handler
+async function handleShowCompactMessages(
+  controller: PiBrainsController,
+  ctx: ExtensionCommandContext
+): Promise<void> {
+  const sessionId = controller.getSessionId();
+  if (!sessionId) {
+    ctx.ui.notify("No active session", "error");
+    return;
+  }
+
+  try {
+    // Get compaction data via gsc (include summaries)
+    const result = await controller.runGscCommand(
+      "pi", "inspect", "overview",
+      "--session", sessionId,
+      "--format", "json",
+      "--include", "compaction-summaries"
+    );
+
+    if (!result || result.code !== 0) {
+      ctx.ui.notify("Failed to load compaction data", "error");
+      return;
+    }
+
+    const data = JSON.parse(result.stdout);
+    const compactions = data?.compactions?.items || [];
+
+    if (compactions.length === 0) {
+      ctx.ui.notify("No compaction messages found", "info");
+      return;
+    }
+
+    // Build notice with compacted messages
+    let notice = `COMPACTION MESSAGES (${compactions.length})\n`;
+    notice += "═".repeat(50) + "\n\n";
+
+    for (const compaction of compactions) {
+      const time = compaction.timestamp 
+        ? new Date(compaction.timestamp).toLocaleString("en-US", { 
+            month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" 
+          })
+        : "unknown";
+      
+      notice += `[${time}] ${compaction.tokens_before?.toLocaleString() || "?"} tokens · ${compaction.file_count || "?"} files\n`;
+      notice += "─".repeat(40) + "\n";
+      
+      if (compaction.summary) {
+        notice += compaction.summary + "\n";
+      } else {
+        notice += "(no summary available)\n";
+      }
+      notice += "\n";
+    }
+
+    ctx.ui.notify(notice, "info");
+  } catch (error) {
+    ctx.ui.notify(`Error: ${error instanceof Error ? error.message : String(error)}`, "error");
+  }
+}
+
+// State for tracking post-compact branch
+let inPostCompactBranch = false;
+let postCompactOriginalLeafId: string | null = null;
+let postCompactCtx: ExtensionCommandContext | null = null;
+
+/**
+ * Initialize post-compact event handlers
+ */
+export function initPostCompactHandlers(pi: ExtensionAPI): void {
+  pi.on("agent_end", async (event, ctx) => {
+    if (inPostCompactBranch && postCompactOriginalLeafId && postCompactCtx) {
+      debugLog("Agent ended in post-compact branch, parsing output");
+      
+      // Wait for agent to fully finish
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Parse POST_COMPACT_NOTE_ID from last message
+      const lastMessage = event.messages?.[event.messages.length - 1] as any;
+      let content = "";
+      if (lastMessage?.content) {
+        if (typeof lastMessage.content === "string") {
+          content = lastMessage.content;
+        } else if (Array.isArray(lastMessage.content)) {
+          content = lastMessage.content
+            .filter((block: any) => block.type === "text")
+            .map((block: any) => block.text || "")
+            .join("\n");
+        }
+      }
+      const match = content.match(/POST_COMPACT_NOTE_ID=([a-zA-Z0-9_-]+)/);
+      
+      if (!match) {
+        debugLog("No POST_COMPACT_NOTE_ID found in output", { content: content.slice(-200) });
+        postCompactCtx.ui.notify("Post-compact enrichment failed: no note ID returned", "error");
+      } else {
+        const noteId = match[1];
+        debugLog("Found note ID", { noteId });
+        
+        // Read the note back
+        try {
+          const result = await pi.exec("gsc", ["notes", "show", noteId, "--scope", "personal", "-o", "json"], {
+            timeout: 10_000,
+          });
+          
+          if (result.code === 0 && result.stdout) {
+            const note = JSON.parse(result.stdout);
+            debugLog("Note read successfully", { noteId, summary: note.summary });
+            
+            // Inject post-compact message on main branch
+            const message = buildPostCompactMessage(noteId, note);
+            postCompactCtx.ui.notify(message, "info");
+            
+            // Navigate back to main branch
+            try {
+              await postCompactCtx.navigateTree(postCompactOriginalLeafId, { summarize: false });
+              debugLog("Navigated back to main branch");
+              postCompactCtx.ui.notify("Returned to main branch with post-compact context", "info");
+            } catch (error) {
+              debugLog("Error navigating back", { error: error instanceof Error ? error.message : String(error) });
+            }
+          } else {
+            debugLog("Failed to read note", { code: result.code, stderr: result.stderr });
+            postCompactCtx.ui.notify(`Failed to read note ${noteId}`, "error");
+          }
+        } catch (error) {
+          debugLog("Error reading note", { error: error instanceof Error ? error.message : String(error) });
+          postCompactCtx.ui.notify(`Error reading note: ${error instanceof Error ? error.message : String(error)}`, "error");
+        }
+      }
+      
+      // Reset state
+      inPostCompactBranch = false;
+      postCompactOriginalLeafId = null;
+      postCompactCtx = null;
+    }
+  });
+}
+
+// /brains post-compact handler
+async function handlePostCompact(
+  pi: ExtensionAPI,
+  controller: PiBrainsController,
+  ctx: ExtensionCommandContext
+): Promise<void> {
+  const sessionId = controller.getSessionId();
+  if (!sessionId) {
+    ctx.ui.notify("No active session", "error");
+    return;
+  }
+
+  const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
+  const leafId = ctx.sessionManager.getLeafId?.() ?? null;
+  const cwd = controller.getCwd();
+
+  // Get latest compaction data
+  const compactionResult = await controller.runGscCommand(
+    "pi", "inspect", "overview",
+    "--session", sessionId,
+    "--format", "json",
+    "--include", "compaction-summaries"
+  );
+
+  if (!compactionResult || compactionResult.code !== 0) {
+    ctx.ui.notify("Failed to load compaction data", "error");
+    return;
+  }
+
+  const overviewData = JSON.parse(compactionResult.stdout);
+  const compactions = overviewData?.compactions?.items || [];
+  
+  if (compactions.length === 0) {
+    ctx.ui.notify("No compactions found for this session", "error");
+    return;
+  }
+
+  const latestCompaction = compactions[0];
+  const checkpoint = overviewData?.checkpoint;
+
+  // Build enrichment instructions
+  const instructions = buildPostCompactInstructions(
+    sessionId,
+    latestCompaction,
+    checkpoint,
+    cwd
+  );
+
+  // Create scratch branch
+  const originalLeafId = ctx.sessionManager.getLeafId();
+  if (!originalLeafId) {
+    ctx.ui.notify("No original leaf ID", "error");
+    return;
+  }
+
+  try {
+    // Navigate to scratch branch
+    await ctx.navigateTree(originalLeafId, { summarize: false });
+    debugLog("Post-compact scratch branch created");
+
+    // Set state for tracking
+    inPostCompactBranch = true;
+    postCompactOriginalLeafId = originalLeafId;
+    postCompactCtx = ctx as unknown as ExtensionCommandContext;
+
+    // Send instructions
+    pi.sendUserMessage(instructions);
+    ctx.ui.notify("Post-compact enrichment started. Creating durable note...", "info");
+  } catch (error) {
+    debugLog("Error creating post-compact branch", { error: error instanceof Error ? error.message : String(error) });
+    ctx.ui.notify(`Error: ${error instanceof Error ? error.message : String(error)}`, "error");
+  }
+}
+
+// Build post-compact enrichment instructions
+function buildPostCompactInstructions(
+  sessionId: string,
+  compaction: any,
+  checkpoint: any,
+  repoPath: string
+): string {
+  const compactionId = compaction.entry_id || "unknown";
+  const checkpointId = checkpoint?.id || "none";
+  const fileCount = compaction.file_count || 0;
+  const readCount = compaction.read_file_count || 0;
+  const modifiedCount = compaction.modified_file_count || 0;
+  const checkpointTagLine = checkpointId !== "none" ? `\n  - checkpoint:${checkpointId}` : "";
+  const checkpointJSONTag = checkpointId !== "none" ? `,\n    "checkpoint:${checkpointId}"` : "";
+
+  let instructions = `You are creating a post-compaction enrichment note for the current Pi session.
+
+Goal:
+Create a durable GitSense note that summarizes what should be carried forward after the latest compaction. This note will later be read by /brains post-compact and inserted into the main chat as a post-compaction message.
+
+Inputs to inspect:
+1. Latest compaction summary for this session.
+2. Latest checkpoint for this session, if any.
+3. Files listed by the compaction as read or modified.
+4. Code-intent brain metadata for those files, if available (a GitSense brain that maps files to their purposes). Note: The code-intent brain may exist in multiple repositories (e.g., ~/gsc-cli, ~/pi-brains, ~/pi). Check each repo separately.
+
+Session: ${sessionId}
+Compaction: ${compactionId}
+Checkpoint: ${checkpointId}
+Files: ${fileCount} total (${readCount} read, ${modifiedCount} modified)
+
+Rules:
+- Do not edit source code.
+- Do not rewrite the original compaction.
+- Do not create a checkpoint.
+- Do not include speculative facts.
+- Prefer concise, high-signal context.
+- If checkpoint and compaction disagree, call out the disagreement.
+- If the code-intent brain is not available or missing for a file, omit that file or mark it as "unknown purpose".
+- Write exactly one GitSense note.
+- Report the created note id at the end.
+
+Create the note with:
+- target: personal
+- topic: pi-session-memory
+- importance: high
+- tags:
+  - pi-post-compact
+  - session:${sessionId}
+  - compaction:${compactionId}${checkpointTagLine}
+
+Note JSON shape:
+
+{
+  "summary": "Post-compaction context for session ${sessionId.slice(0, 8)}",
+  "content": "...",
+  "topic": "pi-session-memory",
+  "glob_patterns": [],
+  "linked_files": [],
+  "tags": [
+    "pi-post-compact",
+    "session:${sessionId}",
+    "compaction:${compactionId}"${checkpointJSONTag}
+  ],
+  "importance": "high"
+}
+
+Content format:
+
+## Post-Compaction Context
+
+### Carry Forward
+- ...
+
+### Risks
+- ...
+
+### Open Questions
+- ...
+
+### File Context
+- path/to/file: one-line purpose and why it mattered in the compacted work.
+
+### State Delta
+- Latest checkpoint: ...
+- Latest compaction: ...
+- Any stale/conflicting state: ...
+
+Steps:
+1. Read the compaction summary: gsc pi inspect overview --session ${sessionId} --format json --include compaction-summaries
+2. Read the checkpoint data (included in the overview JSON)
+3. Get file purposes from the code-intent brain (if available):
+   - The code-intent brain may exist in multiple repositories. Check each:
+     - Current repo: gsc brains --json
+     - Other repos mentioned in compaction files: cd <repo-path> && gsc brains --json
+   - For each repo with a code-intent brain, query it: gsc brains query code-intent --scope personal
+   - The code-intent brain maps files to their purposes (e.g., "This file handles...")
+   - Use this to add one-line file descriptions in the File Context section
+   - If a brain is not available for a repo, mark those files as "unknown purpose"
+4. Write the note JSON to /tmp/pi-post-compact-note.json
+5. Create the note: gsc notes add --target personal --from-file /tmp/pi-post-compact-note.json
+6. Validate: gsc notes show <note-id> --scope personal -o json
+
+Validation:
+After creating the note, run:
+
+gsc notes show <note-id> --scope personal -o json
+
+If verification fails, report the error and do not claim success.
+
+Final response:
+If successful, respond with exactly:
+
+POST_COMPACT_NOTE_ID=<note-id>
+
+No extra prose.
+`;
+
+  return instructions;
+}
+
+// Build post-compact message for main branch
+function buildPostCompactMessage(noteId: string, note: any): string {
+  const timestamp = new Date().toISOString();
+  const summary = note.summary || "Post-compaction enrichment";
+  const content = note.content || "";
+  
+  let message = `[Post-Compact Context] ${summary}\n`;
+  message += `Note ID: ${noteId}\n`;
+  message += `Created: ${timestamp}\n\n`;
+  message += content;
+  
+  return message;
+}
+
 function showHelp(ctx: ExtensionCommandContext): void {
   const help = `/brains commands:
 
@@ -764,6 +1127,8 @@ function showHelp(ctx: ExtensionCommandContext): void {
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
   /brains rules status Show recent rule decisions
+  /brains scm          Show compacted messages (alias: show-compact-messages)
+  /brains pc           Post-compact enrichment (alias: post-compact)
   /brains debug        Toggle debug mode
   /brains debug on     Enable debug mode
   /brains debug off    Disable debug mode
