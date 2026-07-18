@@ -1,4 +1,5 @@
-import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { copyToClipboard, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { spawn } from "node:child_process";
 import { Text } from "@earendil-works/pi-tui";
 import { loadConfig } from "./config.ts";
 import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
@@ -305,7 +306,7 @@ async function handleInspectCommand(_value: string | undefined, controller: PiBr
   // Build the gsc command
   const gscCmd = sessionId
     ? `gsc pi inspect ${sessionId}`
-    : `gsc pi inspect --cwd ${cwd} --wait`;
+    : `gsc pi inspect --cwd ${quoteShellArg(cwd)} --wait`;
 
   // Detect OS for terminal shortcuts
   const platform = process.platform;
@@ -322,13 +323,133 @@ async function handleInspectCommand(_value: string | undefined, controller: PiBr
     shortcuts.push("Windows Terminal: Alt+Shift+=");
   }
 
-  const shortcutBlock = shortcuts.length > 0
-    ? `\nSplit shortcuts:\n  ${shortcuts.join("\n  ")}`
-    : "";
+  // Check if web server is running
+  let serverStatus = "";
+  let serverUrl = "";
+  try {
+    const result = await controller.runGscCommand("app", "native", "status", "--format", "json");
+    if (result && result.code === 0) {
+      const status = JSON.parse(result.stdout);
+      if (status.running) {
+        serverStatus = `GitSense Chat is running at ${status.base_url}`;
+        serverUrl = status.base_url;
+      } else if (status.installed) {
+        serverStatus = "GitSense Chat is not running";
+      } else {
+        serverStatus = "GitSense Chat is not installed";
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
 
-  const content = `Split your terminal and run the following command to create a companion view:\n\n  ${gscCmd}\n${shortcutBlock}`;
+  // Build the explanation
+  const explanation = [
+    "View the current session in a companion view.",
+    "",
+    "You can:",
+    "• Split your terminal and run the command for a TUI view",
+    "• Open in browser for a web view (requires GitSense Chat)",
+    "",
+    "Split your terminal and run:",
+    `  ${gscCmd}`,
+  ];
 
-  ctx.ui.notify(content, "info");
+  if (shortcuts.length > 0) {
+    explanation.push("");
+    explanation.push("Split shortcuts:");
+    shortcuts.forEach(s => explanation.push(`  ${s}`));
+  }
+
+  // Build chat URL
+  const chatUrl = sessionId && serverUrl ? buildChatUrl(serverUrl, sessionId) : "";
+
+  // Build options
+  const options: string[] = [];
+
+  options.push(`Copy terminal command: ${gscCmd}`);
+
+  if (chatUrl) {
+    options.push(`Open in browser: ${chatUrl}`);
+    options.push(`Copy URL: ${chatUrl}`);
+  } else if (serverStatus && serverStatus.includes("not running")) {
+    options.push("Copy start command: gsc app native start");
+  } else if (serverStatus && serverStatus.includes("not installed")) {
+    options.push("Copy install command: gsc app native install");
+  }
+
+  options.push("Close");
+
+  // Show select dialog
+  const choice = await ctx.ui.select(explanation.join("\n"), options);
+
+  // Handle choice
+  if (choice?.startsWith("Copy terminal command")) {
+    try {
+      await copyToClipboard(gscCmd);
+      ctx.ui.notify("Command copied to clipboard", "info");
+    } catch (error) {
+      ctx.ui.notify(`Failed to copy command: ${formatError(error)}`, "error");
+    }
+  } else if (choice?.startsWith("Open in browser")) {
+    try {
+      await openExternalUrl(chatUrl, platform);
+      ctx.ui.notify(`Opening ${chatUrl}`, "info");
+    } catch (error) {
+      ctx.ui.notify(`Failed to open browser: ${formatError(error)}`, "error");
+    }
+  } else if (choice?.startsWith("Copy URL")) {
+    try {
+      await copyToClipboard(chatUrl);
+      ctx.ui.notify("URL copied to clipboard", "info");
+    } catch (error) {
+      ctx.ui.notify(`Failed to copy URL: ${formatError(error)}`, "error");
+    }
+  } else if (choice?.startsWith("Copy start command")) {
+    await copyCommand("gsc app native start", "Start command", ctx);
+  } else if (choice?.startsWith("Copy install command")) {
+    await copyCommand("gsc app native install", "Install command", ctx);
+  }
+}
+
+async function copyCommand(command: string, label: string, ctx: ExtensionCommandContext): Promise<void> {
+  try {
+    await copyToClipboard(command);
+    ctx.ui.notify(`${label} copied to clipboard`, "info");
+  } catch (error) {
+    ctx.ui.notify(`Failed to copy command: ${formatError(error)}`, "error");
+  }
+}
+
+function buildChatUrl(baseUrl: string, sessionId: string): string {
+  const url = new URL("/", baseUrl);
+  url.searchParams.set("chat", `pi-${sessionId}`);
+  return url.toString();
+}
+
+function quoteShellArg(value: string): string {
+  if (process.platform === "win32") {
+    return `"${value.replaceAll('"', '""')}"`;
+  }
+  return `'${value.replaceAll("'", `'"'"'`)}'`;
+}
+
+function openExternalUrl(url: string, platform: NodeJS.Platform): Promise<void> {
+  const command = platform === "darwin" ? "open" : platform === "win32" ? "rundll32.exe" : "xdg-open";
+  const args = platform === "win32" ? ["url.dll,FileProtocolHandler", url] : [url];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { detached: true, stdio: "ignore" });
+    child.once("error", reject);
+    child.once("spawn", () => {
+      child.unref();
+      resolve();
+    });
+  });
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 async function handleBuildCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
