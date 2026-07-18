@@ -163,6 +163,7 @@ export class PiBrainsController {
   }
 
   start(ctx: ExtensionContext): void {
+    this.rulesDelivery.clear();
     this.cwd = ctx.cwd;
     this.tracker.replay(ctx.sessionManager.getBranch(), ctx.cwd);
     this.refreshSessionBinding(ctx);

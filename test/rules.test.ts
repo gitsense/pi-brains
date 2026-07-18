@@ -66,6 +66,71 @@ const rulesJsonResponse: RulesJsonResponse = {
   },
 };
 
+const contextCommandRulesResponse: RulesJsonResponse = {
+  schemaVersion: 1,
+  query: {
+    event: "pre_tool_use",
+    action: "read",
+    file: "/repo/data/accounting/q1.ledger",
+  },
+  gitRoot: "/repo",
+  rules: [
+    {
+      id: "rule-accounting-context",
+      source: "repo",
+      type: "declarative",
+      event: "pre_tool_use",
+      summary: "Load accounting guidance",
+      context_command: {
+        argv: ["gsc", "notes", "list", "--topic", "accounting", "--format", "json"],
+        frequency: "once-per-session",
+      },
+      match: {
+        kind: "glob",
+        value: "data/accounting/**",
+        file: "data/accounting/q1.ledger",
+        action: "read",
+      },
+      ruleHash: "sha256:accounting-context",
+      priority: 0,
+      importance: "medium",
+    },
+  ],
+  summary: {
+    total: 1,
+    declarative: 1,
+    executable: 0,
+  },
+};
+
+const contextCommandExecutionResult: ExecutionResult = {
+  schemaVersion: 1,
+  block: true,
+  reason: "GitSense loaded on-demand context.\n\nCredits are positive.\n\nRetry the original tool call with this context.",
+  notices: [],
+  matchedRules: [
+    {
+      ruleId: "rule-accounting-context",
+      ruleHash: "sha256:accounting-context",
+      type: "declarative",
+      summary: "Load accounting guidance",
+      priority: 0,
+      match: { kind: "glob", value: "data/accounting/**" },
+    },
+  ],
+  triggerResults: [],
+  contextCommandResults: [
+    {
+      ruleId: "rule-accounting-context",
+      success: true,
+      argv: ["gsc", "notes", "list", "--topic", "accounting", "--format", "json"],
+      output: "Credits are positive.",
+    },
+  ],
+  errors: [],
+  subagentTasks: [],
+};
+
 const executionResult: ExecutionResult = {
   schemaVersion: 1,
   block: true,
@@ -231,6 +296,24 @@ describe("rule delivery", () => {
 
     expect(tracker.formatStatus()).toContain("blocked read  data/accounting/q1.ledger");
     expect(tracker.formatStatus()).toContain("Accounting read guidance");
+  });
+
+  it("can reset delivery state at a session boundary", () => {
+    const tracker = new RuleDeliveryTracker();
+    tracker.markDelivered("rule:session-1");
+    tracker.record({
+      timestamp: "2026-06-23T00:00:00Z",
+      outcome: "blocked",
+      action: "read",
+      file: "README.md",
+      normalizedFile: "README.md",
+      reason: "context delivered",
+    });
+
+    tracker.clear();
+
+    expect(tracker.has("rule:session-1")).toBe(false);
+    expect(tracker.getEvents()).toEqual([]);
   });
 });
 
@@ -507,6 +590,52 @@ describe("rule controller integration", () => {
     expect(second).toBeUndefined();
     // executeRules should not be called for the second read
     expect(exec).toHaveBeenCalledTimes(3); // 2 for first read, 1 for second read's getRules
+  });
+
+  it("delivers context command output once per session before allowing the retry", async () => {
+    const exec = vi.fn()
+      .mockResolvedValueOnce({ stdout: JSON.stringify(contextCommandRulesResponse), stderr: "", code: 0, killed: false })
+      .mockResolvedValueOnce({ stdout: JSON.stringify(contextCommandExecutionResult), stderr: "", code: 0, killed: false })
+      .mockResolvedValueOnce({ stdout: JSON.stringify(contextCommandRulesResponse), stderr: "", code: 0, killed: false });
+    const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: true });
+    const ctx = createContext();
+
+    const first = await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx);
+    const retry = await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx);
+
+    expect(first).toEqual({ block: true, reason: contextCommandExecutionResult.reason });
+    expect(first?.reason).toContain("Credits are positive.");
+    expect(retry).toBeUndefined();
+    expect(exec).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not mark a failed context command as delivered", async () => {
+    const failedResult: ExecutionResult = {
+      ...contextCommandExecutionResult,
+      reason: "Required context was not delivered: query failed.",
+      contextCommandResults: [
+        {
+          ruleId: "rule-accounting-context",
+          success: false,
+          argv: ["gsc", "notes", "list"],
+          error: "query failed",
+        },
+      ],
+    };
+    const exec = vi.fn()
+      .mockResolvedValueOnce({ stdout: JSON.stringify(contextCommandRulesResponse), stderr: "", code: 0, killed: false })
+      .mockResolvedValueOnce({ stdout: JSON.stringify(failedResult), stderr: "", code: 0, killed: false })
+      .mockResolvedValueOnce({ stdout: JSON.stringify(contextCommandRulesResponse), stderr: "", code: 0, killed: false })
+      .mockResolvedValueOnce({ stdout: JSON.stringify(failedResult), stderr: "", code: 0, killed: false });
+    const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: true });
+    const ctx = createContext();
+
+    const first = await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx);
+    const retry = await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx);
+
+    expect(first?.block).toBe(true);
+    expect(retry?.block).toBe(true);
+    expect(exec).toHaveBeenCalledTimes(4);
   });
 
   it("passes Pi agent session metadata to gsc rules execute", async () => {

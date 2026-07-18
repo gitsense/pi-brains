@@ -311,6 +311,7 @@ export interface RulesJsonResponse {
 
 export interface RulesJsonRule {
   id: string;
+  source?: "repo" | "personal";
   type: "declarative" | "executable";
   event: string;
   summary: string;
@@ -323,6 +324,12 @@ export interface RulesJsonRule {
   frequency?: {
     mode: string;
     key?: string;
+  };
+  context_command?: {
+    argv: string[];
+    frequency?: "once-per-session";
+    timeout_ms?: number;
+    max_output_bytes?: number;
   };
   match: {
     kind: string;
@@ -344,8 +351,20 @@ export interface ExecutionResult {
   notices?: string[];
   matchedRules: ExecutionMatchedRule[];
   triggerResults: ExecutionTriggerResult[];
+  contextCommandResults?: ExecutionContextCommandResult[];
   errors?: ExecutionError[];
   subagentTasks?: ExecutionSubagentTask[];
+}
+
+export interface ExecutionContextCommandResult {
+  ruleId: string;
+  success: boolean;
+  argv: string[];
+  output?: string;
+  error?: string;
+  timeout?: boolean;
+  truncated?: boolean;
+  durationMs?: number;
 }
 
 export interface ExecutionMatchedRule {

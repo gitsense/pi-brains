@@ -15,6 +15,11 @@ export class RuleDeliveryTracker {
     this.deliveredKeys.add(deliveryKey);
   }
 
+  clear(): void {
+    this.deliveredKeys.clear();
+    this.events.splice(0, this.events.length);
+  }
+
   record(event: RuleDecisionEvent): void {
     this.events.push(event);
     if (this.events.length > MAX_EVENTS) this.events.splice(0, this.events.length - MAX_EVENTS);

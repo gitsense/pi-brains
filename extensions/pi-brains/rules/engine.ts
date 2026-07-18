@@ -163,7 +163,7 @@ export class RuleEngine {
       const undeliveredRules = rules.rules.filter(rule => {
         // Filter declarative rules
         if (rule.type === "declarative") {
-          const deliveryKey = this.buildDeclarativeDeliveryKey(rules, rule, action as RuleAction);
+          const deliveryKey = this.buildDeclarativeDeliveryKey(rules, rule, action as RuleAction, context.session.id);
           const alreadyDelivered = this.delivery.has(deliveryKey);
           if (alreadyDelivered) {
             this.debug.log(`skipping already-delivered declarative rule: ${rule.id}`);
@@ -210,7 +210,20 @@ export class RuleEngine {
       // 6. Mark rules as delivered after successful execution
       for (const rule of undeliveredRules) {
         if (rule.type === "declarative") {
-          const deliveryKey = this.buildDeclarativeDeliveryKey(rules, rule, action as RuleAction);
+          const contextResult = result.contextCommandResults?.find(item => item.ruleId === rule.id);
+          if (rule.context_command && !contextResult?.success) {
+            this.delivery.record(createRuleEvent(
+              "blocked",
+              action as RuleAction,
+              rules.query?.file || "unknown",
+              null,
+              null,
+              `context command was not delivered for ${rule.id}`
+            ));
+            continue;
+          }
+
+          const deliveryKey = this.buildDeclarativeDeliveryKey(rules, rule, action as RuleAction, context.session.id);
           this.delivery.markDelivered(deliveryKey);
           this.delivery.record(createRuleEvent(
             "trigger_executed",
@@ -218,7 +231,9 @@ export class RuleEngine {
             rules.query?.file || "unknown",
             null,
             null,
-            `declarative rule delivered via evaluateWithExecute`
+            rule.context_command
+              ? `on-demand context delivered via evaluateWithExecute`
+              : `declarative rule delivered via evaluateWithExecute`
           ));
         } else if (rule.type === "executable" && rule.frequency?.mode && rule.frequency.mode !== "always") {
           const deliveryKey = this.buildTriggerDeliveryKey(rule, action as RuleAction);
@@ -241,10 +256,13 @@ export class RuleEngine {
     }
   }
 
-  private buildDeclarativeDeliveryKey(response: RulesJsonResponse, rule: RulesJsonRule, action: RuleAction): string {
+  private buildDeclarativeDeliveryKey(response: RulesJsonResponse, rule: RulesJsonRule, action: RuleAction, sessionId: string): string {
     const repoHash = hashString(response.gitRoot || "unknown");
     const ruleId = rule.id;
     const ruleHash = rule.ruleHash || "missing-rule-hash";
+    if (rule.context_command) {
+      return ["context-command", "once-per-session", sessionId || "unknown-session", repoHash, ruleId, ruleHash].join(":");
+    }
     const matchKind = rule.match?.kind || "unknown";
     const matchValue = rule.match?.value || response.query?.file || "unknown";
     return ["static-rule", "once_per_rule_hash", repoHash, ruleId, ruleHash, action, matchKind, matchValue, "default"].join(":");
