@@ -28,11 +28,14 @@
   "files": [
     "assets",
     "extensions",
+    "rules",
+    "scripts",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "check": "tsgo --noEmit",
+    "rules:build": "node scripts/build-bash-observability-bundles.mjs",
     "test": "vitest run"
   },
   "peerDependencies": {

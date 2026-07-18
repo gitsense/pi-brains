@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "gsc.rules.bundle.v1",
+  "exportedAt": "2026-07-17T00:00:00Z",
+  "source": {
+    "scope": "repo"
+  },
+  "topics": [
+    {
+      "slug": "agent-observability",
+      "description": "Structured evidence and analytics for agent tool usage",
+      "created_at": "2026-07-17T00:00:00Z",
+      "updated_at": "2026-07-17T00:00:00Z"
+    }
+  ],
+  "rules": [
+    {
+      "source": "repo",
+      "rule": {
+        "id": "rule_pi_bash_observability_v1",
+        "schema_version": "3.0.0",
+        "created_at": "2026-07-17T00:00:00Z",
+        "updated_at": "2026-07-17T00:00:00Z",
+        "summary": "Require observable wrappers for shell discovery",
+        "details": "Blocks supported discovery commands that do not use gsc bash, preserving structured command intent and evidence for the Pi session.",
+        "topic": "agent-observability",
+        "related_topics": [],
+        "event": "pre_tool_use",
+        "instructions": [],
+        "actions": [
+          "bash"
+        ],
+        "command_filter": "(^|[|;&\\n])[ \\t]*[^|;&\\n]*(rg|grep|find|ls|head|tail|wc|sort|uniq)([ \\t]|$)",
+        "glob_patterns": [],
+        "exclude_globs": [],
+        "applies_to": {
+          "files": [],
+          "linked_files": [],
+          "commands": []
+        },
+        "tags": [
+          "gsc-bash",
+          "pi",
+          "observability"
+        ],
+        "keywords": [
+          "bash",
+          "discovery",
+          "observability",
+          "pi"
+        ],
+        "parent_keywords": [
+          "agent-observability",
+          "topic-knowledge"
+        ],
+        "importance": "high",
+        "ai": {
+          "provider": "",
+          "model_id": "",
+          "agent": ""
+        },
+        "confirmed_at": "2026-07-17T00:00:00Z",
+        "type": "executable",
+        "trigger": {
+          "runtime": "node",
+          "entry": "gsc-bash-observability-strict-v1/trigger.mjs",
+          "timeoutMs": 3000
+        },
+        "instruction": {
+          "mode": "inline",
+          "text": "Run supported discovery commands through gsc bash with the session alias and wrap every pipeline segment separately."
+        },
+        "frequency": {
+          "mode": "always"
+        },
+        "priority": 100,
+        "enabled": true
+      }
+    }
+  ],
+  "assets": [
+    {
+      "kind": "trigger",
+      "entry": "gsc-bash-observability-strict-v1/trigger.mjs",
+      "sha256": "sha256:f6ff9b4abf3f4fdb3c8f334596015639fa89e2b13b4cd1d4c3da8fb90e66d70d",
+      "mode": 420,
+      "encoding": "base64",
+      "contentBase64": "aW1wb3J0IHsgcmVhZEZpbGVTeW5jIH0gZnJvbSAibm9kZTpmcyI7Cgpjb25zdCBzdXBwb3J0ZWQgPSBuZXcgU2V0KFsicmciLCAiZ3JlcCIsICJmaW5kIiwgImxzIiwgImhlYWQiLCAidGFpbCIsICJ3YyIsICJzb3J0IiwgInVuaXEiXSk7CmNvbnN0IGNvbnRleHQgPSBKU09OLnBhcnNlKHJlYWRGaWxlU3luYygwLCAidXRmOCIpKTsKY29uc3QgY29tbWFuZCA9IGNvbnRleHQudG9vbENhbGw/LmNvbW1hbmQ7CmNvbnN0IHZpb2xhdGlvbnMgPSB0eXBlb2YgY29tbWFuZCA9PT0gInN0cmluZyIgPyBmaW5kVW53cmFwcGVkQ29tbWFuZHMoY29tbWFuZCkgOiBbXTsKY29uc3QgbWF0Y2hlZCA9IHZpb2xhdGlvbnMubGVuZ3RoID4gMDsKCmNvbnNvbGUubG9nKEpTT04uc3RyaW5naWZ5KHsKICBtYXRjaGVkLAogIGJsb2NrOiBtYXRjaGVkLAogIG1lc3NhZ2U6IG1hdGNoZWQKICAgID8gYE9ic2VydmFibGUgZGlzY292ZXJ5IGlzIHJlcXVpcmVkLiBSZXRyeSAke3Zpb2xhdGlvbnMuam9pbigiLCAiKX0gdGhyb3VnaCBnc2MgYmFzaCAtcyA8c2Vzc2lvbi1hbGlhcz4sIHVzaW5nIHRoZSBhbGlhcyBmcm9tIHRoZSBQaSBzeXN0ZW0gaW5zdHJ1Y3Rpb25zLiBXcmFwIGV2ZXJ5IHBpcGVsaW5lIHNlZ21lbnQgc2VwYXJhdGVseS5gCiAgICA6IHVuZGVmaW5lZCwKICBub3RpY2U6IG1hdGNoZWQgPyBgQmxvY2tlZCB1bndyYXBwZWQgZGlzY292ZXJ5IGNvbW1hbmQ6ICR7dmlvbGF0aW9ucy5qb2luKCIsICIpfS5gIDogdW5kZWZpbmVkLAogIGRlbGl2ZXJ5TW9kZTogbWF0Y2hlZCA/ICJzdGVlciIgOiB1bmRlZmluZWQsCn0pKTsKCmZ1bmN0aW9uIGZpbmRVbndyYXBwZWRDb21tYW5kcyhzb3VyY2UpIHsKICBjb25zdCByZXN1bHRzID0gW107CiAgZm9yIChjb25zdCBzZWdtZW50IG9mIHNwbGl0U2hlbGxTZWdtZW50cyhzb3VyY2UpKSB7CiAgICBjb25zdCBjb21tYW5kTmFtZSA9IGNvbW1hbmRIZWFkKHNoZWxsV29yZHMoc2VnbWVudCkpOwogICAgaWYgKGNvbW1hbmROYW1lICYmIHN1cHBvcnRlZC5oYXMoY29tbWFuZE5hbWUpICYmICFyZXN1bHRzLmluY2x1ZGVzKGNvbW1hbmROYW1lKSkgcmVzdWx0cy5wdXNoKGNvbW1hbmROYW1lKTsKICB9CiAgcmV0dXJuIHJlc3VsdHM7Cn0KCmZ1bmN0aW9uIHNwbGl0U2hlbGxTZWdtZW50cyhzb3VyY2UpIHsKICBjb25zdCBzZWdtZW50cyA9IFtdOwogIGxldCBjdXJyZW50ID0gIiI7CiAgbGV0IHF1b3RlID0gbnVsbDsKICBsZXQgZXNjYXBlZCA9IGZhbHNlOwogIGZvciAobGV0IGkgPSAwOyBpIDwgc291cmNlLmxlbmd0aDsgaSsrKSB7CiAgICBjb25zdCBjaGFyID0gc291cmNlW2ldOwogICAgaWYgKGVzY2FwZWQpIHsKICAgICAgY3VycmVudCArPSBjaGFyOwogICAgICBlc2NhcGVkID0gZmFsc2U7CiAgICB9IGVsc2UgaWYgKGNoYXIgPT09ICJcXCIgJiYgcXVvdGUgIT09ICInIikgewogICAgICBjdXJyZW50ICs9IGNoYXI7CiAgICAgIGVzY2FwZWQgPSB0cnVlOwogICAgfSBlbHNlIGlmIChxdW90ZSkgewogICAgICBjdXJyZW50ICs9IGNoYXI7CiAgICAgIGlmIChjaGFyID09PSBxdW90ZSkgcXVvdGUgPSBudWxsOwogICAgfSBlbHNlIGlmIChjaGFyID09PSAiJyIgfHwgY2hhciA9PT0gJyInKSB7CiAgICAgIHF1b3RlID0gY2hhcjsKICAgICAgY3VycmVudCArPSBjaGFyOwogICAgfSBlbHNlIGlmIChjaGFyID09PSAifCIgfHwgY2hhciA9PT0gIiYiIHx8IGNoYXIgPT09ICI7IiB8fCBjaGFyID09PSAiXG4iKSB7CiAgICAgIGlmIChjdXJyZW50LnRyaW0oKSkgc2VnbWVudHMucHVzaChjdXJyZW50KTsKICAgICAgY3VycmVudCA9ICIiOwogICAgICBpZiAoKGNoYXIgPT09ICJ8IiB8fCBjaGFyID09PSAiJiIpICYmIHNvdXJjZVtpICsgMV0gPT09IGNoYXIpIGkrKzsKICAgIH0gZWxzZSB7CiAgICAgIGN1cnJlbnQgKz0gY2hhcjsKICAgIH0KICB9CiAgaWYgKGN1cnJlbnQudHJpbSgpKSBzZWdtZW50cy5wdXNoKGN1cnJlbnQpOwogIHJldHVybiBzZWdtZW50czsKfQoKZnVuY3Rpb24gc2hlbGxXb3JkcyhzZWdtZW50KSB7CiAgY29uc3Qgd29yZHMgPSBbXTsKICBsZXQgY3VycmVudCA9ICIiOwogIGxldCBxdW90ZSA9IG51bGw7CiAgbGV0IGVzY2FwZWQgPSBmYWxzZTsKICBmb3IgKGNvbnN0IGNoYXIgb2Ygc2VnbWVudC50cmltKCkucmVwbGFjZSgvXlsoeyFdK1xzKi8sICIiKSkgewogICAgaWYgKGVzY2FwZWQpIHsKICAgICAgY3VycmVudCArPSBjaGFyOwogICAgICBlc2NhcGVkID0gZmFsc2U7CiAgICB9IGVsc2UgaWYgKGNoYXIgPT09ICJcXCIgJiYgcXVvdGUgIT09ICInIikgewogICAgICBlc2NhcGVkID0gdHJ1ZTsKICAgIH0gZWxzZSBpZiAocXVvdGUpIHsKICAgICAgaWYgKGNoYXIgPT09IHF1b3RlKSBxdW90ZSA9IG51bGw7CiAgICAgIGVsc2UgY3VycmVudCArPSBjaGFyOwogICAgfSBlbHNlIGlmIChjaGFyID09PSAiJyIgfHwgY2hhciA9PT0gJyInKSB7CiAgICAgIHF1b3RlID0gY2hhcjsKICAgIH0gZWxzZSBpZiAoL1xzLy50ZXN0KGNoYXIpKSB7CiAgICAgIGlmIChjdXJyZW50KSB3b3Jkcy5wdXNoKGN1cnJlbnQpOwogICAgICBjdXJyZW50ID0gIiI7CiAgICB9IGVsc2UgewogICAgICBjdXJyZW50ICs9IGNoYXI7CiAgICB9CiAgfQogIGlmIChjdXJyZW50KSB3b3Jkcy5wdXNoKGN1cnJlbnQpOwogIHJldHVybiB3b3JkczsKfQoKZnVuY3Rpb24gY29tbWFuZEhlYWQod29yZHMpIHsKICBsZXQgaW5kZXggPSAwOwogIHdoaWxlIChpbmRleCA8IHdvcmRzLmxlbmd0aCAmJiAvXltBLVphLXpfXVtBLVphLXowLTlfXSo9Ly50ZXN0KHdvcmRzW2luZGV4XSkpIGluZGV4Kys7CiAgd2hpbGUgKFsiaWYiLCAidGhlbiIsICJkbyIsICJlbHNlIiwgImVsaWYiXS5pbmNsdWRlcyh3b3Jkc1tpbmRleF0pKSBpbmRleCsrOwogIGlmIChbImNvbW1hbmQiLCAiYnVpbHRpbiIsICJleGVjIl0uaW5jbHVkZXMod29yZHNbaW5kZXhdKSkgaW5kZXgrKzsKICBpZiAod29yZHNbaW5kZXhdID09PSAic3VkbyIpIHsKICAgIGluZGV4Kys7CiAgICB3aGlsZSAod29yZHNbaW5kZXhdPy5zdGFydHNXaXRoKCItIikpIGluZGV4Kys7CiAgfQogIGlmICh3b3Jkc1tpbmRleF0gPT09ICJlbnYiKSB7CiAgICBpbmRleCsrOwogICAgd2hpbGUgKHdvcmRzW2luZGV4XT8uc3RhcnRzV2l0aCgiLSIpIHx8IC9eW0EtWmEtel9dW0EtWmEtejAtOV9dKj0vLnRlc3Qod29yZHNbaW5kZXhdID8/ICIiKSkgaW5kZXgrKzsKICB9CiAgY29uc3QgdmFsdWUgPSB3b3Jkc1tpbmRleF07CiAgcmV0dXJuIHZhbHVlID8gdmFsdWUuc3BsaXQoIi8iKS5wb3AoKSA6IG51bGw7Cn0K"
+    }
+  ]
+}

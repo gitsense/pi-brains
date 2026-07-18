@@ -9,6 +9,7 @@
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
+  <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
@@ -56,6 +57,25 @@ The result is not that Pi stops reading source. The result is that Pi gets a bet
 ### What rules can do
 
 Rules can do more than sit in a doc. They can catch accidental terminal habits, stop risky edits until Pi reads the right context, ask Pi to verify a result, or leave guidance for the next turn.
+
+## Configure Rules
+
+Pi Brains includes an opt-in [rule catalog](rules/README.md). Package
+installation does not activate these policies automatically. Users can review
+each bundle and import it into either personal scope for cross-repository
+behavior or repository scope for project-shared behavior.
+
+The first included pack guides supported shell discovery commands through
+`gsc bash`, producing structured evidence that can be correlated with the Pi
+session. It offers advisory and strict modes. See the
+[observable shell discovery instructions](rules/gsc-bash-observability/README.md)
+for review, installation, switching, and removal commands.
+
+Start the interactive configuration from Pi:
+
+```text
+/brains rules shell
+```
 
 ## Try It Yourself
 
@@ -151,6 +171,8 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains rules on` | Enable rules checking |
 | `/brains rules off` | Disable rules checking |
 | `/brains rules status` | Show recent rule decisions |
+| `/brains rules shell` | Configure observable shell discovery rules |
+| `/brains rules shell status` | Show personal and repository shell-rule modes |
 | `/brains about` | Show what GitSense can do |
 | `/brains debug` | Toggle debug logging |
 | `/brains debug on` | Enable debug logging |
@@ -177,6 +199,9 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 npm install
 npm run check
 npm test
+
+# Regenerate portable observable-shell rule bundles after editing their triggers
+npm run rules:build
 ```
 
 To try local changes in Pi, install this package from your checkout:

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, BeforeAgentStartEventResult, ContextEvent, ExtensionAPI, ExtensionContext, InputEvent, InputEventResult, SessionBeforeCompactEvent, SessionCompactEvent, ToolCallEvent, ToolCallEventResult, ToolResultEvent } from "@earendil-works/pi-coding-agent";
 import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-works/pi-tui";
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
+import { BashObservability } from "./bash-observability.ts";
 import { DebugLogger } from "./debug.ts";
 import { CheckpointLog, type GuideCheckpointSource, type GuideCheckpointReason, type GuideWorkStateEventV1, type GuideCheckpointFacts, type GuideCheckpointCounters, type GuideCheckpointPayloadEventV1, type GuideCheckpointPayloadTool, type GuideCheckpointPayloadRule } from "./checkpoint-log.ts";
 import { readContextState, readModelState } from "./model-context.ts";
@@ -99,6 +100,7 @@ export class PiBrainsController {
   private readonly debug: DebugLogger;
   private readonly guideDebug: CheckpointLog;
   private readonly telemetry: RuleTelemetryWriter;
+  private readonly bashObservability: BashObservability;
   private context: PanelState["context"] = null;
   private model: PanelState["model"] = null;
   private gscStatus: PanelState["gscStatus"] = "checking";
@@ -112,6 +114,8 @@ export class PiBrainsController {
   private passiveSteerMaxLength = 5;
   private passiveSteerMaxChars = 2000;
   private sessionId: string | null = null;
+  private boundSessionId: string | null | undefined;
+  private boundSessionFile: string | null | undefined;
   private guideAgentMarkersDetected = 0;
   private guideAgentMarkersRemoved = 0;
   private guideManualCheckpoints = 0;
@@ -145,6 +149,7 @@ export class PiBrainsController {
     this.guideDebug = new CheckpointLog();
     this.repositories = new RepositoryResolver(pi);
     this.telemetry = new RuleTelemetryWriter(this.debug);
+    this.bashObservability = new BashObservability(pi, this.debug);
     this.rulesEngine = new RuleEngine(
       new GscRulesClient(pi, this.backgroundAbort.signal, this.debug),
       this.rulesDelivery,
@@ -159,18 +164,8 @@ export class PiBrainsController {
 
   start(ctx: ExtensionContext): void {
     this.cwd = ctx.cwd;
-    // Get session ID directly from SessionManager
-    const getSessionId = (ctx.sessionManager as { getSessionId?: () => string | null }).getSessionId;
-    this.sessionId = getSessionId ? getSessionId.call(ctx.sessionManager) : null;
     this.tracker.replay(ctx.sessionManager.getBranch(), ctx.cwd);
-
-    // Initialize telemetry with session path
-    const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
-    this.telemetry.setSession(sessionFile);
-    
-    // Initialize checkpoint log
-    const leafId = ctx.sessionManager.getLeafId?.() ?? null;
-    this.guideDebug.setSession(sessionFile, this.sessionId, leafId);
+    this.refreshSessionBinding(ctx);
     this.guideDebug.logInitialized(this.config.guideEnabled);
     
     this.refreshSessionState(ctx);
@@ -214,6 +209,23 @@ export class PiBrainsController {
     this.clearOverlayOwner = () => ctx.ui.setWidget(OVERLAY_OWNER_WIDGET, undefined);
 
     void this.detectGsc();
+    void this.bashObservability.ensureRegistration(this.cwd, this.backgroundAbort.signal);
+  }
+
+  private refreshSessionBinding(ctx: ExtensionContext): void {
+    const getSessionId = (ctx.sessionManager as { getSessionId?: () => string | null }).getSessionId;
+    const sessionId = getSessionId ? getSessionId.call(ctx.sessionManager) : null;
+    const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
+    const leafId = ctx.sessionManager.getLeafId?.() ?? null;
+
+    if (sessionId !== this.boundSessionId || sessionFile !== this.boundSessionFile) {
+      this.sessionId = sessionId;
+      this.boundSessionId = sessionId;
+      this.boundSessionFile = sessionFile;
+      this.telemetry.setSession(sessionFile);
+      this.guideDebug.setSession(sessionFile, sessionId, leafId);
+      this.bashObservability.bindSession(sessionFile);
+    }
   }
 
   refreshSessionState(ctx: ExtensionContext): void {
@@ -574,7 +586,15 @@ export class PiBrainsController {
   }
 
   async handleToolCall(event: ToolCallEvent, ctx: ExtensionContext): Promise<ToolCallEventResult | undefined> {
-    if (!this.config.rulesEnabled) return undefined;
+    this.refreshSessionBinding(ctx);
+    if (event.toolName === "bash") {
+      await this.bashObservability.ensureRegistration(ctx.cwd, this.backgroundAbort.signal);
+    }
+
+    if (!this.config.rulesEnabled) {
+      this.bashObservability.decorateToolCall(event);
+      return undefined;
+    }
 
     // Use new gsc rules execute flow
     const startTime = Date.now();
@@ -583,6 +603,7 @@ export class PiBrainsController {
 
     if (!result) {
       this.debug.log(`no result from tool call evaluation`);
+      this.bashObservability.decorateToolCall(event);
       return undefined;
     }
 
@@ -605,7 +626,10 @@ export class PiBrainsController {
       ctx.ui.notify(`Trigger error (${error.ruleId}): ${error.error} - Action proceeding (fail-open)`, "warning");
     }
 
-    if (!result.block) return undefined;
+    if (!result.block) {
+      this.bashObservability.decorateToolCall(event);
+      return undefined;
+    }
     return { block: true, reason: result.reason };
   }
 
@@ -654,10 +678,19 @@ export class PiBrainsController {
   }
 
   async handleBeforeAgentStart(event: BeforeAgentStartEvent, ctx: ExtensionContext): Promise<BeforeAgentStartEventResult | undefined> {
+    this.refreshSessionBinding(ctx);
+    await Promise.all([
+      this.bashObservability.ensureRegistration(ctx.cwd, this.backgroundAbort.signal),
+      this.bashObservability.refreshBrains(ctx.cwd, this.backgroundAbort.signal),
+    ]);
     const guideInstruction = this.getGuideInstruction();
     const systemPromptParts = [event.systemPrompt, GITSENSE_SYSTEM_PROMPT];
     if (guideInstruction) {
       systemPromptParts.push(guideInstruction);
+    }
+    const bashInstruction = this.bashObservability.getInstruction();
+    if (bashInstruction) {
+      systemPromptParts.push(bashInstruction);
     }
 
     const eventResult: BeforeAgentStartEventResult = {
@@ -1233,6 +1266,7 @@ export class PiBrainsController {
     try {
       this.debug.log(`gsc ${args.join(" ")}`);
       const result = await this.pi.exec("gsc", args, {
+        cwd: this.cwd || undefined,
         signal: this.backgroundAbort.signal,
         timeout: 30_000,
       });

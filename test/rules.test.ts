@@ -249,7 +249,16 @@ describe("rule controller integration", () => {
     expect(result?.systemPrompt).toContain("gsc experts guide rule-authoring");
     expect(result?.systemPrompt).toContain("gsc experts guide trigger-creation");
     expect(result?.systemPrompt).toContain("gsc experts guide pi");
-    expect(exec).not.toHaveBeenCalled();
+    expect(exec).toHaveBeenCalledWith(
+      "gsc",
+      ["bash", "register", "--session-file", "/repo/session.jsonl", "--format", "json"],
+      expect.objectContaining({ cwd: "/repo" }),
+    );
+    expect(exec).toHaveBeenCalledWith(
+      "gsc",
+      ["brains", "--json"],
+      expect.objectContaining({ cwd: "/repo" }),
+    );
   });
 
   it("keeps baseline GitSense context when before-agent rules inject messages", async () => {
@@ -301,19 +310,29 @@ describe("rule controller integration", () => {
       errors: [],
       subagentTasks: [],
     };
-    const exec = vi.fn()
-      .mockResolvedValueOnce({
-        stdout: JSON.stringify(rulesForBeforeAgent),
-        stderr: "",
-        code: 0,
-        killed: false,
-      })
-      .mockResolvedValueOnce({
-        stdout: JSON.stringify(executionForBeforeAgent),
-        stderr: "",
-        code: 0,
-        killed: false,
-      });
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if (args[0] === "bash" && args[1] === "register") {
+        return {
+          stdout: JSON.stringify({
+            schema_version: 1,
+            alias: "a1b2c3",
+            session_id: "session-id",
+            session_file: "/repo/session.jsonl",
+            sidecar_file: "/repo/session.bash.jsonl",
+          }),
+          stderr: "",
+          code: 0,
+          killed: false,
+        };
+      }
+      if (args[0] === "brains") {
+        return { stdout: JSON.stringify({ databases: [] }), stderr: "", code: 0, killed: false };
+      }
+      if (args[0] === "rules" && args[1] === "get") {
+        return { stdout: JSON.stringify(rulesForBeforeAgent), stderr: "", code: 0, killed: false };
+      }
+      return { stdout: JSON.stringify(executionForBeforeAgent), stderr: "", code: 0, killed: false };
+    });
     const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: true });
     const ctx = createContext();
 

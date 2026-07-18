@@ -4,6 +4,7 @@ import { loadConfig } from "./config.ts";
 import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
 import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
 import { debugLog } from "./debug-log.ts";
+import { handleShellRulesCommand } from "./rule-catalog.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
@@ -113,7 +114,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
       // /brains rules - show rules status
       if (command === "rules") {
-        handleRulesCommand(value, controller, ctx as unknown as ExtensionCommandContext);
+        await handleRulesCommand(value, controller, ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -246,8 +247,14 @@ Once installed, run /brains again to enable expert context.`;
   controller.sendUserMessage("run `gsc experts init` and follow instructions");
 }
 
-function handleRulesCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): void {
+async function handleRulesCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
   const rulesEnabled = controller.isRulesEnabled();
+  const normalized = value?.trim() ?? "";
+
+  if (normalized === "shell" || normalized.startsWith("shell ")) {
+    await handleShellRulesCommand(normalized.slice("shell".length).trim(), controller, ctx);
+    return;
+  }
 
   // /brains rules on
   if (value === "on") {
@@ -280,6 +287,7 @@ injects the matched instructions, and lets the agent retry with context.
   /brains rules off    Disable rules checking
   /brains rules on     Enable rules checking
   /brains rules status Show recent rule decisions
+  /brains rules shell  Configure observable shell discovery
 
 Managing rules:
 
@@ -1127,6 +1135,7 @@ function showHelp(ctx: ExtensionCommandContext): void {
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
   /brains rules status Show recent rule decisions
+  /brains rules shell  Configure observable shell discovery
   /brains scm          Show compacted messages (alias: show-compact-messages)
   /brains pc           Post-compact enrichment (alias: post-compact)
   /brains debug        Toggle debug mode
