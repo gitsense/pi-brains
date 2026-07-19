@@ -1,8 +1,10 @@
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 
 const SHELL_RULE_ID = "rule_pi_bash_observability_v1";
+const BUNDLE_REVISION_TAG_PREFIX = "bundle-revision-";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 type RuleScope = "personal" | "repo";
@@ -19,11 +21,20 @@ interface ListedRule {
   rule?: {
     id?: unknown;
     trigger?: { entry?: unknown };
+    frequency?: { mode?: unknown };
+    tags?: unknown;
   };
 }
 
 interface RulesImportResult {
   warnings?: unknown;
+  rulesAdded?: unknown;
+  rulesReplaced?: unknown;
+}
+
+interface PackagedShellRule {
+  frequency: string;
+  revision: string;
 }
 
 export async function handleShellRulesCommand(
@@ -36,7 +47,7 @@ export async function handleShellRulesCommand(
 
   if (!action) {
     const selected = await ctx.ui.select("Observable shell discovery", [
-      "Advisory - remind once per context",
+      "Advisory - remind for every unwrapped discovery command",
       "Strict - block unwrapped discovery commands",
       "Status",
       "Off - remove the policy",
@@ -99,7 +110,7 @@ async function installShellRule(
 ): Promise<void> {
   const behavior = mode === "strict"
     ? "Blocks supported discovery commands unless every segment uses gsc bash."
-    : "Passively reminds the agent once per context; commands are not blocked.";
+    : "Evaluates every violation and passively reminds the agent; commands are not blocked.";
   const destination = scope === "personal"
     ? "This applies across your repositories."
     : "This writes executable rule metadata and trigger assets into this repository.";
@@ -124,9 +135,10 @@ async function installShellRule(
 
   if (!controller.isRulesEnabled()) controller.setRulesEnabled(true);
   const warnings = parseImportWarnings(result.stdout);
+  const outcome = parseImportOutcome(result.stdout);
   const warningText = warnings.length > 0 ? `\n\nWarnings:\n${warnings.map(item => `- ${item}`).join("\n")}` : "";
   ctx.ui.notify(
-    `Observable shell discovery: ${capitalize(mode)} (${scope})\nRules checking: ON${warningText}`,
+    `${outcome} observable shell discovery: ${capitalize(mode)} (${scope})\nRules checking: ON${warningText}`,
     warnings.length > 0 ? "warning" : "info",
   );
 }
@@ -185,22 +197,63 @@ async function loadShellRuleStatus(
   if (!result || result.code !== 0) return null;
   try {
     const records = JSON.parse(result.stdout) as ListedRule[];
+    const packaged = loadPackagedShellRules();
     const status = new Map<RuleScope, string>();
     for (const record of records) {
       if (record.rule?.id !== SHELL_RULE_ID) continue;
       if (record.source !== "personal" && record.source !== "repo") continue;
       const entry = record.rule.trigger?.entry;
-      const mode = typeof entry === "string" && entry.includes("strict")
-        ? "Strict"
+      const mode: ShellRuleMode | "custom" = typeof entry === "string" && entry.includes("strict")
+        ? "strict"
         : typeof entry === "string" && entry.includes("advisory")
-          ? "Advisory"
-          : "Custom";
-      status.set(record.source, mode);
+          ? "advisory"
+          : "custom";
+      const frequency = typeof record.rule.frequency?.mode === "string"
+        ? record.rule.frequency.mode
+        : "unknown";
+      const revision = findBundleRevision(record.rule.tags);
+      const version = revision ? revision.slice(BUNDLE_REVISION_TAG_PREFIX.length) : "unknown";
+      let freshness = "Custom";
+      if (mode !== "custom") {
+        const expected = packaged.get(mode);
+        freshness = expected && expected.frequency === frequency && expected.revision === revision
+          ? "Current"
+          : "Update available";
+      }
+      status.set(
+        record.source,
+        `${capitalize(mode)} · frequency ${frequency} · version ${version} · ${freshness}`,
+      );
     }
     return status;
   } catch {
     return null;
   }
+}
+
+function loadPackagedShellRules(): Map<ShellRuleMode, PackagedShellRule> {
+  const packaged = new Map<ShellRuleMode, PackagedShellRule>();
+  for (const mode of ["advisory", "strict"] as const) {
+    try {
+      const bundlePath = resolve(packageRoot, "rules", "gsc-bash-observability", `${mode}.bundle.json`);
+      const bundle = JSON.parse(readFileSync(bundlePath, "utf8")) as {
+        rules?: Array<{ rule?: { frequency?: { mode?: unknown }; tags?: unknown } }>;
+      };
+      const rule = bundle.rules?.[0]?.rule;
+      const frequency = rule?.frequency?.mode;
+      const revision = findBundleRevision(rule?.tags);
+      if (typeof frequency === "string" && revision) packaged.set(mode, { frequency, revision });
+    } catch {
+      // Missing or malformed package metadata makes recognized installations stale.
+    }
+  }
+  return packaged;
+}
+
+function findBundleRevision(tags: unknown): string | undefined {
+  return Array.isArray(tags)
+    ? tags.find((tag): tag is string => typeof tag === "string" && tag.startsWith(BUNDLE_REVISION_TAG_PREFIX))
+    : undefined;
 }
 
 function parseImportWarnings(stdout: string): string[] {
@@ -212,6 +265,17 @@ function parseImportWarnings(stdout: string): string[] {
   } catch {
     return [];
   }
+}
+
+function parseImportOutcome(stdout: string): "Installed" | "Updated" | "Applied" {
+  try {
+    const parsed = JSON.parse(stdout) as RulesImportResult;
+    if (Array.isArray(parsed.rulesReplaced) && parsed.rulesReplaced.includes(SHELL_RULE_ID)) return "Updated";
+    if (Array.isArray(parsed.rulesAdded) && parsed.rulesAdded.includes(SHELL_RULE_ID)) return "Installed";
+  } catch {
+    // Keep a truthful generic result for older gsc versions or non-JSON output.
+  }
+  return "Applied";
 }
 
 function notifyFailure(

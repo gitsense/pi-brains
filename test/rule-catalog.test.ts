@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -55,6 +56,20 @@ describe("observable shell rule catalog", () => {
     expect(notify).toHaveBeenCalledWith(expect.stringContaining("Advisory (personal)"), "info");
   });
 
+  it("reports when an existing rule was updated", async () => {
+    const runGscCommand = vi.fn().mockResolvedValue({
+      code: 0,
+      stdout: JSON.stringify({ rulesReplaced: ["rule_pi_bash_observability_v1"] }),
+      stderr: "",
+    });
+    const { controller } = createController(runGscCommand);
+    const { ctx, notify } = createContext({ confirmations: [true] });
+
+    await handleShellRulesCommand("advisory personal", controller, ctx);
+
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Updated observable shell discovery"), "info");
+  });
+
   it("prompts for mode and repository scope", async () => {
     const runGscCommand = vi.fn().mockResolvedValue({ code: 0, stdout: "{}", stderr: "" });
     const { controller } = createController(runGscCommand);
@@ -91,20 +106,20 @@ describe("observable shell rule catalog", () => {
     );
   });
 
-  it("reports configured modes in both scopes", async () => {
+  it("reports a current installed rule with frequency and bundle version", async () => {
+    const bundle = JSON.parse(readFileSync(new URL(
+      "../rules/gsc-bash-observability/advisory.bundle.json",
+      import.meta.url,
+    ), "utf8")) as { rules: Array<{ rule: { tags: string[] } }> };
+    const revisionTag = bundle.rules[0].rule.tags.find(tag => tag.startsWith("bundle-revision-"));
     const records = [
       {
         source: "personal",
         rule: {
           id: "rule_pi_bash_observability_v1",
           trigger: { entry: "gsc-bash-observability-advisory-v1/trigger.mjs" },
-        },
-      },
-      {
-        source: "repo",
-        rule: {
-          id: "rule_pi_bash_observability_v1",
-          trigger: { entry: "gsc-bash-observability-strict-v1/trigger.mjs" },
+          frequency: { mode: "always" },
+          tags: [revisionTag],
         },
       },
     ];
@@ -117,8 +132,54 @@ describe("observable shell rule catalog", () => {
     await handleShellRulesCommand("status", controller, ctx);
 
     expect(runGscCommand).toHaveBeenCalledWith("rules", "list", "--scope", "all", "--format", "json");
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Personal    Advisory"), "info");
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Repository  Strict"), "info");
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("frequency always"), "info");
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Current"), "info");
+  });
+
+  it("reports a stale recognized rule as update available", async () => {
+    const runGscCommand = vi.fn().mockResolvedValue({
+      code: 0,
+      stdout: JSON.stringify([{
+        source: "repo",
+        rule: {
+          id: "rule_pi_bash_observability_v1",
+          trigger: { entry: "gsc-bash-observability-strict-v1/trigger.mjs" },
+          frequency: { mode: "once-per-context" },
+          tags: ["bundle-revision-stale"],
+        },
+      }]),
+      stderr: "",
+    });
+    const { controller } = createController(runGscCommand);
+    const { ctx, notify } = createContext();
+
+    await handleShellRulesCommand("status", controller, ctx);
+
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("frequency once-per-context"), "info");
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Update available"), "info");
+  });
+
+  it("preserves custom-rule identity in status", async () => {
+    const runGscCommand = vi.fn().mockResolvedValue({
+      code: 0,
+      stdout: JSON.stringify([{
+        source: "personal",
+        rule: {
+          id: "rule_pi_bash_observability_v1",
+          trigger: { entry: "my-observable-shell/trigger.mjs" },
+          frequency: { mode: "once-per-session" },
+          tags: ["owner-custom"],
+        },
+      }]),
+      stderr: "",
+    });
+    const { controller } = createController(runGscCommand);
+    const { ctx, notify } = createContext();
+
+    await handleShellRulesCommand("status", controller, ctx);
+
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Custom · frequency once-per-session"), "info");
+    expect(notify).not.toHaveBeenCalledWith(expect.stringContaining("Update available"), "info");
   });
 
   it("removes only the selected shell policy", async () => {

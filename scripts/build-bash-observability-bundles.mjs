@@ -30,6 +30,15 @@ const variants = {
 
 for (const [name, variant] of Object.entries(variants)) {
   const triggerSource = readFileSync(resolve(rulesDir, `${name}-trigger.mjs`));
+  const triggerSha256 = createHash("sha256").update(triggerSource).digest("hex");
+  const revision = createHash("sha256").update(JSON.stringify({
+    name,
+    ruleID,
+    schemaVersion: "3.0.0",
+    commandFilter,
+    variant,
+    triggerSha256,
+  })).digest("hex").slice(0, 12);
   const entry = `gsc-bash-observability-${name}-v1/trigger.mjs`;
   const bundle = {
     schemaVersion: "gsc.rules.bundle.v1",
@@ -59,7 +68,7 @@ for (const [name, variant] of Object.entries(variants)) {
         glob_patterns: [],
         exclude_globs: [],
         applies_to: { files: [], linked_files: [], commands: [] },
-        tags: ["gsc-bash", "pi", "observability"],
+        tags: ["gsc-bash", "pi", "observability", `bundle-revision-${revision}`],
         keywords: ["bash", "discovery", "observability", "pi"],
         parent_keywords: ["agent-observability", "topic-knowledge"],
         importance: variant.importance,
@@ -76,7 +85,7 @@ for (const [name, variant] of Object.entries(variants)) {
     assets: [{
       kind: "trigger",
       entry,
-      sha256: `sha256:${createHash("sha256").update(triggerSource).digest("hex")}`,
+      sha256: `sha256:${triggerSha256}`,
       mode: 420,
       encoding: "base64",
       contentBase64: triggerSource.toString("base64"),
