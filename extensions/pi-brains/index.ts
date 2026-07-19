@@ -6,10 +6,12 @@ import { PiBrainsController, type GuideCheckpointRequestResult } from "./control
 import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
 import { debugLog } from "./debug-log.ts";
 import { handleShellRulesCommand } from "./rule-catalog.ts";
+import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
   const controller = new PiBrainsController(pi, config);
+  let brainsStatusPending = false;
 
   // Initialize checkpoint event handlers
   initCheckpointHandlers(pi);
@@ -25,6 +27,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   });
 
   pi.on("session_start", (_event, ctx) => {
+    brainsStatusPending = false;
     controller.start(ctx);
   });
 
@@ -58,6 +61,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
   pi.on("tool_result", (event, ctx) => {
     controller.recordToolResult(event, ctx);
+    if (isSuccessfulExpertsInit(event)) {
+      brainsStatusPending = true;
+    }
     return controller.handleToolResult(event, ctx);
   });
 
@@ -79,8 +85,13 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     controller.refreshSessionState(ctx);
   });
 
-  pi.on("agent_end", (event, ctx) => {
-    return controller.handleStop(event, ctx);
+  pi.on("agent_end", async (event, ctx) => {
+    const result = await controller.handleStop(event, ctx);
+    if (brainsStatusPending) {
+      brainsStatusPending = false;
+      await showBrainsStatus(controller, ctx as unknown as ExtensionCommandContext);
+    }
+    return result;
   });
 
   pi.on("session_shutdown", () => {
@@ -104,6 +115,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       if (command === "insights") {
         const output = controller.renderInsightsSnapshot();
         ctx.ui.notify(output || "No insights available", "info");
+        return;
+      }
+
+      // /brains status - show the current GitSense configuration
+      if (command === "status") {
+        await showBrainsStatus(controller, ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -1250,6 +1267,7 @@ function showHelp(ctx: ExtensionCommandContext): void {
   const help = `/brains commands:
 
   /brains              Initialize expert context (gsc experts init)
+  /brains status       Show current GitSense configuration
   /brains build        Build/import a Brain manifest
   /brains checkpoint   Create a review checkpoint now
   /brains inspect      Show inspect view instructions

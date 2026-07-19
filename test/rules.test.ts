@@ -318,6 +318,179 @@ describe("rule delivery", () => {
 });
 
 describe("rule controller integration", () => {
+  it("does not consume a frequency-limited trigger when its executable does not match", async () => {
+    const frequencyRule: RulesJsonResponse = {
+      schemaVersion: 1,
+      query: { event: "pre_tool_use", action: "read", file: "/repo/data/accounting/q1.ledger" },
+      gitRoot: "/repo",
+      rules: [{
+        id: "frequency-trigger",
+        type: "executable",
+        event: "pre_tool_use",
+        summary: "Frequency trigger",
+        trigger: { runtime: "node", entry: "frequency-trigger.mjs" },
+        frequency: { mode: "once-per-context" },
+        match: { kind: "glob", value: "data/accounting/**", action: "read" },
+        ruleHash: "sha256:frequency-rule",
+        triggerHash: "sha256:frequency-trigger",
+        priority: 10,
+        importance: "medium",
+      }],
+      summary: { total: 1, declarative: 0, executable: 1 },
+    };
+    const matchedRuleResult = {
+      ruleId: "frequency-trigger",
+      ruleHash: "sha256:frequency-rule",
+      triggerHash: "sha256:frequency-trigger",
+      type: "executable" as const,
+      summary: "Frequency trigger",
+      priority: 10,
+      match: { kind: "glob", value: "data/accounting/**", action: "read" },
+    };
+    const noMatch: ExecutionResult = {
+      schemaVersion: 1,
+      block: false,
+      notices: [],
+      matchedRules: [matchedRuleResult],
+      triggerResults: [{ ruleId: "frequency-trigger", matched: false, block: false }],
+      errors: [],
+      subagentTasks: [],
+    };
+    const match: ExecutionResult = {
+      schemaVersion: 1,
+      block: false,
+      notices: [],
+      matchedRules: [matchedRuleResult],
+      triggerResults: [{
+        ruleId: "frequency-trigger",
+        matched: true,
+        block: false,
+        message: "Frequency trigger matched.",
+        deliveryMode: "passiveSteer",
+      }],
+      errors: [],
+      subagentTasks: [],
+    };
+    let executions = 0;
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if (args[0] === "rules" && args[1] === "get") {
+        return { stdout: JSON.stringify(frequencyRule), stderr: "", code: 0, killed: false };
+      }
+      executions++;
+      return {
+        stdout: JSON.stringify(executions === 1 ? noMatch : match),
+        stderr: "",
+        code: 0,
+        killed: false,
+      };
+    });
+    const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: true });
+    const ctx = createContext();
+
+    expect(await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx)).toBeUndefined();
+    expect(await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx)).toBeUndefined();
+    expect(await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx)).toBeUndefined();
+
+    expect(executions).toBe(2);
+  });
+
+  it("injects a nonblocking tool advisory into the next model context", async () => {
+    const advisoryRules: RulesJsonResponse = {
+      schemaVersion: 1,
+      query: { event: "pre_tool_use", action: "bash" },
+      gitRoot: "/repo",
+      rules: [{
+        id: "rule_pi_bash_observability_v1",
+        type: "executable",
+        event: "pre_tool_use",
+        summary: "Recommend observable wrappers for shell discovery",
+        trigger: { runtime: "node", entry: "advisory-trigger.mjs" },
+        frequency: { mode: "always" },
+        match: { kind: "action", value: "bash", action: "bash" },
+        ruleHash: "sha256:advisory-rule",
+        triggerHash: "sha256:advisory-trigger",
+        priority: 60,
+        importance: "medium",
+      }],
+      summary: { total: 1, declarative: 0, executable: 1 },
+    };
+    const advisoryExecution: ExecutionResult = {
+      schemaVersion: 1,
+      block: false,
+      notices: ["Observable discovery recommended: wrap rg with gsc bash."],
+      matchedRules: [{
+        ruleId: "rule_pi_bash_observability_v1",
+        ruleHash: "sha256:advisory-rule",
+        triggerHash: "sha256:advisory-trigger",
+        type: "executable",
+        summary: "Recommend observable wrappers for shell discovery",
+        priority: 60,
+        match: { kind: "action", value: "bash", action: "bash" },
+      }],
+      triggerResults: [{
+        ruleId: "rule_pi_bash_observability_v1",
+        matched: true,
+        block: false,
+        message: "Use gsc bash -s <session-alias> rg needle .",
+        deliveryMode: "passiveSteer",
+      }],
+      errors: [],
+      subagentTasks: [],
+    };
+    const emptyContextRules: RulesJsonResponse = {
+      schemaVersion: 1,
+      query: { event: "context", action: "context" },
+      gitRoot: "/repo",
+      rules: [],
+      summary: { total: 0, declarative: 0, executable: 0 },
+    };
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if (args[0] === "bash" && args[1] === "register") {
+        return {
+          stdout: JSON.stringify({
+            schema_version: 1,
+            alias: "a1b2c3",
+            session_id: "session-1",
+            session_file: "/repo/session.jsonl",
+            sidecar_file: "/repo/session.bash.jsonl",
+          }),
+          stderr: "",
+          code: 0,
+          killed: false,
+        };
+      }
+      if (args[0] === "rules" && args[1] === "get") {
+        const event = args[args.indexOf("--event") + 1];
+        return {
+          stdout: JSON.stringify(event === "context" ? emptyContextRules : advisoryRules),
+          stderr: "",
+          code: 0,
+          killed: false,
+        };
+      }
+      return { stdout: JSON.stringify(advisoryExecution), stderr: "", code: 0, killed: false };
+    });
+    const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: true });
+    const ctx = createContext();
+    const event = {
+      type: "tool_call",
+      toolCallId: "call-rg",
+      toolName: "bash",
+      input: { command: "rg needle ." },
+    } as ToolCallEvent;
+
+    expect(await controller.handleToolCall(event, ctx)).toBeUndefined();
+    const context = await controller.handleContext(createContextEvent(), ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      "Observable discovery recommended: wrap rg with gsc bash.",
+      "warning",
+    );
+    expect(context?.messages.at(-1)?.content?.[0]?.text).toContain(
+      "Use gsc bash -s a1b2c3 rg needle .",
+    );
+  });
+
   it("injects baseline GitSense context before every agent turn even when rules are disabled", async () => {
     const exec = vi.fn();
     const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: false });

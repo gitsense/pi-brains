@@ -14,8 +14,8 @@ const variants = {
     summary: "Recommend observable wrappers for shell discovery",
     details: "Passively reminds Pi to run supported discovery commands through gsc bash so command intent and evidence can be correlated with the session.",
     importance: "medium",
-    frequency: "once-per-context",
-    instruction: "Use gsc bash with the session alias for supported discovery commands and wrap every pipeline segment separately.",
+    frequency: "always",
+    instruction: "Use gsc bash with the session alias for supported discovery commands, wrap every pipeline segment separately, and do not add -- before command options.",
     priority: 60,
   },
   strict: {
@@ -23,7 +23,7 @@ const variants = {
     details: "Blocks supported discovery commands that do not use gsc bash, preserving structured command intent and evidence for the Pi session.",
     importance: "high",
     frequency: "always",
-    instruction: "Run supported discovery commands through gsc bash with the session alias and wrap every pipeline segment separately.",
+    instruction: "Run supported discovery commands through gsc bash with the session alias, wrap every pipeline segment separately, and do not add -- before command options.",
     priority: 100,
   },
 };

@@ -76,8 +76,21 @@ export class BashObservability {
     if (!alias) return null;
     return `Observable shell discovery is available for this Pi session.
 Use gsc bash -s ${alias} <command> for supported discovery commands: rg, grep, find, ls, head, tail, wc, sort, and uniq.
-Wrap every pipeline segment separately, for example: gsc bash -s ${alias} rg pattern . | gsc bash -s ${alias} head -n 50.
-This preserves structured discovery evidence. Rules may require or recommend this form.`;
+
+Avoid: rg pattern .
+Use:   gsc bash -s ${alias} rg pattern .
+
+Keep shell operators outside the wrapper and wrap every supported segment separately.
+Avoid: rg pattern . | head -n 50
+Use:   gsc bash -s ${alias} rg pattern . | gsc bash -s ${alias} head -n 50
+
+Everything after the supported command name is passed directly to that command. Do not add -- before its options.
+Avoid: gsc bash -s ${alias} rg pattern file.go -- -C 3
+Use:   gsc bash -s ${alias} rg -C 3 pattern file.go
+Use -- only when the underlying command intentionally needs option termination.
+
+Native GitSense discovery such as gsc query and gsc tree does not need the bash wrapper.
+This preserves exact search intent, working directory, file evidence, pipeline truncation, and brains available during discovery. Rules may require or recommend this form.`;
   }
 
   decorateToolCall(event: ToolCallEvent): boolean {

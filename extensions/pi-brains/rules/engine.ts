@@ -236,6 +236,11 @@ export class RuleEngine {
               : `declarative rule delivered via evaluateWithExecute`
           ));
         } else if (rule.type === "executable" && rule.frequency?.mode && rule.frequency.mode !== "always") {
+          const triggerResult = result.triggerResults?.find(item => item.ruleId === rule.id);
+          if (!triggerResult?.matched) {
+            this.debug.log(`trigger did not match; leaving frequency available: ${rule.id}`);
+            continue;
+          }
           const deliveryKey = this.buildTriggerDeliveryKey(rule, action as RuleAction);
           this.delivery.markDelivered(deliveryKey);
           this.delivery.record(createRuleEvent(

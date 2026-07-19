@@ -67,7 +67,7 @@
         },
         "instruction": {
           "mode": "inline",
-          "text": "Run supported discovery commands through gsc bash with the session alias and wrap every pipeline segment separately."
+          "text": "Run supported discovery commands through gsc bash with the session alias, wrap every pipeline segment separately, and do not add -- before command options."
         },
         "frequency": {
           "mode": "always"

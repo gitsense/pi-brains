@@ -4,6 +4,7 @@ import type { AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, BeforeAgent
 import type { Component, OverlayHandle, OverlayOptions, TUI } from "@earendil-works/pi-tui";
 import { GSC_MISSING_NOTICE_ID, saveConfig } from "./config.ts";
 import { BashObservability } from "./bash-observability.ts";
+import { getActiveContextItems, hasGitSenseGuidance } from "./guidance-context.ts";
 import { DebugLogger } from "./debug.ts";
 import { CheckpointLog, type GuideCheckpointSource, type GuideCheckpointReason, type GuideWorkStateEventV1, type GuideCheckpointFacts, type GuideCheckpointCounters, type GuideCheckpointPayloadEventV1, type GuideCheckpointPayloadTool, type GuideCheckpointPayloadRule } from "./checkpoint-log.ts";
 import { readContextState, readModelState } from "./model-context.ts";
@@ -111,6 +112,7 @@ export class PiBrainsController {
   private clearOverlayOwner: (() => void) | null = null;
   private disposed = false;
   private passiveSteerBuffer: string[] = [];
+  private gitSenseGuidanceLoaded = false;
   private passiveSteerMaxLength = 5;
   private passiveSteerMaxChars = 2000;
   private sessionId: string | null = null;
@@ -230,6 +232,7 @@ export class PiBrainsController {
   }
 
   refreshSessionState(ctx: ExtensionContext): void {
+    this.gitSenseGuidanceLoaded = hasGitSenseGuidance(getActiveContextItems(ctx.sessionManager));
     this.context = readContextState(ctx);
     this.model = readModelState(this.pi, ctx);
     // Update leaf ID for checkpoint log
@@ -435,6 +438,7 @@ export class PiBrainsController {
   }
 
   async handleContext(event: ContextEvent, ctx: ExtensionContext): Promise<any> {
+    this.gitSenseGuidanceLoaded = hasGitSenseGuidance(event.messages);
     if (!this.config.rulesEnabled) {
       this.debug.log("rules disabled, skipping context");
       return undefined;
@@ -628,6 +632,12 @@ export class PiBrainsController {
     }
 
     if (!result.block) {
+      for (const triggerResult of result.triggerResults ?? []) {
+        if (triggerResult.message) {
+          this.debug.log(`trigger message: ${triggerResult.message}`);
+          this.sendTriggerMessage(triggerResult.message, triggerResult.deliveryMode, ctx);
+        }
+      }
       this.bashObservability.decorateToolCall(event);
       return undefined;
     }
@@ -787,6 +797,8 @@ export class PiBrainsController {
   }
 
   private sendTriggerMessage(message: string, deliveryMode: string | undefined, ctx: ExtensionContext): void {
+    const alias = this.bashObservability.getAlias();
+    if (alias) message = message.replaceAll("<session-alias>", alias);
     switch (deliveryMode) {
       case "passiveSteer":
         // Buffer the message for injection on next context event
@@ -1195,34 +1207,12 @@ export class PiBrainsController {
   }
 
   hasRunExpertsInit(ctx: ExtensionContext): boolean {
-    const entries = ctx.sessionManager.getBranch();
+    this.gitSenseGuidanceLoaded = hasGitSenseGuidance(getActiveContextItems(ctx.sessionManager));
+    return this.gitSenseGuidanceLoaded;
+  }
 
-    for (const entry of entries) {
-      if (entry.type !== "message") continue;
-      const msg = entry.message;
-
-      if (msg.role === "assistant" && Array.isArray(msg.content)) {
-        for (const block of msg.content) {
-          // Check for bash tool call with gsc experts init
-          if (block.type === "toolCall" && block.name === "bash") {
-            const command = block.arguments?.command;
-            if (typeof command === "string" && command.includes("gsc experts init")) {
-              return true;
-            }
-          }
-
-          // Check for read tool call with experts-context.md
-          if (block.type === "toolCall" && block.name === "read") {
-            const path = block.arguments?.path;
-            if (typeof path === "string" && path.includes("experts-context.md")) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-
-    return false;
+  isGitSenseGuidanceLoaded(): boolean {
+    return this.gitSenseGuidanceLoaded;
   }
 
   async runGscBrains(): Promise<string> {

@@ -5,18 +5,73 @@ const context = JSON.parse(readFileSync(0, "utf8"));
 const command = context.toolCall?.command;
 const violations = typeof command === "string" ? findUnwrappedCommands(command) : [];
 const matched = violations.length > 0;
+const rewrite = matched ? rewriteCommand(command) : null;
 
 console.log(JSON.stringify({
   matched,
   block: false,
   message: matched
-    ? `Use gsc bash -s <session-alias> for observable discovery. Unwrapped command${violations.length === 1 ? "" : "s"}: ${violations.join(", ")}. Wrap every pipeline segment separately; use the alias from the Pi system instructions.`
+    ? buildGuidance(command, violations, rewrite)
     : undefined,
   notice: matched
     ? `Observable discovery recommended: wrap ${violations.join(", ")} with gsc bash.`
     : undefined,
   deliveryMode: matched ? "passiveSteer" : undefined,
 }));
+
+function buildGuidance(command, violations, rewrite) {
+  const lines = [
+    "[Observable discovery]",
+    "",
+    `Unwrapped command${violations.length === 1 ? "" : "s"}: ${violations.join(", ")}`,
+    "",
+    "Avoid:",
+    `  ${command}`,
+    "",
+  ];
+  if (rewrite.exact) {
+    lines.push("Use:", `  ${rewrite.command}`);
+  } else {
+    lines.push(
+      "Use this form for each supported discovery segment:",
+      "  gsc bash -s <session-alias> <command> [args...]",
+      "",
+      "Keep shell operators outside the wrapper and wrap each supported pipeline or chained segment separately.",
+    );
+  }
+  lines.push(
+    "",
+    "Why: this records exact search intent, working directory, file evidence, pipeline truncation, and brains available during discovery.",
+    "This call will proceed because the shell policy is advisory.",
+  );
+  return lines.join("\n");
+}
+
+function rewriteCommand(source) {
+  let exact = true;
+  const parts = splitShellComposition(source).map(({ segment, separator }) => {
+    const trimmed = segment.trim();
+    const words = shellWords(trimmed);
+    const commandName = commandHead(words);
+    if (!commandName || !supported.has(commandName) || isWrapped(words)) {
+      return segment + separator;
+    }
+
+    const first = words[0]?.split("/").pop();
+    if (first !== commandName) {
+      exact = false;
+      return segment + separator;
+    }
+
+    const leading = segment.slice(0, segment.length - segment.trimStart().length);
+    return `${leading}gsc bash -s <session-alias> ${segment.trimStart()}${separator}`;
+  });
+  return { command: parts.join(""), exact };
+}
+
+function isWrapped(words) {
+  return words[0]?.split("/").pop() === "gsc" && words[1] === "bash";
+}
 
 function findUnwrappedCommands(source) {
   const results = [];
@@ -28,7 +83,11 @@ function findUnwrappedCommands(source) {
 }
 
 function splitShellSegments(source) {
-  const segments = [];
+  return splitShellComposition(source).map(part => part.segment).filter(segment => segment.trim());
+}
+
+function splitShellComposition(source) {
+  const parts = [];
   let current = "";
   let quote = null;
   let escaped = false;
@@ -47,15 +106,18 @@ function splitShellSegments(source) {
       quote = char;
       current += char;
     } else if (char === "|" || char === "&" || char === ";" || char === "\n") {
-      if (current.trim()) segments.push(current);
+      let separator = char;
+      if ((char === "|" || char === "&") && source[i + 1] === char) {
+        separator += source[++i];
+      }
+      parts.push({ segment: current, separator });
       current = "";
-      if ((char === "|" || char === "&") && source[i + 1] === char) i++;
     } else {
       current += char;
     }
   }
-  if (current.trim()) segments.push(current);
-  return segments;
+  parts.push({ segment: current, separator: "" });
+  return parts;
 }
 
 function shellWords(segment) {

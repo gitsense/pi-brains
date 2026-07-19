@@ -36,8 +36,24 @@ describe("gsc bash observability rule triggers", () => {
   });
 
   it("advises without blocking", () => {
-    expect(run(advisory, "grep -R needle ."))
-      .toMatchObject({ matched: true, block: false, deliveryMode: "passiveSteer" });
+    const result = run(advisory, "grep -R needle .");
+    expect(result).toMatchObject({ matched: true, block: false, deliveryMode: "passiveSteer" });
+    expect(result.message).toContain("Avoid:\n  grep -R needle .");
+    expect(result.message).toContain("Use:\n  gsc bash -s <session-alias> grep -R needle .");
+    expect(result.message).toContain("Why: this records exact search intent");
+  });
+
+  it("rewrites every supported pipeline and chained segment", () => {
+    const result = run(advisory, "cd src && rg needle . | head -n 20; wc -l");
+    expect(result.message).toContain(
+      "cd src && gsc bash -s <session-alias> rg needle . | gsc bash -s <session-alias> head -n 20; gsc bash -s <session-alias> wc -l",
+    );
+  });
+
+  it("uses a safe pattern when a command prefix cannot be rewritten exactly", () => {
+    const result = run(advisory, "env LC_ALL=C sort names.txt");
+    expect(result.message).toContain("Use this form for each supported discovery segment:");
+    expect(result.message).not.toContain("Use:\n  env LC_ALL=C");
   });
 
   it.each(["advisory", "strict"])("embeds the reviewed %s trigger in its bundle", variant => {

@@ -7,7 +7,9 @@ shell discovery commands. They cover `rg`, `grep`, `find`, `ls`, `head`,
 
 Choose one mode:
 
-- `advisory.bundle.json` sends a passive reminder at most once per context.
+- `advisory.bundle.json` allows the command, shows the violation, and injects
+  an actionable wrapper rewrite before the model's next action. It evaluates
+  every matching command so repeated violations remain measurable.
 - `strict.bundle.json` blocks every matching unwrapped command.
 
 Configure interactively from Pi:
@@ -60,7 +62,23 @@ Regenerate bundles after changing either trigger:
 npm run rules:build
 ```
 
-The trigger performs a bounded shell scan rather than executing or rewriting
-the command. It recognizes common environment, `command`, `exec`, `sudo`, and
-`env` prefixes. It does not attempt to interpret nested command substitutions
-or indirect execution such as `xargs rg` in this first version.
+The trigger performs a bounded shell scan without executing the command. It
+provides an exact wrapper rewrite for straightforward pipeline and chained
+segments. For common environment, `command`, `exec`, `sudo`, and `env`
+prefixes, it identifies the violation but gives a safe wrapper pattern instead
+of claiming an exact rewrite. It does not attempt to interpret nested command
+substitutions or indirect execution such as `xargs rg` in this first version.
+
+Arguments after the supported command name are passed directly to that
+command. Do not insert a wrapper separator before command options:
+
+```sh
+# Wrong: rg treats -C and 3 as paths after --
+gsc bash -s 2a352 rg pattern file.go -- -C 3
+
+# Correct
+gsc bash -s 2a352 rg -C 3 pattern file.go
+```
+
+Use `--` only when the underlying command intentionally needs to stop option
+parsing, such as when addressing a hyphen-prefixed file name.
