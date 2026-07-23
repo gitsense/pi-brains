@@ -12,6 +12,7 @@ export type RuleTelemetryOutcome =
   | "executed"
   | "triggered"
   | "blocked"
+  | "delivery_paused"
   | "skipped"
   | "error"
   | "delivered";
@@ -29,6 +30,7 @@ export interface RuleTelemetryEvent {
   lifecycle: string;
   action: string;
   toolName: string;
+  toolCallId: string | null;
   command: string | null;
   filePath: string | null;
   normalizedFile: string | null;
@@ -62,6 +64,8 @@ export interface RuleTelemetryResult {
   executed: boolean;
   triggerMatched: boolean;
   blocked: boolean;
+  deliveryPaused: boolean;
+  policyBlocked: boolean;
   skipped: boolean;
   delivered: boolean;
   deliveryMode: string | null;
@@ -187,11 +191,12 @@ export function buildTelemetryEvent(input: BuildEventInput): RuleTelemetryEventV
 
 /**
  * Determine the final outcome from boolean flags.
- * Priority: error > blocked > triggered > executed > delivered > matched > skipped
+ * Priority: error > policy block > delivery pause > triggered > executed > delivered > matched > skipped
  */
 export function resolveOutcome(flags: {
   hasError: boolean;
   blocked: boolean;
+  deliveryPaused?: boolean;
   triggerMatched: boolean;
   executed: boolean;
   delivered: boolean;
@@ -200,6 +205,7 @@ export function resolveOutcome(flags: {
 }): RuleTelemetryOutcome {
   if (flags.hasError) return "error";
   if (flags.blocked) return "blocked";
+  if (flags.deliveryPaused) return "delivery_paused";
   if (flags.triggerMatched) return "triggered";
   if (flags.executed) return "executed";
   if (flags.delivered) return "delivered";

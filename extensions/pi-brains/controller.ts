@@ -298,7 +298,7 @@ export class PiBrainsController {
     const input = event.input as Record<string, unknown>;
     const filePath = (input?.path as string) ?? null;
     const command = (input?.command as string) ?? null;
-    await this.writeTelemetry(ctx, "post_tool_use", event.toolName, command, filePath, null, result, durationMs);
+    await this.writeTelemetry(ctx, "post_tool_use", event.toolName, event.toolCallId ?? null, command, filePath, null, result, durationMs);
 
     // Track rule facts for guide checkpoints
     if (this.config.guideEnabled && result.triggerResults) {
@@ -368,7 +368,7 @@ export class PiBrainsController {
     this.debug.log(`agent_end result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
 
     // Write telemetry
-    await this.writeTelemetry(ctx, "agent_end", "agent_end", null, null, null, result, durationMs);
+    await this.writeTelemetry(ctx, "agent_end", "agent_end", null, null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -416,7 +416,7 @@ export class PiBrainsController {
     this.debug.log(`agent_start result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
 
     // Write telemetry
-    await this.writeTelemetry(ctx, "agent_start", "agent_start", null, null, null, result, durationMs);
+    await this.writeTelemetry(ctx, "agent_start", "agent_start", null, null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -457,7 +457,7 @@ export class PiBrainsController {
     // Show notices from rules
     if (result) {
       // Write telemetry
-      await this.writeTelemetry(ctx, "context", "context", null, null, null, result, durationMs);
+      await this.writeTelemetry(ctx, "context", "context", null, null, null, null, result, durationMs);
 
       for (const notice of result.notices ?? []) {
         this.debug.log(`showing notice: ${notice}`);
@@ -527,7 +527,7 @@ export class PiBrainsController {
     this.debug.log(`session_before_compact result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
 
     // Write telemetry
-    await this.writeTelemetry(ctx, "session_before_compact", "session_before_compact", null, null, null, result, durationMs);
+    await this.writeTelemetry(ctx, "session_before_compact", "session_before_compact", null, null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -569,7 +569,7 @@ export class PiBrainsController {
     this.debug.log(`session_compact result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
 
     // Write telemetry
-    await this.writeTelemetry(ctx, "session_compact", "session_compact", null, null, null, result, durationMs);
+    await this.writeTelemetry(ctx, "session_compact", "session_compact", null, null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -618,7 +618,7 @@ export class PiBrainsController {
     const input = event.input as Record<string, unknown>;
     const filePath = (input?.path as string) ?? null;
     const command = (input?.command as string) ?? null;
-    await this.writeTelemetry(ctx, "pre_tool_use", event.toolName, command, filePath, null, result, durationMs);
+    await this.writeTelemetry(ctx, "pre_tool_use", event.toolName, event.toolCallId ?? null, command, filePath, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -665,7 +665,7 @@ export class PiBrainsController {
     this.debug.log(`input result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
 
     // Write telemetry
-    await this.writeTelemetry(ctx, "user_prompt_submit", "prompt", null, null, null, result, durationMs);
+    await this.writeTelemetry(ctx, "user_prompt_submit", "prompt", null, null, null, null, result, durationMs);
 
     // Show notices
     const notices = result.notices ?? [];
@@ -724,7 +724,7 @@ export class PiBrainsController {
     this.debug.log(`before_agent_start result: block=${result.block}, notices=${result.notices?.length ?? 0}`);
 
     // Write telemetry
-    await this.writeTelemetry(ctx, "before_agent_start", "before_agent_start", null, null, null, result, durationMs);
+    await this.writeTelemetry(ctx, "before_agent_start", "before_agent_start", null, null, null, null, result, durationMs);
 
     // Show notices
     for (const notice of result.notices ?? []) {
@@ -1403,6 +1403,7 @@ export class PiBrainsController {
     ctx: ExtensionContext,
     lifecycle: LifecycleEvent,
     toolName: string,
+    toolCallId: string | null,
     command: string | null,
     filePath: string | null,
     repoRoot: string | null,
@@ -1428,6 +1429,7 @@ export class PiBrainsController {
       lifecycle,
       action: toolName,
       toolName,
+      toolCallId,
       command,
       filePath,
       normalizedFile: filePath,
@@ -1440,16 +1442,22 @@ export class PiBrainsController {
       const error = result.errors?.find(e => e.ruleId === matchedRule.ruleId);
 
       const hasError = !!error;
-      const blocked = triggerResult?.block ?? false;
+      const policyBlocked = triggerResult?.block ?? false;
+      const deliveryPaused = matchedRule.type === "declarative" && result.block;
+      const blocked = policyBlocked || deliveryPaused;
       const triggerMatched = triggerResult?.matched ?? false;
       const executed = matchedRule.type === "executable";
-      const delivered = matchedRule.type === "declarative" || (triggerResult?.matched ?? false);
+      const contextResult = result.contextCommandResults?.find(item => item.ruleId === matchedRule.ruleId);
+      const delivered = matchedRule.type === "declarative"
+        ? !contextResult || contextResult.success
+        : (triggerResult?.matched ?? false);
       const matched = true;
       const skipped = false; // Skipped rules are not in ExecutionResult yet
 
       const outcome = resolveOutcome({
         hasError,
-        blocked,
+        blocked: policyBlocked,
+        deliveryPaused,
         triggerMatched,
         executed,
         delivered,
@@ -1467,7 +1475,7 @@ export class PiBrainsController {
         instructions: matchedRule.instructions ?? [],
         event: lifecycle,
         priority: matchedRule.priority,
-        importance: "medium", // Default, not in ExecutionMatchedRule
+        importance: matchedRule.importance || "medium",
         frequencyMode: null,
       };
 
@@ -1484,6 +1492,8 @@ export class PiBrainsController {
         executed,
         triggerMatched,
         blocked,
+        deliveryPaused,
+        policyBlocked,
         skipped,
         delivered,
         deliveryMode: triggerResult?.deliveryMode ?? null,

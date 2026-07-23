@@ -35,6 +35,7 @@ function createTestEvent(overrides?: Partial<RuleTelemetryEventV1>): RuleTelemet
       lifecycle: "pre_tool_use",
       action: "read",
       toolName: "read",
+      toolCallId: "call_123",
       command: null,
       filePath: "/repo/src/index.ts",
       normalizedFile: "src/index.ts",
@@ -65,6 +66,8 @@ function createTestEvent(overrides?: Partial<RuleTelemetryEventV1>): RuleTelemet
       executed: false,
       triggerMatched: false,
       blocked: true,
+      deliveryPaused: false,
+      policyBlocked: true,
       skipped: false,
       delivered: true,
       deliveryMode: null,
@@ -120,6 +123,21 @@ describe("outcome resolution", () => {
         skipped: false,
       }),
     ).toBe("blocked");
+  });
+
+  it("returns delivery_paused when declarative instructions pause the call", () => {
+    expect(
+      resolveOutcome({
+        hasError: false,
+        blocked: false,
+        deliveryPaused: true,
+        triggerMatched: false,
+        executed: false,
+        delivered: true,
+        matched: true,
+        skipped: false,
+      }),
+    ).toBe("delivery_paused");
   });
 
   it("returns triggered when triggerMatched is true (no error/block)", () => {
@@ -419,6 +437,72 @@ describe("telemetry writer", () => {
 
     const content = readFileSync(sidecarPath, "utf8");
     expect(content.trim()).toBeTruthy();
+
+    rmSync(tmpDir, { recursive: true });
+  });
+});
+
+describe("toolCallId preservation", () => {
+  it("preserves toolCallId in telemetry events", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "telemetry-test-"));
+    const sessionPath = join(tmpDir, "session.jsonl");
+    const sidecarPath = join(tmpDir, "session.rules.jsonl");
+
+    const writer = createTestWriter(tmpDir);
+    writer.setSession(sessionPath);
+
+    const event = createTestEvent({
+      event: {
+        lifecycle: "pre_tool_use",
+        action: "bash",
+        toolName: "bash",
+        toolCallId: "call_456",
+        command: "ls -la",
+        filePath: null,
+        normalizedFile: null,
+        repoRoot: "/repo",
+      },
+    });
+    const written = await writer.write(event);
+
+    expect(written).toBe(true);
+
+    const content = readFileSync(sidecarPath, "utf8");
+    const parsed = JSON.parse(content.trim());
+
+    expect(parsed.event.toolCallId).toBe("call_456");
+
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  it("preserves null toolCallId for non-tool lifecycle events", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "telemetry-test-"));
+    const sessionPath = join(tmpDir, "session.jsonl");
+    const sidecarPath = join(tmpDir, "session.rules.jsonl");
+
+    const writer = createTestWriter(tmpDir);
+    writer.setSession(sessionPath);
+
+    const event = createTestEvent({
+      event: {
+        lifecycle: "session_start",
+        action: "session_start",
+        toolName: "session_start",
+        toolCallId: null,
+        command: null,
+        filePath: null,
+        normalizedFile: null,
+        repoRoot: null,
+      },
+    });
+    const written = await writer.write(event);
+
+    expect(written).toBe(true);
+
+    const content = readFileSync(sidecarPath, "utf8");
+    const parsed = JSON.parse(content.trim());
+
+    expect(parsed.event.toolCallId).toBeNull();
 
     rmSync(tmpDir, { recursive: true });
   });
