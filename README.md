@@ -183,6 +183,7 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains checkpoint suggest off` | Disable checkpoint suggestions |
 | `/brains checkpoint suggest status` | Show checkpoint suggestion status |
 | `/brains inspect` | Show inspect view instructions |
+| `/brains wi` | Wait for the next message from GitSense Chat (alias: `/brains web-input`) |
 | `/brains dismiss` | Dismiss the GitSense unavailable notice |
 | `/brains help` | Show available commands |
 

@@ -1,12 +1,13 @@
 import { copyToClipboard, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { spawn } from "node:child_process";
 import { Text } from "@earendil-works/pi-tui";
+import { buildChatUrl, getChatAppStatus, openExternalUrl } from "./chat-app.ts";
 import { loadConfig } from "./config.ts";
 import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
 import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
 import { debugLog } from "./debug-log.ts";
 import { handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
+import { handleWebInputCommand } from "./web-input.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
@@ -139,6 +140,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains inspect - open/close inspect view
       if (command === "inspect") {
         await handleInspectCommand(value, controller, ctx);
+        return;
+      }
+
+      // /brains wi (web-input) - wait for the next message from GitSense Chat
+      if (command === "wi" || command === "web-input") {
+        await handleWebInputCommand(controller, ctx, { copyText: copyToClipboard });
         return;
       }
 
@@ -341,24 +348,9 @@ async function handleInspectCommand(_value: string | undefined, controller: PiBr
   }
 
   // Check if web server is running
-  let serverStatus = "";
-  let serverUrl = "";
-  try {
-    const result = await controller.runGscCommand("app", "native", "status", "--format", "json");
-    if (result && result.code === 0) {
-      const status = JSON.parse(result.stdout);
-      if (status.running) {
-        serverStatus = `GitSense Chat is running at ${status.base_url}`;
-        serverUrl = status.base_url;
-      } else if (status.installed) {
-        serverStatus = "GitSense Chat is not running";
-      } else {
-        serverStatus = "GitSense Chat is not installed";
-      }
-    }
-  } catch {
-    // Ignore errors
-  }
+  const chatAppStatus = await getChatAppStatus(controller);
+  const serverStatus = chatAppStatus.description;
+  const serverUrl = chatAppStatus.baseUrl;
 
   // Build the explanation
   const explanation = [
@@ -438,31 +430,11 @@ async function copyCommand(command: string, label: string, ctx: ExtensionCommand
   }
 }
 
-function buildChatUrl(baseUrl: string, sessionId: string): string {
-  const url = new URL("/", baseUrl);
-  url.searchParams.set("chat", `pi-${sessionId}`);
-  return url.toString();
-}
-
 function quoteShellArg(value: string): string {
   if (process.platform === "win32") {
     return `"${value.replaceAll('"', '""')}"`;
   }
   return `'${value.replaceAll("'", `'"'"'`)}'`;
-}
-
-function openExternalUrl(url: string, platform: NodeJS.Platform): Promise<void> {
-  const command = platform === "darwin" ? "open" : platform === "win32" ? "rundll32.exe" : "xdg-open";
-  const args = platform === "win32" ? ["url.dll,FileProtocolHandler", url] : [url];
-
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { detached: true, stdio: "ignore" });
-    child.once("error", reject);
-    child.once("spawn", () => {
-      child.unref();
-      resolve();
-    });
-  });
 }
 
 function formatError(error: unknown): string {
@@ -1271,6 +1243,7 @@ function showHelp(ctx: ExtensionCommandContext): void {
   /brains build        Build/import a Brain manifest
   /brains checkpoint   Create a review checkpoint now
   /brains inspect      Show inspect view instructions
+  /brains wi           Wait for GitSense Chat input (alias: web-input)
   /brains insights     Show a static inspect snapshot
   /brains rules        Show rules status and options
   /brains rules status Show recent rule decisions
