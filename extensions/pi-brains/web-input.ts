@@ -150,6 +150,11 @@ async function showWebInputDialog(
     let finished = false;
     let cancelPending = false;
     let pollTimer: NodeJS.Timeout | undefined;
+    let heartbeatTimer: NodeJS.Timeout | undefined;
+    let pollInFlight = false;
+    let lastSuccessfulPollAt: number | undefined;
+    let pollError: string | undefined;
+    const startedAt = Date.now();
     const statusText = new Text();
     const component = buildWebInputComponent(
       tui,
@@ -184,7 +189,25 @@ async function showWebInputDialog(
     );
 
     function setStatus(message: string): void {
-      statusText.setText(theme.fg("muted", message));
+      statusTextMessage = message;
+      renderStatus();
+    }
+
+    let statusTextMessage = "Waiting for a message from GitSense Chat…";
+
+    function renderStatus(): void {
+      const elapsed = formatDuration(Date.now() - startedAt);
+      const polling = pollInFlight
+          ? "checking…"
+        : pollError
+          ? `error — retrying (${pollError})`
+          : lastSuccessfulPollAt
+            ? "healthy"
+            : "starting…";
+      statusText.setText(theme.fg(
+        "muted",
+        `${statusTextMessage}\nElapsed: ${elapsed}\nPolling: ${polling}`,
+      ));
       tui.requestRender();
     }
 
@@ -192,11 +215,15 @@ async function showWebInputDialog(
       if (finished) return;
       finished = true;
       if (pollTimer) clearTimeout(pollTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       done(result);
     }
 
     async function poll(): Promise<void> {
       if (finished || cancelPending) return;
+      pollInFlight = true;
+      pollError = undefined;
+      renderStatus();
       const result = await controller.runGscCommand(
         "pi",
         "sessions",
@@ -208,11 +235,14 @@ async function showWebInputDialog(
         request.webInputId,
         "--consume",
       );
+      pollInFlight = false;
       if (finished || cancelPending) return;
 
       if (result?.code === 0) {
         try {
           const state = parseWebInputPollResult(result.stdout);
+          lastSuccessfulPollAt = Date.now();
+          pollError = undefined;
           if (state.webInput?.status === "submitted" && state.consumed) {
             finish({ kind: "submitted", message: state.webInput.message });
             return;
@@ -223,10 +253,12 @@ async function showWebInputDialog(
           }
           setStatus("Waiting for a message from GitSense Chat…");
         } catch (error) {
-          setStatus(`Invalid gsc response: ${formatError(error)}`);
+          pollError = `invalid response: ${formatError(error)}`;
+          setStatus("Waiting for a message from GitSense Chat…");
         }
       } else {
-        setStatus(commandFailure(result, "Unable to poll web input"));
+        pollError = commandFailure(result, "Unable to poll web input");
+        setStatus("Waiting for a message from GitSense Chat…");
       }
 
       if (!finished) {
@@ -285,13 +317,17 @@ async function showWebInputDialog(
       }
 
       cancelPending = false;
+      pollError = commandFailure(result, "Unable to cancel web input");
       setStatus(commandFailure(result, "Unable to cancel web input"));
       pollTimer = setTimeout(() => {
         void poll();
       }, pollIntervalMs);
     }
 
-    setStatus("Waiting for a message from GitSense Chat…");
+    renderStatus();
+    heartbeatTimer = setInterval(() => {
+      if (!finished) renderStatus();
+    }, 1_000);
     pollTimer = setTimeout(() => {
       void poll();
     }, 0);
@@ -301,10 +337,20 @@ async function showWebInputDialog(
       dispose() {
         finished = true;
         if (pollTimer) clearTimeout(pollTimer);
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
         component.dispose?.();
       },
     };
   });
+}
+
+function formatDuration(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1_000));
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 type WebInputAction = "open" | "copy-url" | "copy-start" | "copy-install" | "cancel";

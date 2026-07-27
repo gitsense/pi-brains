@@ -58,7 +58,7 @@ function createContext(onComponent?: (component: Component) => void) {
     mode: "tui",
     ui: { notify, custom },
   } as unknown as ExtensionCommandContext;
-  return { ctx, notify };
+  return { ctx, notify, tui };
 }
 
 function createController(
@@ -201,6 +201,41 @@ describe("web input", () => {
     await handleWebInputCommand(controller, ctx, { pollIntervalMs: 0 });
 
     expect(sendUserMessage).toHaveBeenCalledWith("Won the race");
+  });
+
+  it("updates elapsed time and poll health while waiting", async () => {
+    vi.useFakeTimers();
+    try {
+      const runGscCommand = vi.fn(async (...args: string[]) => {
+        if (args.includes("create")) {
+          return { code: 0, stdout: response("waiting"), stderr: "" };
+        }
+        if (args[0] === "app") {
+          return { code: 1, stdout: "", stderr: "" };
+        }
+        if (args.includes("cancel")) {
+          return { code: 0, stdout: response("cancelled"), stderr: "" };
+        }
+        return { code: 0, stdout: response("waiting"), stderr: "" };
+      });
+      const { controller } = createController(runGscCommand);
+      let component: Component | undefined;
+      const { ctx, tui } = createContext(value => {
+        component = value;
+      });
+      const command = handleWebInputCommand(controller, ctx);
+
+      await vi.advanceTimersByTimeAsync(1_500);
+      const rendered = component?.render(120).join("\n") ?? "";
+      expect(rendered).toContain("Elapsed:");
+      expect(rendered).toContain("Polling: healthy");
+      expect(tui.requestRender).toHaveBeenCalled();
+
+      component?.handleInput?.("\u001b");
+      await command;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects malformed gsc responses", () => {
