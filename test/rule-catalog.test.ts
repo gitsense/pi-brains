@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it, vi } from "vitest";
 import {
-  handleShellRulesCommand,
+	handleRecorderRulesCommand,
+	handleShellRulesCommand,
   type RuleCatalogController,
 } from "../extensions/pi-brains/rule-catalog.ts";
 
@@ -218,5 +219,61 @@ describe("observable shell rule catalog", () => {
     await handleShellRulesCommand("", controller, ctx);
 
     expect(runGscCommand).not.toHaveBeenCalled();
+  });
+});
+
+describe("Pi edit recorder rule catalog", () => {
+  it("installs the recorder in personal scope", async () => {
+    const runGscCommand = vi.fn().mockResolvedValue({
+      code: 0,
+      stdout: JSON.stringify({ rulesAdded: ["gsc-pi-edit-history-pre", "gsc-pi-edit-history-post"] }),
+      stderr: "",
+    });
+    const { controller, setRulesEnabled } = createController(runGscCommand, false);
+    const { ctx, notify } = createContext({ confirmations: [true] });
+
+    await handleRecorderRulesCommand("personal", controller, ctx);
+
+    expect(runGscCommand).toHaveBeenCalledWith(
+      "pi", "rules", "recorder", "install", "--format", "json",
+    );
+    expect(setRulesEnabled).toHaveBeenCalledWith(true);
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Installed personal Pi edit recorder"), "info");
+  });
+
+  it("rejects repository scope", async () => {
+    const runGscCommand = vi.fn();
+    const { controller } = createController(runGscCommand);
+    const { ctx, notify } = createContext();
+
+    await handleRecorderRulesCommand("install repo", controller, ctx);
+
+    expect(runGscCommand).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("personal-only"), "warning");
+  });
+
+  it("shows recorder status", async () => {
+    const runGscCommand = vi.fn().mockResolvedValue({
+      code: 0,
+      stdout: JSON.stringify({
+        installed: true,
+        storageRoot: "/Users/test/gitsense/data/pi/edit-history",
+        rules: {
+          "gsc-pi-edit-history-pre": true,
+          "gsc-pi-edit-history-post": true,
+        },
+      }),
+      stderr: "",
+    });
+    const { controller } = createController(runGscCommand);
+    const { ctx, notify } = createContext();
+
+    await handleRecorderRulesCommand("status", controller, ctx);
+
+    expect(runGscCommand).toHaveBeenCalledWith(
+      "pi", "rules", "recorder", "status", "--format", "json",
+    );
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Pre-capture   Installed"), "info");
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("/Users/test/gitsense/data/pi/edit-history/<session-id>"), "info");
   });
 });

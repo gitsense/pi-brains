@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 
 const SHELL_RULE_ID = "rule_pi_bash_observability_v1";
+const RECORDER_PRE_RULE_ID = "gsc-pi-edit-history-pre";
+const RECORDER_POST_RULE_ID = "gsc-pi-edit-history-post";
 const BUNDLE_REVISION_TAG_PREFIX = "bundle-revision-";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -14,6 +16,12 @@ export interface RuleCatalogController {
   runGscCommand(...args: string[]): Promise<{ code: number; stdout: string; stderr: string } | null>;
   isRulesEnabled(): boolean;
   setRulesEnabled(enabled: boolean): void;
+}
+
+interface RecorderStatus {
+  installed?: unknown;
+  storageRoot?: unknown;
+  rules?: Record<string, unknown>;
 }
 
 interface ListedRule {
@@ -85,6 +93,132 @@ export async function handleShellRulesCommand(
   }
 
   await installShellRule(action, scope, controller, ctx);
+}
+
+export async function handleRecorderRulesCommand(
+  value: string,
+  controller: RuleCatalogController,
+  ctx: ExtensionCommandContext,
+): Promise<void> {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  let action = parts[0];
+  let scope = parts[1];
+
+  if (action === "personal") {
+    action = "install";
+    scope = "personal";
+  }
+  if (!action) {
+    const selected = await ctx.ui.select("Pi edit recorder", [
+      "Install personal recorder",
+      "Status",
+      "Remove",
+      "Cancel",
+    ]);
+    if (!selected || selected === "Cancel") return;
+    action = selected.startsWith("Install") ? "install" : selected.startsWith("Remove") ? "remove" : "status";
+    scope = "personal";
+  }
+  if (scope && scope !== "personal") {
+    ctx.ui.notify("The Pi edit recorder is personal-only; repository installation is unsupported.", "warning");
+    return;
+  }
+  if (parts.length > 2 || (parts.length === 2 && parts[1] !== "personal")) {
+    notifyRecorderUsage(ctx);
+    return;
+  }
+
+  if (action === "status") {
+    await showRecorderRuleStatus(controller, ctx);
+    return;
+  }
+  if (action === "remove" || action === "off") {
+    await removeRecorderRules(controller, ctx);
+    return;
+  }
+  if (action === "install" || action === "on") {
+    await installRecorderRules(controller, ctx);
+    return;
+  }
+  notifyRecorderUsage(ctx);
+}
+
+async function installRecorderRules(controller: RuleCatalogController, ctx: ExtensionCommandContext): Promise<void> {
+  const confirmed = await ctx.ui.confirm(
+    "Install the personal Pi edit recorder?",
+    "This records exact before-and-after file bytes for every Pi edit and write tool call. Runtime data is stored under GSC_HOME/data/pi/edit-history/<session-id>, including files outside the starting repository. The pre-edit hook blocks a mutation if the before-state cannot be captured.",
+  );
+  if (!confirmed) return;
+
+  const result = await controller.runGscCommand("pi", "rules", "recorder", "install", "--format", "json");
+  if (!result || result.code !== 0) {
+    notifyFailure(ctx, "install the Pi edit recorder", result);
+    return;
+  }
+  if (!controller.isRulesEnabled()) controller.setRulesEnabled(true);
+  const outcome = parseRecorderInstallOutcome(result.stdout);
+  ctx.ui.notify(`${outcome} personal Pi edit recorder. Rules checking: ON`, "info");
+}
+
+async function removeRecorderRules(controller: RuleCatalogController, ctx: ExtensionCommandContext): Promise<void> {
+  const status = await loadRecorderStatus(controller);
+  if (!status) {
+    ctx.ui.notify("Could not read Pi edit recorder status.", "error");
+    return;
+  }
+  if (!status.installed && !status.rules?.[RECORDER_PRE_RULE_ID] && !status.rules?.[RECORDER_POST_RULE_ID]) {
+    ctx.ui.notify("The personal Pi edit recorder is not installed.", "info");
+    return;
+  }
+  const confirmed = await ctx.ui.confirm(
+    "Remove the personal Pi edit recorder?",
+    "Future Pi edit and write calls will no longer receive exact before-and-after capture. Existing session recorder data is not deleted.",
+  );
+  if (!confirmed) return;
+  const result = await controller.runGscCommand("pi", "rules", "recorder", "remove", "--format", "json");
+  if (!result || result.code !== 0) {
+    notifyFailure(ctx, "remove the Pi edit recorder", result);
+    return;
+  }
+  ctx.ui.notify("Personal Pi edit recorder removed. Existing recorder data was kept.", "info");
+}
+
+async function showRecorderRuleStatus(controller: RuleCatalogController, ctx: ExtensionCommandContext): Promise<void> {
+  const status = await loadRecorderStatus(controller);
+  if (!status) {
+    ctx.ui.notify("Could not read Pi edit recorder status.", "error");
+    return;
+  }
+  const pre = Boolean(status.rules?.[RECORDER_PRE_RULE_ID]);
+  const post = Boolean(status.rules?.[RECORDER_POST_RULE_ID]);
+  const storageRoot = typeof status.storageRoot === "string"
+    ? `${status.storageRoot.replace(/[\\/]$/, "")}/<session-id>`
+    : "$GSC_HOME/data/pi/edit-history/<session-id>";
+  ctx.ui.notify(
+    `Pi edit recorder\n\nScope         Personal\nCoverage      All Pi sessions\nStorage       ${storageRoot}\nPre-capture   ${pre ? "Installed" : "Not installed"}\nPost-capture  ${post ? "Installed" : "Not installed"}\nRules check   ${controller.isRulesEnabled() ? "ON" : "OFF"}`,
+    "info",
+  );
+}
+
+async function loadRecorderStatus(controller: RuleCatalogController): Promise<RecorderStatus | null> {
+  const result = await controller.runGscCommand("pi", "rules", "recorder", "status", "--format", "json");
+  if (!result || result.code !== 0) return null;
+  try {
+    return JSON.parse(result.stdout) as RecorderStatus;
+  } catch {
+    return null;
+  }
+}
+
+function parseRecorderInstallOutcome(stdout: string): "Installed" | "Updated" | "Applied" {
+  try {
+    const parsed = JSON.parse(stdout) as { rulesAdded?: unknown; rulesReplaced?: unknown };
+    if (Array.isArray(parsed.rulesReplaced) && parsed.rulesReplaced.length > 0) return "Updated";
+    if (Array.isArray(parsed.rulesAdded) && parsed.rulesAdded.length > 0) return "Installed";
+  } catch {
+    // Keep a truthful generic result for older gsc versions or non-JSON output.
+  }
+  return "Applied";
 }
 
 async function resolveScope(value: string | undefined, ctx: ExtensionCommandContext): Promise<RuleScope | null> {
@@ -290,6 +424,13 @@ function notifyFailure(
 function notifyUsage(ctx: ExtensionCommandContext): void {
   ctx.ui.notify(
     "Usage: /brains rules shell [advisory|strict|off|status] [personal|repo]",
+    "warning",
+  );
+}
+
+function notifyRecorderUsage(ctx: ExtensionCommandContext): void {
+  ctx.ui.notify(
+    "Usage: /brains rules recorder [personal|install|status|remove]",
     "warning",
   );
 }

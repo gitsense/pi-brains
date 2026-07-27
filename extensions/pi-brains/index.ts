@@ -6,7 +6,7 @@ import { PiBrainsController, type GuideCheckpointRequestResult } from "./control
 import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
 import { debugLog } from "./debug-log.ts";
 import { buildInspectDialog } from "./inspect-view.ts";
-import { handleShellRulesCommand } from "./rule-catalog.ts";
+import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 import { handleWebInputCommand } from "./web-input.ts";
 
@@ -107,9 +107,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       const command = parts[0];
       const value = parts.slice(1).join(" ");
 
-      // /brains - initialize expert context
+      // /brains - show initialization and help options
       if (!command) {
-        await initializeBrains(controller, pi, ctx as unknown as ExtensionContext);
+        await initializeBrains(controller, ctx as unknown as ExtensionContext);
         return;
       }
 
@@ -243,10 +243,15 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   });
 }
 
-async function initializeBrains(controller: PiBrainsController, pi: ExtensionAPI, ctx: ExtensionContext): Promise<void> {
-  // Check if gsc is available
-  const gscStatus = controller.getGscStatus();
-  if (gscStatus === "missing") {
+async function initializeBrains(controller: PiBrainsController, ctx: ExtensionContext): Promise<void> {
+  // Check availability without sending anything to the model. Session startup
+  // normally performs this check; retry explicitly if it is still pending.
+  let gscAvailable = controller.getGscStatus() === "available";
+  if (controller.getGscStatus() === "checking") {
+    const result = await controller.runGscCommand("--version");
+    gscAvailable = result?.code === 0;
+  }
+  if (!gscAvailable) {
     const installMsg = `gsc not found. GitSense provides repository-aware rules and expert context for coding agents.
 
 Install via curl:
@@ -263,13 +268,17 @@ Once installed, run /brains again to enable expert context.`;
     return;
   }
 
-  // Check if agent has already run gsc experts init
-  if (controller.hasRunExpertsInit(ctx)) {
+  const initialized = controller.hasRunExpertsInit(ctx);
+  const choice = await ctx.ui.select("GitSense Brains", [
+    initialized ? "Reinitialize expert context" : "Initialize expert context",
+    "Help",
+    "Cancel",
+  ]);
+  if (!choice || choice === "Cancel") return;
+  if (choice === "Help") {
     showHelp(ctx as unknown as ExtensionCommandContext);
     return;
   }
-
-  // Send user message to agent
   controller.sendUserMessage("run `gsc experts init` and follow instructions");
 }
 
@@ -279,6 +288,11 @@ async function handleRulesCommand(value: string | undefined, controller: PiBrain
 
   if (normalized === "shell" || normalized.startsWith("shell ")) {
     await handleShellRulesCommand(normalized.slice("shell".length).trim(), controller, ctx);
+    return;
+  }
+
+  if (normalized === "recorder" || normalized.startsWith("recorder ")) {
+    await handleRecorderRulesCommand(normalized.slice("recorder".length).trim(), controller, ctx);
     return;
   }
 
@@ -314,6 +328,7 @@ injects the matched instructions, and lets the agent retry with context.
   /brains rules on     Enable rules checking
   /brains rules status Show recent rule decisions
   /brains rules shell  Configure observable shell discovery
+  /brains rules recorder personal  Install the personal Pi edit recorder
 
 Managing rules:
 
@@ -1207,16 +1222,14 @@ function buildPostCompactMessage(noteId: string, note: any): string {
 function showHelp(ctx: ExtensionCommandContext): void {
   const help = `/brains commands:
 
-  /brains              Initialize expert context (gsc experts init)
+  /brains              Show initialization and help options
   /brains status       Show current GitSense configuration
   /brains build        Build/import a Brain manifest
   /brains checkpoint   Create a review checkpoint now
-  /brains inspect      Show inspect view instructions
+  /brains inspect      Inspect the live Pi session in a terminal or browser
   /brains wi           Wait for GitSense Chat input (alias: web-input)
   /brains insights     Show a static inspect snapshot
-  /brains rules        Show rules status and options
-  /brains rules status Show recent rule decisions
-  /brains rules shell  Configure observable shell discovery
+  /brains rules        Configure rules and show available options
   /brains scm          Show compacted messages (alias: show-compact-messages)
   /brains pc           Post-compact enrichment (alias: post-compact)
   /brains debug        Toggle debug mode
