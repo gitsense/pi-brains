@@ -1,10 +1,11 @@
 import { copyToClipboard, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
-import { buildChatUrl, getChatAppStatus, openExternalUrl } from "./chat-app.ts";
+import { getChatAppStatus, openExternalUrl } from "./chat-app.ts";
 import { loadConfig } from "./config.ts";
 import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
 import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
 import { debugLog } from "./debug-log.ts";
+import { buildInspectDialog } from "./inspect-view.ts";
 import { handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 import { handleWebInputCommand } from "./web-input.ts";
@@ -349,74 +350,42 @@ async function handleInspectCommand(_value: string | undefined, controller: PiBr
 
   // Check if web server is running
   const chatAppStatus = await getChatAppStatus(controller);
-  const serverStatus = chatAppStatus.description;
-  const serverUrl = chatAppStatus.baseUrl;
-
-  // Build the explanation
-  const explanation = [
-    "View the current session in a companion view.",
-    "",
-    "You can:",
-    "• Split your terminal and run the command for a TUI view",
-    "• Open in browser for a web view (requires GitSense Chat)",
-    "",
-    "Split your terminal and run:",
-    `  ${gscCmd}`,
-  ];
-
-  if (shortcuts.length > 0) {
-    explanation.push("");
-    explanation.push("Split shortcuts:");
-    shortcuts.forEach(s => explanation.push(`  ${s}`));
-  }
-
-  // Build chat URL
-  const chatUrl = sessionId && serverUrl ? buildChatUrl(serverUrl, sessionId) : "";
-
-  // Build options
-  const options: string[] = [];
-
-  options.push(`Copy terminal command: ${gscCmd}`);
-
-  if (chatUrl) {
-    options.push(`Open in browser: ${chatUrl}`);
-    options.push(`Copy URL: ${chatUrl}`);
-  } else if (serverStatus && serverStatus.includes("not running")) {
-    options.push("Copy start command: gsc app native start");
-  } else if (serverStatus && serverStatus.includes("not installed")) {
-    options.push("Copy install command: gsc app native install");
-  }
-
-  options.push("Close");
+  const dialog = buildInspectDialog({
+    sessionId,
+    gscCommand: gscCmd,
+    shortcuts,
+    chatAppStatus,
+  });
 
   // Show select dialog
-  const choice = await ctx.ui.select(explanation.join("\n"), options);
+  const choice = await ctx.ui.select(dialog.message, dialog.options.map(option => option.label));
+  const action = dialog.options.find(option => option.label === choice)?.action;
 
   // Handle choice
-  if (choice?.startsWith("Copy terminal command")) {
+  if (action === "copy-terminal") {
     try {
       await copyToClipboard(gscCmd);
       ctx.ui.notify("Command copied to clipboard", "info");
     } catch (error) {
       ctx.ui.notify(`Failed to copy command: ${formatError(error)}`, "error");
     }
-  } else if (choice?.startsWith("Open in browser")) {
+  } else if (action === "open-chat") {
     try {
-      await openExternalUrl(chatUrl, platform);
-      ctx.ui.notify(`Opening ${chatUrl}`, "info");
+      await openExternalUrl(dialog.chatUrl, platform);
+      ctx.ui.notify(`Opening ${dialog.chatUrl}`, "info");
     } catch (error) {
       ctx.ui.notify(`Failed to open browser: ${formatError(error)}`, "error");
     }
-  } else if (choice?.startsWith("Copy URL")) {
+  } else if (action === "copy-chat-url") {
     try {
-      await copyToClipboard(chatUrl);
+      await copyToClipboard(dialog.chatUrl);
       ctx.ui.notify("URL copied to clipboard", "info");
     } catch (error) {
       ctx.ui.notify(`Failed to copy URL: ${formatError(error)}`, "error");
     }
-  } else if (choice?.startsWith("Copy start command")) {
+  } else if (action === "copy-start") {
     await copyCommand("gsc app native start", "Start command", ctx);
-  } else if (choice?.startsWith("Copy install command")) {
+  } else if (action === "copy-install") {
     await copyCommand("gsc app native install", "Install command", ctx);
   }
 }
