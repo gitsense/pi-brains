@@ -8,12 +8,13 @@ import { debugLog } from "./debug-log.ts";
 import { buildInspectDialog } from "./inspect-view.ts";
 import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
-import { handleWebInputCommand } from "./web-input.ts";
+import { handleInboxCommand, startInboxWatcher } from "./inbox.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
   const controller = new PiBrainsController(pi, config);
   let brainsStatusPending = false;
+  let stopInboxWatcher: (() => void) | null = null;
 
   // Initialize checkpoint event handlers
   initCheckpointHandlers(pi);
@@ -31,6 +32,8 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   pi.on("session_start", (_event, ctx) => {
     brainsStatusPending = false;
     controller.start(ctx);
+    stopInboxWatcher?.();
+    stopInboxWatcher = startInboxWatcher(controller, ctx);
   });
 
   pi.on("input", (event, ctx) => {
@@ -97,6 +100,8 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   });
 
   pi.on("session_shutdown", () => {
+    stopInboxWatcher?.();
+    stopInboxWatcher = null;
     controller.dispose();
   });
 
@@ -144,9 +149,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains wi (web-input) - wait for the next message from GitSense Chat
-      if (command === "wi" || command === "web-input") {
-        await handleWebInputCommand(controller, ctx, { copyText: copyToClipboard });
+      // /brains inbox - review messages drafted in GitSense Chat
+      if (command === "inbox") {
+        await handleInboxCommand(controller, ctx, value);
         return;
       }
 
@@ -1227,7 +1232,8 @@ function showHelp(ctx: ExtensionCommandContext): void {
   /brains build        Build/import a Brain manifest
   /brains checkpoint   Create a review checkpoint now
   /brains inspect      Inspect the live Pi session in a terminal or browser
-  /brains wi           Wait for GitSense Chat input (alias: web-input)
+  /brains inbox        Review messages drafted in GitSense Chat
+  /brains inbox list   List all messages in the session inbox
   /brains insights     Show a static inspect snapshot
   /brains rules        Configure rules and show available options
   /brains scm          Show compacted messages (alias: show-compact-messages)
