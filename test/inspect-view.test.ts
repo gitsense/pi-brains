@@ -102,4 +102,21 @@ describe("inspect dialog", () => {
       "close",
     ]);
   });
+
+  it("explains that a new session has nothing to inspect yet", () => {
+    const dialog = buildInspectDialog({
+      sessionId: SESSION_ID,
+      sessionFileExists: false,
+      gscCommand: GSC_COMMAND,
+      shortcuts: [],
+      chatAppStatus: status("running", "http://127.0.0.1:3357"),
+    });
+
+    expect(dialog.message).toContain("NO SESSION FILE");
+    expect(dialog.message).toContain("This Pi session has a UUID, but its JSONL file has not been created yet.");
+    expect(dialog.message).toContain("Pi creates it after the first message is submitted.");
+    expect(dialog.message).toContain("There is currently nothing to inspect.");
+    expect(dialog.message).not.toContain("No messages yet; Pi creates the session file after the first message.");
+    expect(dialog.chatUrl).toBe("http://127.0.0.1:3357/?chat=pi-11111111-1111-4111-8111-111111111111");
+  });
 });

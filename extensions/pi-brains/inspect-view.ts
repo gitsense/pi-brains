@@ -21,25 +21,35 @@ export interface InspectDialog {
 
 export interface InspectDialogInput {
   sessionId: string | null;
+  sessionFileExists?: boolean;
   gscCommand: string;
   shortcuts: string[];
   chatAppStatus: ChatAppStatus;
 }
 
 export function buildInspectDialog(input: InspectDialogInput): InspectDialog {
+  const sessionFileExists = input.sessionFileExists ?? true;
   const chatUrl = input.sessionId && input.chatAppStatus.baseUrl
     ? buildChatUrl(input.chatAppStatus.baseUrl, input.sessionId)
     : "";
   const lines = [
     "Inspect this session in another terminal or GitSense Chat.",
-    "",
-    "Terminal:",
-    `  ${input.gscCommand}`,
   ];
 
   if (!input.sessionId) {
     lines.push("  No active session yet; this command waits for one.");
+  } else if (!sessionFileExists) {
+    lines.push(
+      "",
+      "NO SESSION FILE",
+      "",
+      "This Pi session has a UUID, but its JSONL file has not been created yet.",
+      "Pi creates it after the first message is submitted.",
+      "There is currently nothing to inspect.",
+    );
   }
+
+  lines.push("", "Terminal:", `  ${input.gscCommand}`);
   if (input.shortcuts.length > 0) {
     lines.push("");
     lines.push("Split shortcuts:");
