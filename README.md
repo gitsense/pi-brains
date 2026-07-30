@@ -8,6 +8,7 @@
 
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
+  <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
@@ -30,6 +31,32 @@ Start Pi in a workspace and run:
 ```
 
 If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
+
+## See it in action
+
+<table width="100%">
+  <tr>
+    <td width="33%" align="center"><code>/brains rules on</code></td>
+    <td width="33%" align="center"><code>/brains inspect</code></td>
+    <td width="33%" align="center"><code>/brains sessions</code></td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/demo/rules-on-placeholder.png" alt="Placeholder for the /brains rules on demo video" width="280">
+    </td>
+    <td align="center">
+      <img src="assets/demo/inspect-placeholder.png" alt="Placeholder for the /brains inspect demo video" width="280">
+    </td>
+    <td align="center">
+      <img src="assets/demo/sessions-placeholder.png" alt="Placeholder for the /brains sessions demo video" width="280">
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">Turn on guardrails that stop risky edits and enforce project behavior.</td>
+    <td valign="top">Open the active session in GitSense Chat to surface insights, then send complex messages through its richer session inbox.</td>
+    <td valign="top">Open GitSense Chat to monitor active agents, find any session, surface insights, and send complex follow-ups.</td>
+  </tr>
+</table>
 
 ## How it works
 
