@@ -48,7 +48,9 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
     <td width="50%" valign="top">
       <p align="center"><code>/brains inspect</code></p>
       <p align="center">
-        <img src="assets/demo/inspect-placeholder.png" alt="Placeholder for the /brains inspect demo video" width="360">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
+          <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect demo video" width="360">
+        </a>
       </p>
       <p>Open the active session in GitSense Chat to turn a wall of tool calls into actionable insights.</p>
     </td>
