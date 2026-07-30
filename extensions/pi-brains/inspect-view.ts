@@ -70,12 +70,13 @@ export function buildInspectDialog(input: InspectDialogInput): InspectDialog {
       { action: "open-chat", label: `Open GitSense Chat: ${chatUrl}` },
       { action: "copy-chat-url", label: `Copy GitSense Chat URL: ${chatUrl}` },
     );
-  } else if (input.chatAppStatus.state === "stopped") {
+  }
+  if (input.chatAppStatus.state === "stopped") {
     options.push({
       action: "copy-start",
       label: "Copy start command: gsc app native start",
     });
-  } else if (input.chatAppStatus.state === "not-installed") {
+  } else if (!chatUrl && input.chatAppStatus.state === "not-installed") {
     options.push({
       action: "copy-install",
       label: "Copy install command: gsc app native install",
@@ -101,10 +102,12 @@ function formatChatAppStatus(
     return lines;
   }
   if (status.state === "stopped") {
-    return [
+    const lines = [
       "  Not running.",
       "  Start it with: gsc app native start",
     ];
+    if (sessionId && chatUrl) lines.push(`  Session URL: ${chatUrl}`);
+    return lines;
   }
   if (status.state === "not-installed") {
     return [

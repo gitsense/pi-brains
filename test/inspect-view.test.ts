@@ -51,6 +51,25 @@ describe("inspect dialog", () => {
     ]);
   });
 
+  it("keeps the Chat URL actions available while the app is stopped", () => {
+    const chatUrl = "http://127.0.0.1:3357/?chat=pi-11111111-1111-4111-8111-111111111111";
+    const dialog = buildInspectDialog({
+      sessionId: SESSION_ID,
+      gscCommand: GSC_COMMAND,
+      shortcuts: [],
+      chatAppStatus: status("stopped", "http://127.0.0.1:3357"),
+    });
+
+    expect(dialog.message).toContain(`Session URL: ${chatUrl}`);
+    expect(dialog.options.map(option => option.action)).toEqual([
+      "copy-terminal",
+      "open-chat",
+      "copy-chat-url",
+      "copy-start",
+      "close",
+    ]);
+  });
+
   it("explains how to install the app", () => {
     const dialog = buildInspectDialog({
       sessionId: SESSION_ID,

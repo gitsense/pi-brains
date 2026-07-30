@@ -16,6 +16,8 @@ export interface ChatAppStatus {
   description: string;
 }
 
+const LOCAL_CHAT_HOST = "http://127.0.0.1";
+
 export async function getChatAppStatus(controller: ChatAppController): Promise<ChatAppStatus> {
   const unavailable: ChatAppStatus = {
     state: "unavailable",
@@ -27,20 +29,22 @@ export async function getChatAppStatus(controller: ChatAppController): Promise<C
     const result = await controller.runGscCommand("app", "native", "status", "--format", "json");
     if (!result || result.code !== 0) return unavailable;
 
-    const value: unknown = JSON.parse(result.stdout);
+    const value: unknown = parseStatusOutput(result.stdout);
     if (!isRecord(value)) return unavailable;
 
-    if (value.running === true && typeof value.base_url === "string") {
+    const baseUrl = getBaseUrl(value);
+    const status = typeof value.status === "string" ? value.status.toLowerCase() : "";
+    if (value.running === true || status === "running") {
       return {
         state: "running",
-        baseUrl: value.base_url,
-        description: `GitSense Chat is running at ${value.base_url}`,
+        baseUrl,
+        description: baseUrl ? `GitSense Chat is running at ${baseUrl}` : "GitSense Chat is running",
       };
     }
-    if (value.installed === true) {
+    if (value.installed === true || status === "stopped") {
       return {
         state: "stopped",
-        baseUrl: "",
+        baseUrl,
         description: "GitSense Chat is not running",
       };
     }
@@ -52,6 +56,28 @@ export async function getChatAppStatus(controller: ChatAppController): Promise<C
   } catch {
     return unavailable;
   }
+}
+
+function parseStatusOutput(stdout: string): unknown {
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    const port = stdout.match(/^\s*Port:\s*(\d+)/im)?.[1];
+    const installed = stdout.match(/^\s*Installed:\s*(true|false)/im)?.[1];
+    const status = stdout.match(/^\s*Status:\s*(Running|Stopped)/im)?.[1]?.toLowerCase();
+    if (!port && !installed && !status) return null;
+    return {
+      port: port ? Number(port) : undefined,
+      installed: installed === "true" ? true : installed === "false" ? false : undefined,
+      status,
+    };
+  }
+}
+
+function getBaseUrl(value: Record<string, unknown>): string {
+  if (typeof value.base_url === "string" && value.base_url.length > 0) return value.base_url;
+  const port = typeof value.port === "number" ? value.port : Number(value.port);
+  return Number.isInteger(port) && port > 0 ? `${LOCAL_CHAT_HOST}:${port}` : "";
 }
 
 export function buildChatUrl(baseUrl: string, sessionId: string): string {
