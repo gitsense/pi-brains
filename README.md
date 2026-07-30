@@ -39,7 +39,9 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
     <td width="50%" valign="top">
       <p align="center"><code>/brains rules on</code></p>
       <p align="center">
-        <video src="assets/demo/brains-rules-on.mp4" controls width="360"></video>
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-rules-on.mp4">
+          <img src="assets/demo/brains-rules-on.png" alt="Watch the /brains rules on demo video" width="360">
+        </a>
       </p>
       <p>Turn on guardrails that stop risky edits and enforce project behavior.</p>
     </td>
