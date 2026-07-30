@@ -33,6 +33,7 @@ describe("configuration", () => {
       rulesEnabled: true,
       debug: false,
       guideEnabled: false,
+      inboxAutoAccept: false,
     });
   });
 });

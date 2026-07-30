@@ -158,9 +158,23 @@ export class RuleEngine {
 
       this.debug.log(`matched ${rules.rules.length} rules`);
 
+      // Declarative post-tool guidance describes obligations created by a
+      // successful operation. Failed tools did not create those obligations,
+      // and must not consume their once-per-session delivery state.
+      const applicableRules = context.event.name === "post_tool_use" && context.payload.toolResult?.isError
+        ? rules.rules.filter(rule => rule.type === "executable")
+        : rules.rules;
+      if (applicableRules.length !== rules.rules.length) {
+        this.debug.log(`skipping declarative post-tool rules for failed tool result`);
+      }
+      if (applicableRules.length === 0) {
+        this.debug.log(`no applicable rules remain after tool-result filtering`);
+        return undefined;
+      }
+
       // 3. Filter out already-delivered rules (once-per-rule-hash)
-      const action = context.payload?.toolCall?.action || "read";
-      const undeliveredRules = rules.rules.filter(rule => {
+      const action = rules.query?.action || context.payload?.toolCall?.action || "read";
+      const undeliveredRules = applicableRules.filter(rule => {
         // Filter declarative rules
         if (rule.type === "declarative") {
           const deliveryKey = this.buildDeclarativeDeliveryKey(rules, rule, action as RuleAction, context.session.id);
@@ -1059,8 +1073,20 @@ export class RuleEngine {
 
     // Determine lifecycle event
     const lifecycleEvent = query.event || DEFAULT_LIFECYCLE_EVENT;
+    const blockingTriggers = matchedPackets.filter(
+      p => p.type === "executable" && p.triggerResult?.block
+    );
+    const policyBlocked = blockingTriggers.length > 0;
 
-    lines.push("GitSense matched repository rules before this lifecycle event.");
+    if (policyBlocked) {
+      lines.push("GitSense blocked this tool call because a repository policy condition was not met.");
+    } else {
+      lines.push("GitSense paused this tool call once to add applicable repository instructions to the agent's context.");
+      lines.push("The instructions matched this operation; no violation was detected.");
+    }
+    lines.push("");
+    lines.push("IMPORTANT: THE ORIGINAL TOOL CALL WAS NOT EXECUTED.");
+    lines.push("The original operation produced no result or changes.");
     lines.push("");
     lines.push(`Event: ${lifecycleEvent}`);
     lines.push("Agent: Pi");
@@ -1154,22 +1180,23 @@ export class RuleEngine {
       ruleIndex++;
     }
 
-    // Required next steps
-    lines.push("Required next steps:");
+    // Next steps
+    lines.push("Next steps:");
 
     if (undeliveredInstructions.length > 0) {
-      lines.push("- Apply all deterministic instructions above.");
+      lines.push("- Review and apply the instructions above while performing the operation.");
     }
 
-    const blockingTriggers = matchedPackets.filter(
-      p => p.type === "executable" && p.triggerResult?.block
-    );
     if (blockingTriggers.length > 0) {
       lines.push("- Address all blocking trigger results above.");
     }
 
-    lines.push("- Run any requested `gsc` commands, loading the required `gsc experts guide ...` first.");
-    lines.push("- Retry the original tool call only after satisfying the rule packet.");
+    if (policyBlocked) {
+      lines.push("- Retry the original tool call after resolving the blocking condition.");
+    } else {
+      lines.push("- Retry the original tool call; the applicable instructions are now in context.");
+    }
+    lines.push("- Do not continue as though the original tool call succeeded.");
 
     return lines.join("\n");
   }

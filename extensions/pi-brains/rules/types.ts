@@ -375,6 +375,7 @@ export interface ExecutionMatchedRule {
   summary: string;
   instructions?: string[];
   priority: number;
+  importance?: string;
   match: {
     kind: string;
     value: string;

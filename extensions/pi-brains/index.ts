@@ -1,20 +1,22 @@
+import { existsSync } from "node:fs";
 import { copyToClipboard, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { getChatAppStatus, openExternalUrl } from "./chat-app.ts";
-import { loadConfig } from "./config.ts";
+import { loadConfig, saveConfig } from "./config.ts";
 import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
 import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
 import { debugLog } from "./debug-log.ts";
 import { buildInspectDialog } from "./inspect-view.ts";
 import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
-import { handleInboxCommand, startInboxWatcher } from "./inbox.ts";
+import { handleInboxAutoCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
+import { showOutputPanel } from "./output-panel.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
   const controller = new PiBrainsController(pi, config);
   let brainsStatusPending = false;
-  let stopInboxWatcher: (() => void) | null = null;
+  let inboxWatcher: InboxWatcherHandle | null = null;
 
   // Initialize checkpoint event handlers
   initCheckpointHandlers(pi);
@@ -32,8 +34,17 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   pi.on("session_start", (_event, ctx) => {
     brainsStatusPending = false;
     controller.start(ctx);
-    stopInboxWatcher?.();
-    stopInboxWatcher = startInboxWatcher(controller, ctx);
+    inboxWatcher?.stop();
+    inboxWatcher = startInboxWatcher(controller, ctx, {
+      initialAutoAccept: config.inboxAutoAccept,
+      onAutoAcceptChange: (enabled) => {
+        config.inboxAutoAccept = enabled;
+        void saveConfig(config);
+      },
+    });
+    if (config.inboxAutoAccept) {
+      ctx.ui.notify("Inbox auto-accept is ON. New messages will be delivered automatically.", "warning");
+    }
   });
 
   pi.on("input", (event, ctx) => {
@@ -100,8 +111,8 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   });
 
   pi.on("session_shutdown", () => {
-    stopInboxWatcher?.();
-    stopInboxWatcher = null;
+    inboxWatcher?.stop();
+    inboxWatcher = null;
     controller.dispose();
   });
 
@@ -121,7 +132,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains insights - show the current inspect state as a notification
       if (command === "insights") {
         const output = controller.renderInsightsSnapshot();
-        ctx.ui.notify(output || "No insights available", "info");
+        await showOutputPanel(ctx as unknown as ExtensionCommandContext, "Brains Insights", output || "No insights available");
         return;
       }
 
@@ -151,19 +162,23 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
       // /brains inbox - review messages drafted in GitSense Chat
       if (command === "inbox") {
-        await handleInboxCommand(controller, ctx, value);
+        if (value === "auto" || value.startsWith("auto ")) {
+          await handleInboxAutoCommand(value.slice("auto".length), inboxWatcher, ctx);
+        } else {
+          await handleInboxCommand(controller, ctx, value, inboxWatcher);
+        }
         return;
       }
 
       // /brains about - what GitSense can do
       if (command === "about") {
-        showAbout(ctx as unknown as ExtensionCommandContext);
+        await showAbout(ctx as unknown as ExtensionCommandContext);
         return;
       }
 
       // /brains help - show available commands
       if (command === "help") {
-        showHelp(ctx as unknown as ExtensionCommandContext);
+        await showHelp(ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -281,7 +296,7 @@ Once installed, run /brains again to enable expert context.`;
   ]);
   if (!choice || choice === "Cancel") return;
   if (choice === "Help") {
-    showHelp(ctx as unknown as ExtensionCommandContext);
+    await showHelp(ctx as unknown as ExtensionCommandContext);
     return;
   }
   controller.sendUserMessage("run `gsc experts init` and follow instructions");
@@ -317,7 +332,7 @@ async function handleRulesCommand(value: string | undefined, controller: PiBrain
 
   // /brains rules status
   if (value === "status") {
-    ctx.ui.notify(controller.getRulesStatus(), "info");
+    await showOutputPanel(ctx, "Rules Status", controller.getRulesStatus());
     return;
   }
 
@@ -341,12 +356,14 @@ Managing rules:
     "Add a rule for packages/ai/src that requires running npm run check"
     "Update rule <id> to include test files"
     "Delete rule <id>"`;
-  ctx.ui.notify(rulesHelp, "info");
+  await showOutputPanel(ctx, "Rules", rulesHelp);
 }
 
 async function handleInspectCommand(_value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
   const sessionId = controller.getSessionId();
   const cwd = controller.getCwd();
+  const sessionFile = ctx.sessionManager.getSessionFile?.() ?? null;
+  const sessionFileExists = sessionFile !== null && existsSync(sessionFile);
 
   // Build the gsc command
   const gscCmd = sessionId
@@ -372,6 +389,7 @@ async function handleInspectCommand(_value: string | undefined, controller: PiBr
   const chatAppStatus = await getChatAppStatus(controller);
   const dialog = buildInspectDialog({
     sessionId,
+    sessionFileExists,
     gscCommand: gscCmd,
     shortcuts,
     chatAppStatus,
@@ -458,7 +476,7 @@ For a name like "code-intent", gsc looks for .gitsense/manifests/code-intent.jso
 Current Brains:
 
 ${brains || "No active Brains found."}`;
-    ctx.ui.notify(help, "info");
+    await showOutputPanel(ctx, "Build Brains", help);
     return;
   }
 
@@ -468,7 +486,7 @@ ${brains || "No active Brains found."}`;
   ctx.ui.notify(output || `Brain build completed${manifest ? ` for ${manifest}` : ""}`, "info");
 }
 
-function showAbout(ctx: ExtensionCommandContext): void {
+async function showAbout(ctx: ExtensionCommandContext): Promise<void> {
   const about = `GitSense (gsc) turns domain knowledge into queryable intelligence for coding agents.
 
 What gsc can do:
@@ -492,7 +510,7 @@ Source and documentation:
   GitSense Chat          https://github.com/gitsense/chat
 
 Run \`gsc --help\` for the full command reference.`;
-  ctx.ui.notify(about, "info");
+  await showOutputPanel(ctx, "About GitSense", about);
 }
 
 async function handleCheckpointCommand(value: string | undefined, pi: ExtensionAPI, controller: PiBrainsController, ctx: ExtensionContext): Promise<void> {
@@ -931,7 +949,7 @@ async function handleShowCompactMessages(
       notice += "\n";
     }
 
-    ctx.ui.notify(notice, "info");
+    await showOutputPanel(ctx, "Compaction Messages", notice);
   } catch (error) {
     ctx.ui.notify(`Error: ${error instanceof Error ? error.message : String(error)}`, "error");
   }
@@ -1224,25 +1242,26 @@ function buildPostCompactMessage(noteId: string, note: any): string {
   return message;
 }
 
-function showHelp(ctx: ExtensionCommandContext): void {
-  const help = `/brains commands:
+async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
+  const help = `
+## Core commands
 
-  /brains              Show initialization and help options
-  /brains status       Show current GitSense configuration
-  /brains build        Build/import a Brain manifest
-  /brains checkpoint   Create a review checkpoint now
-  /brains inspect      Inspect the live Pi session in a terminal or browser
-  /brains inbox        Review messages drafted in GitSense Chat
-  /brains inbox list   List all messages in the session inbox
-  /brains insights     Show a static inspect snapshot
-  /brains rules        Configure rules and show available options
-  /brains scm          Show compacted messages (alias: show-compact-messages)
-  /brains pc           Post-compact enrichment (alias: post-compact)
-  /brains debug        Toggle debug mode
-  /brains debug on     Enable debug mode
-  /brains debug off    Disable debug mode
-  /brains debug file   Show debug log file path
-  /brains about        What GitSense can do
-  /brains help         This message`;
-  ctx.ui.notify(help, "info");
+- \/brains — Initialize GitSense expert context
+- \/brains status — Show current GitSense configuration
+- \/brains build — Build or import Brain manifests
+- \/brains insights — Show a static session snapshot
+- \/brains inspect — Inspect the live Pi session in a terminal or browser
+- \/brains rules — Configure rules and show available options
+- \/brains about — Show what GitSense can do
+- \/brains help — Show this help
+
+## Session tools
+
+- \/brains checkpoint — Create a review checkpoint
+- \/brains checkpoint exit — Return to the main branch
+- \/brains inbox — Review pending GitSense Chat messages
+- \/brains inbox list — List all messages in the session inbox
+- \/brains inbox auto on|off|status — Configure automatic inbox acceptance
+- \/brains inbox help — Show inbox commands and settings`;
+  await showOutputPanel(ctx, "\/brains Commands", help);
 }

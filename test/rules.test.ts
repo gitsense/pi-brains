@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { AgentEndEvent, BeforeAgentStartEvent, ContextEvent, ExtensionAPI, ExtensionContext, ToolCallEvent } from "@earendil-works/pi-coding-agent";
+import type { AgentEndEvent, BeforeAgentStartEvent, ContextEvent, ExtensionAPI, ExtensionContext, ToolCallEvent, ToolResultEvent } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/pi-brains/config.ts";
 import { PiBrainsController } from "../extensions/pi-brains/controller.ts";
@@ -134,7 +134,7 @@ const contextCommandExecutionResult: ExecutionResult = {
 const executionResult: ExecutionResult = {
   schemaVersion: 1,
   block: true,
-  reason: "GitSense matched repository rules before this lifecycle event.\n\nEvent: pre_tool_use\nRuntime: pi\n\nOriginal event:\n- Tool: read\n- Action: read\n- File: /repo/data/accounting/q1.ledger\n\nMatched rules:\n\n1. Accounting read guidance [instruction]\n   Rule: rule-1\n   Match: glob: data/accounting/**\n   Instructions:\n   - Run `gsc query --file data/accounting/q1.ledger --topic accounting` before read.\n\nRequired next steps:\n- Apply all deterministic instructions above.",
+  reason: "GitSense paused this tool call once to add applicable repository instructions to the agent's context.\nThe instructions matched this operation; no violation was detected.\n\nIMPORTANT: THE ORIGINAL TOOL CALL WAS NOT EXECUTED.\nThe original operation produced no result or changes.\n\nEvent: pre_tool_use\nRuntime: pi\n\nOriginal event:\n- Tool: read\n- Action: read\n- File: /repo/data/accounting/q1.ledger\n\nMatched rules:\n\n1. Accounting read guidance [instruction]\n   Rule: rule-1\n   Match: glob: data/accounting/**\n   Instructions:\n   - Run `gsc query --file data/accounting/q1.ledger --topic accounting` before read.\n\nNext steps:\n- Review and apply the instructions above while performing the operation.\n- Retry the original tool call; the applicable instructions are now in context.\n- Do not continue as though the original tool call succeeded.",
   notices: [],
   matchedRules: [
     {
@@ -183,6 +183,18 @@ function createReadEvent(path: string): ToolCallEvent {
     toolName: "read",
     input: { path },
   } as ToolCallEvent;
+}
+
+function createEditResultEvent(isError: boolean): ToolResultEvent {
+  return {
+    type: "tool_result",
+    toolCallId: "call-edit",
+    toolName: "edit",
+    input: { path: "packages/example.ts" },
+    content: [{ type: "text", text: isError ? "edit failed" : "edit succeeded" }],
+    details: undefined,
+    isError,
+  };
 }
 
 function createBeforeAgentStartEvent(systemPrompt = "base system prompt"): BeforeAgentStartEvent {
@@ -318,6 +330,115 @@ describe("rule delivery", () => {
 });
 
 describe("rule controller integration", () => {
+  it("does not deliver or consume declarative post-tool rules for failed operations", async () => {
+    const postToolRules: RulesJsonResponse = {
+      schemaVersion: 1,
+      query: { event: "post_tool_use", action: "edit" },
+      gitRoot: "/repo",
+      rules: [{
+        id: "verify-after-edit",
+        type: "declarative",
+        event: "post_tool_use",
+        summary: "Verify successful edits",
+        instructions: ["Run the modified test."],
+        match: { kind: "action", value: "edit", action: "edit" },
+        ruleHash: "sha256:verify-after-edit",
+        priority: 10,
+        importance: "high",
+      }],
+      summary: { total: 1, declarative: 1, executable: 0 },
+    };
+    const postToolExecution: ExecutionResult = {
+      schemaVersion: 1,
+      block: false,
+      notices: [],
+      matchedRules: [{
+        ruleId: "verify-after-edit",
+        ruleHash: "sha256:verify-after-edit",
+        type: "declarative",
+        summary: "Verify successful edits",
+        instructions: ["Run the modified test."],
+        priority: 10,
+        match: { kind: "action", value: "edit", action: "edit" },
+      }],
+      triggerResults: [],
+      errors: [],
+      subagentTasks: [],
+    };
+    let executions = 0;
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if (args[0] === "rules" && args[1] === "get") {
+        return { stdout: JSON.stringify(postToolRules), stderr: "", code: 0, killed: false };
+      }
+      executions++;
+      return { stdout: JSON.stringify(postToolExecution), stderr: "", code: 0, killed: false };
+    });
+    const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: true });
+    const ctx = createContext();
+
+    await controller.handleToolResult(createEditResultEvent(true), ctx);
+    expect(executions).toBe(0);
+
+    await controller.handleToolResult(createEditResultEvent(false), ctx);
+    expect(executions).toBe(1);
+  });
+
+  it("still evaluates executable post-tool rules for failed operations", async () => {
+    const failureRules: RulesJsonResponse = {
+      schemaVersion: 1,
+      query: { event: "post_tool_use", action: "edit" },
+      gitRoot: "/repo",
+      rules: [{
+        id: "inspect-failed-edit",
+        type: "executable",
+        event: "post_tool_use",
+        summary: "Inspect failed edits",
+        trigger: { runtime: "node", entry: "inspect-failed-edit.mjs" },
+        frequency: { mode: "always" },
+        match: { kind: "action", value: "edit", action: "edit" },
+        ruleHash: "sha256:inspect-failed-edit-rule",
+        triggerHash: "sha256:inspect-failed-edit-trigger",
+        priority: 10,
+        importance: "medium",
+      }],
+      summary: { total: 1, declarative: 0, executable: 1 },
+    };
+    const failureExecution: ExecutionResult = {
+      schemaVersion: 1,
+      block: false,
+      notices: [],
+      matchedRules: [{
+        ruleId: "inspect-failed-edit",
+        ruleHash: "sha256:inspect-failed-edit-rule",
+        triggerHash: "sha256:inspect-failed-edit-trigger",
+        type: "executable",
+        summary: "Inspect failed edits",
+        priority: 10,
+        match: { kind: "action", value: "edit", action: "edit" },
+      }],
+      triggerResults: [{
+        ruleId: "inspect-failed-edit",
+        matched: true,
+        block: false,
+      }],
+      errors: [],
+      subagentTasks: [],
+    };
+    let executions = 0;
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if (args[0] === "rules" && args[1] === "get") {
+        return { stdout: JSON.stringify(failureRules), stderr: "", code: 0, killed: false };
+      }
+      executions++;
+      return { stdout: JSON.stringify(failureExecution), stderr: "", code: 0, killed: false };
+    });
+    const controller = new PiBrainsController(createMockPi(exec), { ...DEFAULT_CONFIG, rulesEnabled: true });
+
+    await controller.handleToolResult(createEditResultEvent(true), createContext());
+
+    expect(executions).toBe(1);
+  });
+
   it("does not consume a frequency-limited trigger when its executable does not match", async () => {
     const frequencyRule: RulesJsonResponse = {
       schemaVersion: 1,
@@ -748,10 +869,14 @@ describe("rule controller integration", () => {
     const first = await controller.handleToolCall(createReadEvent("data/accounting/q1.ledger"), ctx);
 
     expect(first).toMatchObject({ block: true });
-    expect(first?.reason).toContain("GitSense matched repository rules before this lifecycle event.");
+    expect(first?.reason).toContain("GitSense paused this tool call once");
+    expect(first?.reason).toContain("no violation was detected");
+    expect(first?.reason).toContain("IMPORTANT: THE ORIGINAL TOOL CALL WAS NOT EXECUTED");
+    expect(first?.reason).toContain("produced no result or changes");
     expect(first?.reason).toContain("Event: pre_tool_use");
     expect(first?.reason).toContain("Runtime: pi");
-    expect(first?.reason).toContain("Required next steps:");
+    expect(first?.reason).toContain("Next steps:");
+    expect(first?.reason).toContain("Do not continue as though the original tool call succeeded");
     expect(exec).toHaveBeenCalledWith(
       "gsc",
       ["rules", "get", "--event", "pre_tool_use", "--format", "rules-json", "--action", "read", "--file", "/repo/data/accounting/q1.ledger"],

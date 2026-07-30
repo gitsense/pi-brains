@@ -185,6 +185,11 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains inspect` | Show inspect view instructions |
 | `/brains inbox` | Review messages drafted in GitSense Chat |
 | `/brains inbox list` | List all messages in the session inbox |
+| `/brains inbox status` | Show current inbox settings |
+| `/brains inbox auto on` | Automatically accept new inbox messages for this session |
+| `/brains inbox auto off` | Disable automatic inbox acceptance |
+| `/brains inbox auto status` | Show automatic inbox acceptance status |
+| `/brains inbox help` | Show inbox commands and current settings |
 | `/brains dismiss` | Dismiss the GitSense unavailable notice |
 | `/brains help` | Show available commands |
 

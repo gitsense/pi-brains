@@ -777,8 +777,8 @@ export class PiBrainsController {
     return this.rulesDelivery.formatStatus();
   }
 
-  sendUserMessage(message: string): void {
-    this.pi.sendUserMessage(message);
+  sendUserMessage(message: string, options?: { deliverAs?: "steer" | "followUp" }): void {
+    this.pi.sendUserMessage(message, options);
   }
 
   private notifyTriggerNotice(ctx: ExtensionContext, notice: string, level: string | undefined): void {

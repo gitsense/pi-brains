@@ -18,6 +18,7 @@ export const DEFAULT_CONFIG: PiBrainsConfig = {
   rulesEnabled: true,
   debug: false,
   guideEnabled: false,
+  inboxAutoAccept: false,
 };
 
 export function getConfigPath(): string {
@@ -53,6 +54,7 @@ export function parseConfig(value: unknown): PiBrainsConfig {
     rulesEnabled: typeof value.rulesEnabled === "boolean" ? value.rulesEnabled : DEFAULT_CONFIG.rulesEnabled,
     debug: typeof value.debug === "boolean" ? value.debug : DEFAULT_CONFIG.debug,
     guideEnabled: typeof value.guideEnabled === "boolean" ? value.guideEnabled : DEFAULT_CONFIG.guideEnabled,
+    inboxAutoAccept: typeof value.inboxAutoAccept === "boolean" ? value.inboxAutoAccept : DEFAULT_CONFIG.inboxAutoAccept,
   };
 }
 

@@ -1,5 +1,6 @@
 import type { ExtensionCommandContext, ToolResultEvent } from "@earendil-works/pi-coding-agent";
 import { isExpertsInitCommand } from "./guidance-context.ts";
+import { showOutputPanel } from "./output-panel.ts";
 
 const SHELL_RULE_ID = "rule_pi_bash_observability_v1";
 
@@ -70,7 +71,7 @@ export async function showBrainsStatus(
   for (const row of rows) {
     lines.push(`  ${row.label.padEnd(labelWidth)}${row.value}`);
   }
-  ctx.ui.notify(lines.join("\n"), "info");
+  await showOutputPanel(ctx, "[Brains Status]", lines.slice(1).join("\n"));
 }
 
 function parseBrainCount(result: Awaited<ReturnType<BrainsStatusController["runGscCommand"]>>): number | null {

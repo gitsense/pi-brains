@@ -1,9 +1,10 @@
 import type { ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { type ChatAppController, type GscCommandResult } from "./chat-app.ts";
+import { showOutputPanel } from "./output-panel.ts";
 
 const DEFAULT_INBOX_POLL_INTERVAL_MS = 2_000;
 
-type InboxStatus = "pending" | "accepted" | "ignored";
+type InboxStatus = "pending" | "delivering" | "accepted" | "ignored";
 
 export interface InboxMessage {
   schema_version: number;
@@ -13,6 +14,7 @@ export interface InboxMessage {
   created_at: string;
   updated_at: string;
   message?: string;
+  delivery_id?: string;
 }
 
 interface InboxListResult {
@@ -22,13 +24,96 @@ interface InboxListResult {
 
 export interface InboxController extends ChatAppController {
   getSessionId(): string | null;
-  sendUserMessage(message: string): void;
+  sendUserMessage(message: string, options?: { deliverAs?: "steer" | "followUp" }): void;
+}
+
+export interface InboxWatcherHandle {
+  stop(): void;
+  setAutoAccept(enabled: boolean): void;
+  isAutoAcceptEnabled(): boolean;
+}
+
+function inboxAutoAcceptStatus(watcher: InboxWatcherHandle | null): "ON" | "OFF" {
+  return watcher?.isAutoAcceptEnabled() ? "ON" : "OFF";
+}
+
+async function showInboxAutoStatus(ctx: ExtensionCommandContext, watcher: InboxWatcherHandle | null): Promise<void> {
+  const autoStatus = inboxAutoAcceptStatus(watcher);
+  await showOutputPanel(
+    ctx,
+    "Pi Session Inbox",
+    `Auto-accept: **${autoStatus}**`,
+    {
+      status: {
+        text: `Inbox auto-accept is ${autoStatus}.`,
+        color: autoStatus === "ON" ? "success" : "accent",
+      },
+    },
+  );
+}
+
+async function showEmptyInbox(ctx: ExtensionCommandContext, watcher: InboxWatcherHandle | null): Promise<void> {
+  const autoStatus = inboxAutoAcceptStatus(watcher);
+  await showOutputPanel(
+    ctx,
+    "Pi Session Inbox",
+    `Auto-accept: **${autoStatus}**`,
+    { status: { text: "✓ The Pi session inbox is empty.", color: "success" } },
+  );
+}
+
+export function handleInboxAutoCommand(
+  value: string,
+  watcher: InboxWatcherHandle | null,
+  ctx: ExtensionCommandContext,
+): Promise<void> {
+  const action = value.trim().toLowerCase();
+  if (!watcher) {
+    ctx.ui.notify("The inbox watcher is not running", "error");
+    return Promise.resolve();
+  }
+  if (action === "on") {
+    watcher.setAutoAccept(true);
+    ctx.ui.notify("Inbox auto-accept enabled for this Pi session.", "info");
+    return Promise.resolve();
+  }
+  if (action === "off") {
+    watcher.setAutoAccept(false);
+    ctx.ui.notify("Inbox auto-accept disabled.", "info");
+    return Promise.resolve();
+  }
+  if (action === "status" || action === "") {
+    return showInboxAutoStatus(ctx, watcher);
+  }
+  ctx.ui.notify("Usage: /brains inbox auto on|off|status", "warning");
+  return Promise.resolve();
+}
+
+async function showInboxHelp(ctx: ExtensionCommandContext, watcher: InboxWatcherHandle | null): Promise<void> {
+  const autoStatus = inboxAutoAcceptStatus(watcher);
+  const help = `
+## Commands
+
+- \/brains inbox — Review pending messages in the Pi session inbox
+- \/brains inbox list — List all messages in the session inbox
+- \/brains inbox status — Show the current auto-accept setting
+- \/brains inbox auto — Configure automatic inbox acceptance
+- \/brains inbox auto on — Enable auto-accept for this session
+- \/brains inbox auto off — Disable auto-accept
+- \/brains inbox auto status — Show the current auto-accept setting
+- \/brains inbox help — Show this help
+
+## Current settings
+
+Auto-accept: **${autoStatus}**`;
+  await showOutputPanel(ctx, "Pi Session Inbox", help);
 }
 
 export async function handleInboxCommand(
   controller: InboxController,
   ctx: ExtensionCommandContext,
   value = "",
+  watcher: InboxWatcherHandle | null = null,
 ): Promise<void> {
   if (ctx.mode !== "tui") {
     ctx.ui.notify("/brains inbox is only available in the TUI", "error");
@@ -39,8 +124,16 @@ export async function handleInboxCommand(
     ctx.ui.notify("No active session. Start a conversation first.", "error");
     return;
   }
+  if (value.trim() === "help") {
+    await showInboxHelp(ctx, watcher);
+    return;
+  }
+  if (value.trim() === "status") {
+    await showInboxAutoStatus(ctx, watcher);
+    return;
+  }
   if (value.trim() === "list") {
-    await listInboxMessages(controller, ctx, sessionId);
+    await listInboxMessages(controller, ctx, sessionId, watcher);
     return;
   }
 
@@ -51,7 +144,7 @@ export async function handleInboxCommand(
       return;
     }
     if (pending.length === 0) {
-      ctx.ui.notify("The Pi session inbox is empty.", "info");
+      await showEmptyInbox(ctx, watcher);
       return;
     }
 
@@ -70,13 +163,9 @@ export async function handleInboxCommand(
       ["Accept and send", "Ignore", "Back"],
     );
     if (action === "Accept and send") {
-      const accepted = await transitionInboxMessage(controller, sessionId, summary.message_id, "accept");
-      if (!accepted?.message) {
-        ctx.ui.notify("Unable to accept inbox message", "error");
-        continue;
+      if (await deliverInboxMessage(controller, ctx, sessionId, summary.message_id)) {
+        ctx.ui.notify("Inbox message accepted and sent to the Pi session.", "info");
       }
-      controller.sendUserMessage(accepted.message);
-      ctx.ui.notify("Inbox message accepted and sent to the Pi session.", "info");
     } else if (action === "Ignore") {
       const ignored = await transitionInboxMessage(controller, sessionId, summary.message_id, "ignore");
       if (ignored) ctx.ui.notify("Inbox message ignored.", "info");
@@ -84,21 +173,26 @@ export async function handleInboxCommand(
   }
 }
 
-async function listInboxMessages(controller: InboxController, ctx: ExtensionCommandContext, sessionId: string): Promise<void> {
+async function listInboxMessages(
+  controller: InboxController,
+  ctx: ExtensionCommandContext,
+  sessionId: string,
+  watcher: InboxWatcherHandle | null,
+): Promise<void> {
   const messages = await getInboxMessages(controller, sessionId, "all");
   if (!messages) {
     ctx.ui.notify("Unable to read the Pi session inbox", "error");
     return;
   }
   if (messages.length === 0) {
-    ctx.ui.notify("The Pi session inbox is empty.", "info");
+    await showEmptyInbox(ctx, watcher);
     return;
   }
   const output = messages.map(message => [
     `${message.status}  ${message.message_id}`,
     `${formatTimestamp(message.created_at)}  ${message.message ?? ""}`,
   ].join("\n")).join("\n\n");
-  ctx.ui.notify(output, "info");
+  await showOutputPanel(ctx, "Pi Session Inbox", output);
 }
 
 async function showInboxMessage(controller: InboxController, ctx: ExtensionCommandContext, sessionId: string, messageID: string): Promise<InboxMessage | null> {
@@ -130,6 +224,57 @@ async function transitionInboxMessage(controller: InboxController, sessionId: st
   }
 }
 
+async function deliverInboxMessage(
+  controller: InboxController,
+  ctx: ExtensionContext,
+  sessionId: string,
+  messageID: string,
+): Promise<boolean> {
+  const claim = await runInboxTransition(controller, sessionId, messageID, "claim");
+  if (!claim?.message || !claim.delivery_id) return false;
+  try {
+    controller.sendUserMessage(
+      claim.message,
+      ctx.isIdle() ? undefined : { deliverAs: "followUp" },
+    );
+    const completed = await controller.runGscCommand(
+      "pi", "sessions", "inbox", "complete",
+      "--session-id", sessionId,
+      "--id", messageID,
+      "--delivery-id", claim.delivery_id,
+    );
+    if (!completed || completed.code !== 0) throw new Error("delivery acknowledgement failed");
+    return true;
+  } catch {
+    await controller.runGscCommand(
+      "pi", "sessions", "inbox", "release",
+      "--session-id", sessionId,
+      "--id", messageID,
+      "--delivery-id", claim.delivery_id,
+    );
+    return false;
+  }
+}
+
+async function runInboxTransition(
+  controller: InboxController,
+  sessionId: string,
+  messageID: string,
+  action: "claim",
+): Promise<InboxMessage | null> {
+  const result = await controller.runGscCommand(
+    "pi", "sessions", "inbox", action,
+    "--session-id", sessionId,
+    "--id", messageID,
+  );
+  if (!result || result.code !== 0) return null;
+  try {
+    return parseInboxMessage(result.stdout);
+  } catch {
+    return null;
+  }
+}
+
 async function getInboxMessages(controller: InboxController, sessionId: string, status: "pending" | "all"): Promise<InboxMessage[] | null> {
   const result = await controller.runGscCommand(
     "pi", "sessions", "inbox", "list", "--session-id", sessionId, "--status", status,
@@ -147,13 +292,17 @@ async function getInboxMessages(controller: InboxController, sessionId: string, 
 export function startInboxWatcher(
   controller: InboxController,
   ctx: ExtensionContext,
-  options: { pollIntervalMs?: number } = {},
-): () => void {
-  if (ctx.mode !== "tui") return () => {};
+  options: { pollIntervalMs?: number; initialAutoAccept?: boolean; onAutoAcceptChange?: (enabled: boolean) => void } = {},
+): InboxWatcherHandle {
+  if (ctx.mode !== "tui") {
+    return { stop() {}, setAutoAccept() {}, isAutoAcceptEnabled: () => false };
+  }
   let stopped = false;
   let inFlight = false;
   let initialized = false;
+  let autoAccept = options.initialAutoAccept ?? false;
   const seen = new Set<string>();
+  const autoFailureNotices = new Set<string>();
   const poll = async (): Promise<void> => {
     if (stopped || inFlight) return;
     const sessionId = controller.getSessionId();
@@ -165,9 +314,21 @@ export function startInboxWatcher(
       );
       if (!result || result.code !== 0 || stopped) return;
       const parsed = parseInboxPoll(result.stdout);
-      const newMessages = parsed.filter(message => !seen.has(message.message_id));
+      const newMessages = parsed.filter(message => message.status === "pending" && !seen.has(message.message_id));
       parsed.forEach(message => seen.add(message.message_id));
-      if (initialized && newMessages.length > 0) {
+      if (autoAccept) {
+        for (const message of parsed) {
+          if (message.status !== "pending" && message.status !== "delivering") continue;
+          const delivered = await deliverInboxMessage(controller, ctx, sessionId, message.message_id);
+          if (delivered) {
+            autoFailureNotices.delete(message.message_id);
+            ctx.ui.notify("Inbox message auto-accepted and sent to the Pi session.", "info");
+          } else if (!autoFailureNotices.has(message.message_id)) {
+            autoFailureNotices.add(message.message_id);
+            ctx.ui.notify("Inbox auto-accept failed; the message will be retried.", "warning");
+          }
+        }
+      } else if (initialized && newMessages.length > 0) {
         const suffix = newMessages.length === 1 ? "message" : "messages";
         ctx.ui.notify(`New ${suffix} in the Pi session inbox. Run /brains inbox to review.`, "info");
       }
@@ -181,9 +342,18 @@ export function startInboxWatcher(
   };
   void poll();
   const timer = setInterval(() => { void poll(); }, options.pollIntervalMs ?? DEFAULT_INBOX_POLL_INTERVAL_MS);
-  return () => {
-    stopped = true;
-    clearInterval(timer);
+  return {
+    stop() {
+      stopped = true;
+      clearInterval(timer);
+    },
+    setAutoAccept(enabled: boolean) {
+      autoAccept = enabled;
+      options.onAutoAcceptChange?.(enabled);
+    },
+    isAutoAcceptEnabled() {
+      return autoAccept;
+    },
   };
 }
 
@@ -202,7 +372,7 @@ function parseInboxMessage(value: string): InboxMessage {
 function isInboxMessage(value: unknown): value is InboxMessage {
   if (!isRecord(value)) return false;
   return typeof value.message_id === "string" && typeof value.session_id === "string"
-    && (value.status === "pending" || value.status === "accepted" || value.status === "ignored")
+    && (value.status === "pending" || value.status === "delivering" || value.status === "accepted" || value.status === "ignored")
     && typeof value.created_at === "string";
 }
 

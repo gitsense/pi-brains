@@ -15,6 +15,7 @@ export interface PiBrainsConfig {
   rulesEnabled: boolean;
   debug: boolean;
   guideEnabled: boolean;
+  inboxAutoAccept: boolean;
 }
 
 export interface ContextState {
