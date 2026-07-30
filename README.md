@@ -36,25 +36,36 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 <table width="100%">
   <tr>
-    <td width="33%" align="center"><code>/brains rules on</code></td>
-    <td width="33%" align="center"><code>/brains inspect</code></td>
-    <td width="33%" align="center"><code>/brains sessions</code></td>
+    <td width="50%" valign="top">
+      <p align="center"><code>/brains rules on</code></p>
+      <p align="center">
+        <img src="assets/demo/rules-on-placeholder.png" alt="Placeholder for the /brains rules on demo video" width="360">
+      </p>
+      <p>Turn on guardrails that stop risky edits and enforce project behavior.</p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><code>/brains inspect</code></p>
+      <p align="center">
+        <img src="assets/demo/inspect-placeholder.png" alt="Placeholder for the /brains inspect demo video" width="360">
+      </p>
+      <p>Open the active session in GitSense Chat to turn a wall of tool calls into actionable insights.</p>
+    </td>
   </tr>
   <tr>
-    <td align="center">
-      <img src="assets/demo/rules-on-placeholder.png" alt="Placeholder for the /brains rules on demo video" width="280">
+    <td width="50%" valign="top">
+      <p align="center"><code>/brains sessions</code></p>
+      <p align="center">
+        <img src="assets/demo/sessions-placeholder.png" alt="Placeholder for the /brains sessions demo video" width="360">
+      </p>
+      <p>Open GitSense Chat to monitor agents, find any session, and surface insights.</p>
     </td>
-    <td align="center">
-      <img src="assets/demo/inspect-placeholder.png" alt="Placeholder for the /brains inspect demo video" width="280">
+    <td width="50%" valign="top">
+      <p align="center"><code>/brains inbox auto on</code></p>
+      <p align="center">
+        <img src="assets/demo/inbox-auto-on-placeholder.png" alt="Placeholder for the /brains inbox auto on demo video" width="360">
+      </p>
+      <p>Craft complex messages ergonomically in GitSense Chat and send them to the TUI automatically.</p>
     </td>
-    <td align="center">
-      <img src="assets/demo/sessions-placeholder.png" alt="Placeholder for the /brains sessions demo video" width="280">
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">Turn on guardrails that stop risky edits and enforce project behavior.</td>
-    <td valign="top">Open the active session in GitSense Chat to surface insights, then send complex messages through its richer session inbox.</td>
-    <td valign="top">Open GitSense Chat to monitor active agents, find any session, surface insights, and send complex follow-ups.</td>
   </tr>
 </table>
 
