@@ -59,7 +59,9 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
     <td width="50%" valign="top">
       <p align="center"><code>/brains sessions</code></p>
       <p align="center">
-        <img src="assets/demo/sessions-placeholder.png" alt="Placeholder for the /brains sessions demo video" width="360">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
+          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions demo video" width="360">
+        </a>
       </p>
       <p>Open GitSense Chat to monitor agents, find any session, and surface insights.</p>
     </td>
