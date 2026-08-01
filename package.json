@@ -39,12 +39,12 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "*",
-    "@earendil-works/pi-tui": "*"
+    "@earendil-works/pi-coding-agent": ">=0.81.1",
+    "@earendil-works/pi-tui": ">=0.81.1"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "0.79.5",
-    "@earendil-works/pi-tui": "0.79.5",
+    "@earendil-works/pi-coding-agent": "0.81.1",
+    "@earendil-works/pi-tui": "0.81.1",
     "@types/node": "24.12.4",
     "@typescript/native-preview": "7.0.0-dev.20260120.1",
     "typescript": "5.9.3",

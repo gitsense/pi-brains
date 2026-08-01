@@ -11,6 +11,7 @@ import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-cata
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 import { handleInboxAutoCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
 import { handleForgetCommand } from "./forget.ts";
+import { appendBrainsInsightsEntry, registerBrainsInsightsEntryRenderer } from "./insights-entry.ts";
 import { showOutputPanel } from "./output-panel.ts";
 import { buildSessionsDialog } from "./sessions-view.ts";
 
@@ -32,6 +33,8 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     const prefix = theme.fg("accent", "[brains-context]");
     return new Text(prefix + "\n\n" + content, 0, 0);
   });
+
+  registerBrainsInsightsEntryRenderer(pi);
 
   pi.on("session_start", (_event, ctx) => {
     brainsStatusPending = false;
@@ -131,10 +134,10 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
-      // /brains insights - show the current inspect state as a notification
+      // /brains insights - append a durable, model-hidden snapshot to the transcript
       if (command === "insights") {
         const output = controller.renderInsightsSnapshot();
-        await showOutputPanel(ctx as unknown as ExtensionCommandContext, "Brains Insights", output || "No insights available");
+        appendBrainsInsightsEntry(pi, output);
         return;
       }
 
