@@ -1,4 +1,6 @@
 import type { ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
 import { type ChatAppController, type GscCommandResult } from "./chat-app.ts";
 import { showOutputPanel } from "./output-panel.ts";
 
@@ -37,6 +39,49 @@ function inboxAutoAcceptStatus(watcher: InboxWatcherHandle | null): "ON" | "OFF"
   return watcher?.isAutoAcceptEnabled() ? "ON" : "OFF";
 }
 
+/**
+ * Resolve the inbox store directory gsc reads/writes for a session, mirroring
+ * gsc's settings.GetGSCHome(false) + GetPiSessionsStateDir. This is the exact
+ * directory that `gsc pi sessions inbox list/poll --session-id` targets.
+ *
+ * If GSC_HOME is not set in this process, gsc falls back to ~/.gitsense.
+ * Messages drafted in GitSense Chat are stored under the chat server's
+ * GSC_HOME, so a mismatch here means the watcher checks a different store
+ * than the one the chat app writes to.
+ */
+function resolveInboxStore(sessionId: string): {
+  gscHome: string;
+  inboxDir: string;
+  usingFallback: boolean;
+} {
+  const raw = process.env.GSC_HOME;
+  let gscHome: string;
+  let usingFallback = false;
+  if (raw && raw.trim() !== "") {
+    const expanded = raw === "~" || raw.startsWith("~/")
+      ? join(homedir(), raw.slice(1))
+      : raw;
+    gscHome = resolve(expanded);
+  } else {
+    gscHome = join(homedir(), ".gitsense");
+    usingFallback = true;
+  }
+  const sessionsDir = join(gscHome, "data", "pi", "sessions");
+  return {
+    gscHome,
+    inboxDir: join(sessionsDir, sessionId, "inbox"),
+    usingFallback,
+  };
+}
+
+function inboxStoreDescription(sessionId: string): string {
+  const store = resolveInboxStore(sessionId);
+  const source = store.usingFallback
+    ? `GSC_HOME is not set, so gsc is using the \`~/.gitsense\` fallback.`
+    : `GSC_HOME=${store.gscHome}`;
+  return `Checked inbox at \`${store.inboxDir}\` (${source}).`;
+}
+
 async function showInboxAutoStatus(ctx: ExtensionCommandContext, watcher: InboxWatcherHandle | null): Promise<void> {
   const autoStatus = inboxAutoAcceptStatus(watcher);
   await showOutputPanel(
@@ -52,12 +97,12 @@ async function showInboxAutoStatus(ctx: ExtensionCommandContext, watcher: InboxW
   );
 }
 
-async function showEmptyInbox(ctx: ExtensionCommandContext, watcher: InboxWatcherHandle | null): Promise<void> {
+async function showEmptyInbox(ctx: ExtensionCommandContext, watcher: InboxWatcherHandle | null, sessionId: string): Promise<void> {
   const autoStatus = inboxAutoAcceptStatus(watcher);
   await showOutputPanel(
     ctx,
     "Pi Session Inbox",
-    `Auto-accept: **${autoStatus}**`,
+    `Auto-accept: **${autoStatus}**\n\n${inboxStoreDescription(sessionId)}`,
     { status: { text: "✓ The Pi session inbox is empty.", color: "success" } },
   );
 }
@@ -144,7 +189,7 @@ export async function handleInboxCommand(
       return;
     }
     if (pending.length === 0) {
-      await showEmptyInbox(ctx, watcher);
+      await showEmptyInbox(ctx, watcher, sessionId);
       return;
     }
 
@@ -185,13 +230,15 @@ async function listInboxMessages(
     return;
   }
   if (messages.length === 0) {
-    await showEmptyInbox(ctx, watcher);
+    await showEmptyInbox(ctx, watcher, sessionId);
     return;
   }
-  const output = messages.map(message => [
-    `${message.status}  ${message.message_id}`,
-    `${formatTimestamp(message.created_at)}  ${message.message ?? ""}`,
-  ].join("\n")).join("\n\n");
+  const output = [inboxStoreDescription(sessionId), ""].concat(
+    messages.map(message => [
+      `${message.status}  ${message.message_id}`,
+      `${formatTimestamp(message.created_at)}  ${message.message ?? ""}`,
+    ].join("\n")),
+  ).join("\n\n");
   await showOutputPanel(ctx, "Pi Session Inbox", output);
 }
 
