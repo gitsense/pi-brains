@@ -10,6 +10,7 @@ import { buildInspectDialog } from "./inspect-view.ts";
 import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 import { handleInboxAutoCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
+import { handleForgetCommand } from "./forget.ts";
 import { showOutputPanel } from "./output-panel.ts";
 import { buildSessionsDialog } from "./sessions-view.ts";
 
@@ -240,6 +241,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains post-compact (pc) - enrich compaction with checkpoint + brain metadata
       if (command === "post-compact" || command === "pc") {
         await handlePostCompact(pi, controller, ctx as unknown as ExtensionCommandContext);
+        return;
+      }
+
+      // /brains forget - prune entries after the current /tree position (with backup)
+      if (command === "forget") {
+        await handleForgetCommand(ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -1296,6 +1303,7 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 
 - \/brains checkpoint — Create a review checkpoint
 - \/brains checkpoint exit — Return to the main branch
+- \/brains forget — Prune entries after the current /tree position (with backup)
 - \/brains inbox — Review pending GitSense Chat messages
 - \/brains inbox list — List all messages in the session inbox
 - \/brains inbox auto on|off|status — Configure automatic inbox acceptance

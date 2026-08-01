@@ -13,12 +13,12 @@ interface ValidationResult {
 
 export class GscRulesClient {
   private readonly pi: ExtensionAPI;
-  private readonly signal: AbortSignal;
+  private readonly getSignal: () => AbortSignal;
   private readonly debug: DebugLogger;
 
-  constructor(pi: ExtensionAPI, signal: AbortSignal, debug: DebugLogger) {
+  constructor(pi: ExtensionAPI, getSignal: () => AbortSignal, debug: DebugLogger) {
     this.pi = pi;
-    this.signal = signal;
+    this.getSignal = getSignal;
     this.debug = debug;
   }
 
@@ -44,7 +44,7 @@ export class GscRulesClient {
     this.debug.log(`gsc rules get: ${args.join(" ")}`);
 
     const result = await this.pi.exec("gsc", args, {
-      signal: this.signal,
+      signal: this.getSignal(),
       timeout: 3_000,
     });
 
@@ -84,7 +84,7 @@ export class GscRulesClient {
         "rules", "trigger", "run", ruleId,
         "--context", contextFile,
       ], {
-        signal: this.signal,
+        signal: this.getSignal(),
         timeout: timeoutMs || 10_000,
       });
 
@@ -118,7 +118,7 @@ export class GscRulesClient {
     this.debug.log(`gsc rules get --format rules-json: ${args.join(" ")}`);
 
     const result = await this.pi.exec("gsc", args, {
-      signal: this.signal,
+      signal: this.getSignal(),
       timeout: 3_000,
     });
 
@@ -159,7 +159,7 @@ export class GscRulesClient {
         "--context", contextFile,
         "--rules", rulesFile,
       ], {
-        signal: this.signal,
+        signal: this.getSignal(),
         timeout: 30_000, // 30 second timeout for execution
       });
 

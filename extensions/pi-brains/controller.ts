@@ -95,7 +95,7 @@ export class PiBrainsController {
   private readonly config: PiBrainsConfig;
   private readonly tracker = new TouchedFileTracker();
   private readonly repositories: RepositoryResolver;
-  private readonly backgroundAbort = new AbortController();
+  private backgroundAbort = new AbortController();
   private readonly rulesDelivery = new RuleDeliveryTracker();
   private readonly rulesEngine: RuleEngine;
   private readonly debug: DebugLogger;
@@ -153,7 +153,7 @@ export class PiBrainsController {
     this.telemetry = new RuleTelemetryWriter(this.debug);
     this.bashObservability = new BashObservability(pi, this.debug);
     this.rulesEngine = new RuleEngine(
-      new GscRulesClient(pi, this.backgroundAbort.signal, this.debug),
+      new GscRulesClient(pi, () => this.backgroundAbort.signal, this.debug),
       this.rulesDelivery,
       () => this.pi.getThinkingLevel(),
       () => this.pi.getCommands(),
@@ -165,6 +165,11 @@ export class PiBrainsController {
   }
 
   start(ctx: ExtensionContext): void {
+    // Reset lifecycle after a session switch: dispose() runs on session_shutdown
+    // (fired by /resume, /new, /fork, and /brains forget), so re-arm the controller
+    // for the new session before re-initializing state.
+    this.disposed = false;
+    this.backgroundAbort = new AbortController();
     this.rulesDelivery.clear();
     this.cwd = ctx.cwd;
     this.tracker.replay(ctx.sessionManager.getBranch(), ctx.cwd);

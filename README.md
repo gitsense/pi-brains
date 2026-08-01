@@ -226,6 +226,7 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains checkpoint suggest on` | Enable checkpoint suggestions |
 | `/brains checkpoint suggest off` | Disable checkpoint suggestions |
 | `/brains checkpoint suggest status` | Show checkpoint suggestion status |
+| `/brains forget` | Prune entries after the current `/tree` position (with backup) |
 | `/brains inspect` | Show inspect view instructions |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
 | `/brains inbox` | Review messages drafted in GitSense Chat |
