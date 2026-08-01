@@ -306,6 +306,8 @@ Once installed, run /brains again to enable expert context.`;
     await showHelp(ctx as unknown as ExtensionCommandContext);
     return;
   }
+  // Hide the working spinner from the previous turn before sending
+  ctx.ui.setWorkingVisible(false);
   controller.sendUserMessage("run `gsc experts init` and follow instructions");
 }
 
