@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import type { PiBrainsConfig } from "./types.ts";
+import type { AskGroup, PiBrainsConfig } from "./types.ts";
 
 export const GSC_MISSING_NOTICE_ID = "gsc-missing-v1";
 
@@ -19,6 +19,7 @@ export const DEFAULT_CONFIG: PiBrainsConfig = {
   debug: false,
   guideEnabled: false,
   inboxAutoAccept: false,
+  askGroups: [],
 };
 
 export function getConfigPath(): string {
@@ -27,6 +28,27 @@ export function getConfigPath(): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseAskGroups(value: unknown): AskGroup[] {
+  if (!Array.isArray(value)) return [...DEFAULT_CONFIG.askGroups];
+  return value.flatMap((item): AskGroup[] => {
+    if (!isRecord(item)) return [];
+    if (
+      typeof item.id !== "string" ||
+      typeof item.url !== "string" ||
+      typeof item.createdAt !== "string" ||
+      typeof item.updatedAt !== "string"
+    ) {
+      return [];
+    }
+    return [{
+      id: item.id,
+      url: item.url,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }];
+  });
 }
 
 export function parseConfig(value: unknown): PiBrainsConfig {
@@ -55,6 +77,7 @@ export function parseConfig(value: unknown): PiBrainsConfig {
     debug: typeof value.debug === "boolean" ? value.debug : DEFAULT_CONFIG.debug,
     guideEnabled: typeof value.guideEnabled === "boolean" ? value.guideEnabled : DEFAULT_CONFIG.guideEnabled,
     inboxAutoAccept: typeof value.inboxAutoAccept === "boolean" ? value.inboxAutoAccept : DEFAULT_CONFIG.inboxAutoAccept,
+    askGroups: parseAskGroups(value.askGroups),
   };
 }
 

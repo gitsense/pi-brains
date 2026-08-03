@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { copyToClipboard, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { getChatAppStatus, openExternalUrl } from "./chat-app.ts";
+import { handleAskCommand } from "./ask.ts";
 import { loadConfig, saveConfig } from "./config.ts";
 import { PiBrainsController, type GuideCheckpointRequestResult } from "./controller.ts";
 import { handleCheckpoint, handleCheckpointExit, initCheckpointHandlers } from "./checkpoint.ts";
@@ -168,6 +169,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains sessions - review all Pi sessions in GitSense Chat
       if (command === "sessions") {
         await handleSessionsCommand(controller, ctx as unknown as ExtensionCommandContext);
+        return;
+      }
+
+      // /brains ask - open and manage saved knowledge groups
+      if (command === "ask") {
+        await handleAskCommand(controller, config, ctx as unknown as ExtensionCommandContext, value);
         return;
       }
 
@@ -1298,6 +1305,12 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 - \/brains insights — Show a static session snapshot
 - \/brains inspect — Inspect the live Pi session in a terminal or browser
 - \/brains sessions — Review all Pi sessions in GitSense Chat
+- \/brains ask — Open and manage saved knowledge groups
+- \/brains ask register <url> — Save a GitSense Chat group URL
+- \/brains ask list — List saved knowledge groups
+- \/brains ask groups — List saved knowledge groups
+- \/brains ask rename — Rename a saved knowledge group
+- \/brains ask delete — Remove a saved knowledge group
 - \/brains rules — Configure rules and show available options
 - \/brains about — Show what GitSense can do
 - \/brains help — Show this help

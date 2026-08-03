@@ -19,6 +19,12 @@ describe("configuration", () => {
         showModel: false,
         showRepositories: false,
         dismissedNotices: ["gsc-missing-v1", 4],
+        askGroups: [{
+          id: "group-1",
+          url: "http://localhost:3357/?chat=pi-sessions&track=expert-a&track-name=Experts",
+          createdAt: "2026-08-03T00:00:00.000Z",
+          updatedAt: "2026-08-03T00:00:00.000Z",
+        }],
       }),
     ).toEqual({
       visible: true,
@@ -34,6 +40,28 @@ describe("configuration", () => {
       debug: false,
       guideEnabled: false,
       inboxAutoAccept: false,
+      askGroups: [{
+        id: "group-1",
+        url: "http://localhost:3357/?chat=pi-sessions&track=expert-a&track-name=Experts",
+        createdAt: "2026-08-03T00:00:00.000Z",
+        updatedAt: "2026-08-03T00:00:00.000Z",
+      }],
     });
+  });
+
+  it("preserves registered knowledge groups", () => {
+    expect(parseConfig({
+      askGroups: [{
+        id: "group-1",
+        url: "http://localhost:3357/?chat=pi-sessions&track=expert-a&track-name=Experts",
+        createdAt: "2026-08-03T00:00:00.000Z",
+        updatedAt: "2026-08-03T01:00:00.000Z",
+      }],
+    }).askGroups).toEqual([{
+      id: "group-1",
+      url: "http://localhost:3357/?chat=pi-sessions&track=expert-a&track-name=Experts",
+      createdAt: "2026-08-03T00:00:00.000Z",
+      updatedAt: "2026-08-03T01:00:00.000Z",
+    }]);
   });
 });

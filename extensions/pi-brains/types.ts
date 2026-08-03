@@ -2,6 +2,13 @@ export type GlyphFont = "3x5" | "5x7";
 export type GlyphStyle = "block" | "ascii";
 export type Brightness = "dim" | "normal";
 
+export interface AskGroup {
+  id: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PiBrainsConfig {
   visible: boolean;
   width: number;
@@ -16,6 +23,7 @@ export interface PiBrainsConfig {
   debug: boolean;
   guideEnabled: boolean;
   inboxAutoAccept: boolean;
+  askGroups: AskGroup[];
 }
 
 export interface ContextState {

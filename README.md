@@ -9,7 +9,7 @@
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
-  <a href="#spread-knowledge-not-context">Spread knowledge</a> &nbsp;·&nbsp;
+  <a href="#brains-ask">/brains ask</a> &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
@@ -76,13 +76,13 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
   </tr>
 </table>
 
-## Spread knowledge, not context
+## `/brains ask`
 
-Too much context can hurt an agent's reasoning. Every document, repository detail, and side conversation asks for some of its attention. When that knowledge isn't relevant to the job at hand, it can distract from what matters and make the agent work harder to reach the right answer.
+Using multiple agents to spread the context load isn't new. What's usually awkward is keeping those agents organized, asking them from one place, and bringing their answers back into the session doing the work. `/brains ask` makes that part easier.
 
-Using agents to carry different pieces of knowledge isn't a new idea. What `/brains sessions` adds is an easy way to organize them. Create a group of agents that know different repositories, docs, or parts of your system, and you can quickly find the one that knows what you need.
+Too much context can hurt an agent's reasoning. Every document, tool call, and unrelated detail asks for some of its attention. Keeping different parts of the problem in focused sessions lets the main agent work with the findings instead of carrying all of the research.
 
-From the group page in GitSense Chat, you can message any of those agents directly and follow their status while they work. When the answers come back, copy the useful parts—from one agent or several—into your main session. Each agent keeps its own context, while the agent doing the work gets the knowledge that matters.
+Track related sessions in GitSense Chat and register the group URL once. From then on, `/brains ask` can open that group from any Pi session and add the current session to it. Message the agents that already have the context you need, follow their status from one page, and use their replies to write one focused message for the agent doing the work.
 
 <table width="100%">
   <tr>
@@ -91,47 +91,47 @@ From the group page in GitSense Chat, you can message any of those agents direct
   </tr>
   <tr>
     <td valign="top">
-      <strong>1. Track the right agents</strong>
-      <p>Select the sessions that know the repositories, docs, or systems involved.</p>
+      <strong>1. Save a group</strong>
+      <p>Track sessions that carry useful context, copy the group URL, and register it with <code>/brains ask register &lt;url&gt;</code>.</p>
     </td>
     <td valign="top" align="center">
-      <img src="assets/demo/knowledge-track-placeholder.svg" alt="Video placeholder showing sessions being selected for tracking" width="520">
+      <img src="assets/demo/knowledge-track-placeholder.svg" alt="Video placeholder showing sessions being tracked and registered as a group" width="520">
     </td>
   </tr>
   <tr>
     <td valign="top">
-      <strong>2. Ask the expert</strong>
-      <p>Ask the agent that already has the right context.</p>
+      <strong>2. Ask what you need</strong>
+      <p>Run <code>/brains ask</code>, open the group, message the relevant agents, and follow their status.</p>
     </td>
     <td valign="top" align="center">
-      <img src="assets/demo/knowledge-ask-placeholder.svg" alt="Video placeholder showing a question being sent to a knowledge agent" width="520">
+      <img src="assets/demo/knowledge-ask-placeholder.svg" alt="Video placeholder showing questions being sent to agents from a saved group" width="520">
     </td>
   </tr>
   <tr>
     <td valign="top">
-      <strong>3. Share what matters</strong>
-      <p>Bring the useful finding back to the agent doing the work.</p>
+      <strong>3. Bring back what matters</strong>
+      <p>Use the replies to compose one focused message and send it to the main session through <code>/brains inbox</code>.</p>
     </td>
     <td valign="top" align="center">
-      <img src="assets/demo/knowledge-share-placeholder.svg" alt="Video placeholder showing an answer being shared with the main session" width="520">
+      <img src="assets/demo/knowledge-share-placeholder.svg" alt="Video placeholder showing several answers being combined and sent to the main session" width="520">
     </td>
   </tr>
 </table>
 
 ### Why not just use subagents?
 
-Subagents are useful when an agent has a task it wants to split up. Tracked knowledge agents solve a different problem: they make experience from independent sessions available wherever it is needed.
+Subagents are useful when the current agent needs to divide a task. `/brains ask` helps divide the context.
 
-They do not belong to the main session or to one delegated task. A repository expert can help with today's bug, tomorrow's migration, or another agent's planning session. You choose who to ask and which parts of the answer are worth carrying over.
+A saved group can contain any sessions whose context may be useful, regardless of when they were created or what task created them. You choose which agents to ask and which parts of their answers deserve space in the main session.
 
-| Subagents | Tracked knowledge agents |
+| Subagents | Saved groups |
 | --- | --- |
-| Help a parent agent complete a specific task | Help any session that needs their expertise |
-| Start with work delegated by the parent | Build knowledge in their own sessions and repositories |
-| Return the result of that delegated work | Can be consulted again across tasks |
-| Best for dividing execution | Best for spreading knowledge |
+| Divide the work for a specific task | Keep different parts of the context in different sessions |
+| Start with work delegated by a parent agent | Can bring together sessions created at different times for different work |
+| Return the result of the delegated work | Let you compare answers and decide what enters the main session |
+| Best for parallel execution | Best for keeping the main context focused |
 
-The two approaches work well together: use subagents to divide the work, and tracked knowledge agents to help everyone start from what is already known.
+The two approaches work well together: use subagents to divide the work, and `/brains ask` to bring in context that already lives somewhere else.
 
 ## How it works
 
@@ -287,6 +287,13 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains forget` | Prune entries after the current `/tree` position (with backup) |
 | `/brains inspect` | Show inspect view instructions |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
+| `/brains ask` | Open a saved knowledge group in GitSense Chat |
+| `/brains ask <group-name>` | Open a saved knowledge group directly |
+| `/brains ask register <url>` | Save a GitSense Chat group URL for reuse |
+| `/brains ask list` | List saved knowledge groups |
+| `/brains ask groups` | List saved knowledge groups |
+| `/brains ask rename` | Rename a saved knowledge group |
+| `/brains ask delete` | Remove a saved knowledge group |
 | `/brains inbox` | Review messages drafted in GitSense Chat |
 | `/brains inbox list` | List all messages in the session inbox |
 | `/brains inbox status` | Show current inbox settings |
