@@ -78,11 +78,11 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 ## Spread knowledge, not context
 
-Some tasks reach across several repositories, docs, and areas of expertise. Putting all of that material into one session can make the agent doing the work spend more time sorting through context than using it.
+Too much context can hurt an agent's reasoning. Every document, repository detail, and side conversation asks for some of its attention. When that knowledge isn't relevant to the job at hand, it can distract from what matters and make the agent work harder to reach the right answer.
 
-`/brains sessions` lets you bring the right knowledge to that agent instead. Track the sessions that know the systems involved, ask the agent with the relevant experience, then share the useful part of its answer with your main session.
+Using agents to carry different pieces of knowledge isn't a new idea. What `/brains sessions` adds is an easy way to organize them. Create a group of agents that know different repositories, docs, or parts of your system, and you can quickly find the one that knows what you need.
 
-Each agent stays focused on what it knows. The agent doing the work gets a useful lead—where to look, what matters, or what to watch out for—without having to repeat the same research.
+From the group page in GitSense Chat, you can message any of those agents directly and follow their status while they work. When the answers come back, copy the useful parts—from one agent or several—into your main session. Each agent keeps its own context, while the agent doing the work gets the knowledge that matters.
 
 <table width="100%">
   <tr>
