@@ -84,10 +84,39 @@ Some tasks reach across several repositories, docs, and areas of expertise. Putt
 
 Each agent stays focused on what it knows. The agent doing the work gets a useful lead—where to look, what matters, or what to watch out for—without having to repeat the same research.
 
-| 1. Track | 2. Ask | 3. Share |
-| --- | --- | --- |
-| <img src="assets/demo/knowledge-track-placeholder.svg" alt="Video placeholder showing sessions being selected for tracking" width="300"> | <img src="assets/demo/knowledge-ask-placeholder.svg" alt="Video placeholder showing a question being sent to a knowledge agent" width="300"> | <img src="assets/demo/knowledge-share-placeholder.svg" alt="Video placeholder showing an answer being shared with the main session" width="300"> |
-| Select the sessions that know the repositories, docs, or systems involved. | Ask the agent that already has the right context. | Bring the useful finding back to the agent doing the work. |
+<table width="100%">
+  <tr>
+    <th width="35%" align="left">What you do</th>
+    <th width="65%" align="left">What it looks like</th>
+  </tr>
+  <tr>
+    <td valign="top">
+      <strong>1. Track the right agents</strong>
+      <p>Select the sessions that know the repositories, docs, or systems involved.</p>
+    </td>
+    <td valign="top" align="center">
+      <img src="assets/demo/knowledge-track-placeholder.svg" alt="Video placeholder showing sessions being selected for tracking" width="520">
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <strong>2. Ask the expert</strong>
+      <p>Ask the agent that already has the right context.</p>
+    </td>
+    <td valign="top" align="center">
+      <img src="assets/demo/knowledge-ask-placeholder.svg" alt="Video placeholder showing a question being sent to a knowledge agent" width="520">
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <strong>3. Share what matters</strong>
+      <p>Bring the useful finding back to the agent doing the work.</p>
+    </td>
+    <td valign="top" align="center">
+      <img src="assets/demo/knowledge-share-placeholder.svg" alt="Video placeholder showing an answer being shared with the main session" width="520">
+    </td>
+  </tr>
+</table>
 
 ### Why not just use subagents?
 
