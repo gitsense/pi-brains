@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title description">
+  <title id="title">Track knowledge agents video placeholder</title>
+  <desc id="description">Placeholder thumbnail for a video showing a user selecting sessions to track.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#050914"/>
+      <stop offset="1" stop-color="#111936"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6090ff"/>
+      <stop offset="1" stop-color="#a26cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" rx="30" fill="url(#background)"/>
+  <rect x="24" y="24" width="1232" height="672" rx="24" fill="none" stroke="#5474db" stroke-width="2"/>
+  <text x="640" y="135" text-anchor="middle" fill="#8c9bbd" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="28" letter-spacing="5">VIDEO PLACEHOLDER</text>
+  <text x="640" y="245" text-anchor="middle" fill="url(#accent)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="72" font-weight="700">1. Track</text>
+  <g transform="translate(350 325)">
+    <rect width="580" height="190" rx="24" fill="#0b1124" stroke="#627fdf" stroke-width="2"/>
+    <circle cx="68" cy="58" r="16" fill="#65d18a"/>
+    <rect x="105" y="43" width="270" height="30" rx="10" fill="#35456f"/>
+    <circle cx="68" cy="126" r="16" fill="#65d18a"/>
+    <rect x="105" y="111" width="340" height="30" rx="10" fill="#35456f"/>
+    <rect x="485" y="39" width="54" height="38" rx="19" fill="#6688ff"/>
+    <rect x="485" y="107" width="54" height="38" rx="19" fill="#6688ff"/>
+  </g>
+  <text x="640" y="600" text-anchor="middle" fill="#dce5ff" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34">Select the sessions that know the work</text>
+  <circle cx="640" cy="655" r="25" fill="none" stroke="#8c75ff" stroke-width="2"/>
+  <path d="M632 641 L652 655 L632 669 Z" fill="#8c75ff"/>
+</svg>

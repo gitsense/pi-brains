@@ -9,6 +9,7 @@
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
+  <a href="#spread-knowledge-not-context">Spread knowledge</a> &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
@@ -74,6 +75,34 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
     </td>
   </tr>
 </table>
+
+## Spread knowledge, not context
+
+Some tasks reach across several repositories, docs, and areas of expertise. Putting all of that material into one session can make the agent doing the work spend more time sorting through context than using it.
+
+`/brains sessions` lets you bring the right knowledge to that agent instead. Track the sessions that know the systems involved, ask the agent with the relevant experience, then share the useful part of its answer with your main session.
+
+Each agent stays focused on what it knows. The agent doing the work gets a useful lead—where to look, what matters, or what to watch out for—without having to repeat the same research.
+
+| 1. Track | 2. Ask | 3. Share |
+| --- | --- | --- |
+| <img src="assets/demo/knowledge-track-placeholder.svg" alt="Video placeholder showing sessions being selected for tracking" width="300"> | <img src="assets/demo/knowledge-ask-placeholder.svg" alt="Video placeholder showing a question being sent to a knowledge agent" width="300"> | <img src="assets/demo/knowledge-share-placeholder.svg" alt="Video placeholder showing an answer being shared with the main session" width="300"> |
+| Select the sessions that know the repositories, docs, or systems involved. | Ask the agent that already has the right context. | Bring the useful finding back to the agent doing the work. |
+
+### Why not just use subagents?
+
+Subagents are useful when an agent has a task it wants to split up. Tracked knowledge agents solve a different problem: they make experience from independent sessions available wherever it is needed.
+
+They do not belong to the main session or to one delegated task. A repository expert can help with today's bug, tomorrow's migration, or another agent's planning session. You choose who to ask and which parts of the answer are worth carrying over.
+
+| Subagents | Tracked knowledge agents |
+| --- | --- |
+| Help a parent agent complete a specific task | Help any session that needs their expertise |
+| Start with work delegated by the parent | Build knowledge in their own sessions and repositories |
+| Return the result of that delegated work | Can be consulted again across tasks |
+| Best for dividing execution | Best for spreading knowledge |
+
+The two approaches work well together: use subagents to divide the work, and tracked knowledge agents to help everyone start from what is already known.
 
 ## How it works
 
