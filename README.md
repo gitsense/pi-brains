@@ -80,10 +80,6 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 Using multiple agents to spread the context load isn't new. What's usually awkward is keeping those agents organized, asking them from one place, and bringing their answers back into the session doing the work. `/brains ask` makes that part easier.
 
-Too much context can hurt an agent's reasoning. Every document, tool call, and unrelated detail asks for some of its attention. Keeping different parts of the problem in focused sessions lets the main agent work with the findings instead of carrying all of the research.
-
-Track related sessions in GitSense Chat and register the group URL once. From then on, `/brains ask` can open that group from any Pi session and add the current session to it. Message the agents that already have the context you need, follow their status from one page, and use their replies to write one focused message for the agent doing the work.
-
 <table width="100%">
   <tr>
     <th width="35%" align="left">What you do</th>
