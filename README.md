@@ -125,6 +125,50 @@ built up, and send follow-up instructions. Adding an agent does not merge its
 history into the current session; it keeps the sessions together where you can
 work with them directly.
 
+### Connect independent agents
+
+**Spread knowledge. Improve reasoning.**
+
+Grouping agents also creates a place to connect them. Instead of creating
+short-lived subagents, ask one independent agent to consult other agents that
+already have useful domain knowledge and focused context.
+
+<table width="100%">
+  <tr>
+    <th width="35%" align="left">Ask two specialists</th>
+    <th width="65%" align="left">Planned demo</th>
+  </tr>
+  <tr>
+    <td valign="top">
+      <p>Give the main agent one instruction:</p>
+      <blockquote>
+        Ask the two agents in this group to inspect the files in their
+        respective workspaces and report the most important implementation
+        constraint each one finds. Compare their answers.
+      </blockquote>
+      <p>The specialists work in their own sessions and return their findings
+      to the main agent.</p>
+    </td>
+    <td valign="top" align="center">
+      <img src="assets/demo/connect-agents-placeholder.svg" alt="Placeholder for the connect independent agents demo video" width="520">
+    </td>
+  </tr>
+</table>
+
+In the demo, the two specialist agents read files and use tools inside their
+own workspaces. Their token counts grow as they investigate, while their file
+contents, tool calls, and intermediate noise stay out of the main agent's
+context. Only the useful replies come back for comparison and synthesis.
+
+The main session remains available for conversation while Pi Brains tracks the
+outstanding requests. When every specialist has replied, or the wait deadline
+expires, the main agent is informed once with the completed and missing
+responses.
+
+> Agent-to-agent messaging and automatic reply tracking are a planned workflow.
+> The grouping demos above show the independent-session collaboration available
+> today.
+
 ### Why this matters
 
 One agent does not need to carry every file, experiment, tool call, and failed
@@ -142,10 +186,9 @@ independently, remain useful after the original task, and be revisited or
 regrouped later. Their complete sessions remain available instead of being
 reduced to a single response returned to a parent agent.
 
-> This is human-directed collaboration, not automatic multi-agent
-> orchestration. Sessions do not silently share memory or coordinate tasks;
-> you decide which agents to bring together and what context should move
-> between them.
+> Sessions do not silently share memory. You decide which agents to bring
+> together and what questions to send; only their explicit replies move back
+> into the main agent's context.
 
 ## How it works
 

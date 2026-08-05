@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title description">
+  <title id="title">Connect independent agents video placeholder</title>
+  <desc id="description">Placeholder thumbnail showing a main agent asking two independent specialist agents to inspect their own workspaces.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#050914"/>
+      <stop offset="1" stop-color="#111936"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6090ff"/>
+      <stop offset="1" stop-color="#a26cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" rx="30" fill="url(#background)"/>
+  <rect x="24" y="24" width="1232" height="672" rx="24" fill="none" stroke="#5474db" stroke-width="2"/>
+  <text x="640" y="105" text-anchor="middle" fill="#8c9bbd" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="25" letter-spacing="5">VIDEO PLACEHOLDER</text>
+  <text x="640" y="180" text-anchor="middle" fill="url(#accent)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="58" font-weight="700">Connect independent agents</text>
+
+  <g transform="translate(105 270)">
+    <rect width="310" height="220" rx="22" fill="#0b1124" stroke="#728ce8" stroke-width="2"/>
+    <text x="155" y="55" text-anchor="middle" fill="#a9baff" font-family="ui-sans-serif, system-ui, sans-serif" font-size="27">Main agent</text>
+    <rect x="48" y="87" width="214" height="16" rx="8" fill="#35456f"/>
+    <rect x="73" y="119" width="164" height="16" rx="8" fill="#35456f"/>
+    <text x="155" y="180" text-anchor="middle" fill="#7f90b8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19">focused context</text>
+  </g>
+
+  <path d="M445 350 C540 350 545 290 640 290" fill="none" stroke="#6e8fff" stroke-width="7" stroke-linecap="round"/>
+  <path d="M445 410 C540 410 545 510 640 510" fill="none" stroke="#8a78ff" stroke-width="7" stroke-linecap="round"/>
+  <path d="M620 274 L644 290 L620 306" fill="none" stroke="#6e8fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M620 494 L644 510 L620 526" fill="none" stroke="#8a78ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g transform="translate(675 225)">
+    <rect width="465" height="175" rx="22" fill="#0b1124" stroke="#627fdf" stroke-width="2"/>
+    <text x="35" y="48" fill="#8ca8ff" font-family="ui-sans-serif, system-ui, sans-serif" font-size="26">Specialist A</text>
+    <text x="35" y="86" fill="#7f90b8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19">workspace-a/</text>
+    <rect x="35" y="111" width="230" height="14" rx="7" fill="#35456f"/>
+    <rect x="35" y="139" width="175" height="14" rx="7" fill="#35456f"/>
+    <text x="425" y="148" text-anchor="end" fill="#7ecf9a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19">tokens ↑</text>
+  </g>
+
+  <g transform="translate(675 440)">
+    <rect width="465" height="175" rx="22" fill="#0b1124" stroke="#9872e8" stroke-width="2"/>
+    <text x="35" y="48" fill="#c7a4ff" font-family="ui-sans-serif, system-ui, sans-serif" font-size="26">Specialist B</text>
+    <text x="35" y="86" fill="#9889b8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19">workspace-b/</text>
+    <rect x="35" y="111" width="230" height="14" rx="7" fill="#4a386f"/>
+    <rect x="35" y="139" width="175" height="14" rx="7" fill="#4a386f"/>
+    <text x="425" y="148" text-anchor="end" fill="#7ecf9a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19">tokens ↑</text>
+  </g>
+
+  <text x="640" y="665" text-anchor="middle" fill="#dce5ff" font-family="ui-sans-serif, system-ui, sans-serif" font-size="29">Separate investigations. Useful findings returned.</text>
+</svg>
