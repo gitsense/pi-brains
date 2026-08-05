@@ -169,22 +169,31 @@ responses.
 > The grouping demos above show the independent-session collaboration available
 > today.
 
-### Why this matters
+### Sub-agents?
 
-One agent does not need to carry every file, experiment, tool call, and failed
-path in a single context. You can spread that context across focused Pi
-sessions, compare independent lines of investigation, and bring forward only
-the findings that improve the next decision.
+Connected agents offer many of the context-isolation benefits of sub-agents,
+but they use a different relationship. A sub-agent is usually created by a
+parent for a particular task. A connected agent is an ordinary Pi session that
+started independently and can collaborate without becoming owned by a parent.
 
-Pi does not ship with a separate subagent system. These are ordinary Pi agents
-running in ordinary sessions, but grouping them in GitSense Chat makes them
-behave much like subagents: you can monitor their progress, inspect what each
-one has seen and done, and send follow-up instructions from one page.
+| | Sub-agent | Connected independent agent |
+| --- | --- | --- |
+| **Started by** | A parent agent for a task | A user as a normal Pi session |
+| **Relationship** | The parent creates and monitors it | No parent owns it; agents exchange explicit messages |
+| **Context** | Receives the context selected for the delegated task | Keeps its own workspace, history, tools, and domain knowledge |
+| **Lifetime** | Commonly scoped to the parent task | Remains available after the request and can be reused or regrouped |
+| **Result** | Returns a result to its parent | Shares an explicit reply while preserving its complete session |
 
-In some ways they are more flexible than conventional subagents. They can start
-independently, remain useful after the original task, and be revisited or
-regrouped later. Their complete sessions remain available instead of being
-reduced to a single response returned to a parent agent.
+Both approaches keep investigation noise away from the coordinating agent. A
+specialist can read files, run tools, explore failed paths, and spend tokens in
+its own context. Only the findings needed for the next decision have to move
+back to the main agent.
+
+Independent sessions add flexibility: an agent can become useful before a
+collaboration begins, develop expertise over time, work in a different
+workspace, and later help multiple groups. The tradeoff is that coordination is
+asynchronous—the agent must be available, fetch the request, and explicitly
+reply rather than being controlled through a parent lifecycle.
 
 > Sessions do not silently share memory. You decide which agents to bring
 > together and what questions to send; only their explicit replies move back
