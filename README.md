@@ -9,7 +9,7 @@
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
-  <a href="#brains-ask">/brains ask</a> &nbsp;·&nbsp;
+  <a href="#portable-agents-not-just-subagents">Portable agents</a> &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
@@ -76,58 +76,54 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
   </tr>
 </table>
 
-## `/brains ask`
+## Portable agents, not just subagents
 
-Using multiple agents to spread the context load isn't new. What's usually awkward is keeping those agents organized, asking them from one place, and bringing their answers back into the session doing the work. `/brains ask` makes that part easier.
+Subagents are useful when an agent needs to delegate part of its current task. But an agent does not have to begin as someone else's subagent to be useful.
 
-<table width="100%">
-  <tr>
-    <th width="35%" align="left">What you do</th>
-    <th width="65%" align="left">What it looks like</th>
-  </tr>
-  <tr>
-    <td valign="top">
-      <strong>1. Save a group</strong>
-      <p>Track sessions that carry useful context, copy the group URL, and register it with <code>/brains ask register &lt;url&gt;</code>.</p>
-    </td>
-    <td valign="top" align="center">
-      <img src="assets/demo/knowledge-track-placeholder.svg" alt="Video placeholder showing sessions being tracked and registered as a group" width="520">
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <strong>2. Ask what you need</strong>
-      <p>Run <code>/brains ask</code>, open the group, message the relevant agents, and follow their status.</p>
-    </td>
-    <td valign="top" align="center">
-      <img src="assets/demo/knowledge-ask-placeholder.svg" alt="Video placeholder showing questions being sent to agents from a saved group" width="520">
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <strong>3. Bring back what matters</strong>
-      <p>Use the replies to compose one focused message and send it to the main session through <code>/brains inbox</code>.</p>
-    </td>
-    <td valign="top" align="center">
-      <img src="assets/demo/knowledge-share-placeholder.svg" alt="Video placeholder showing several answers being combined and sent to the main session" width="520">
-    </td>
-  </tr>
-</table>
+A Pi session can start independently, build up its own context, and later be attached wherever its work is needed. From the current session's GitSense Chat page, you can monitor that agent, read its messages and tool calls, send follow-up instructions, and bring the useful results back into your work.
 
-### Why not just use subagents?
+Attaching a session does not copy its history into the main agent's context. It puts both sessions in the same workspace so you can decide what information is worth carrying over.
 
-Subagents are useful when the current agent needs to divide a task. `/brains ask` helps divide the context.
-
-A saved group can contain any sessions whose context may be useful, regardless of when they were created or what task created them. You choose which agents to ask and which parts of their answers deserve space in the main session.
-
-| Subagents | Saved groups |
+| Subagents | Portable agents |
 | --- | --- |
-| Divide the work for a specific task | Keep different parts of the context in different sessions |
-| Start with work delegated by a parent agent | Can bring together sessions created at different times for different work |
-| Return the result of the delegated work | Let you compare answers and decide what enters the main session |
-| Best for parallel execution | Best for keeping the main context focused |
+| Begin with work delegated by a parent session | Can start independently in any terminal |
+| Usually serve the task that created them | Can be attached later wherever their work becomes useful |
+| Return their result to the parent | Keep a first-class session you can revisit and message again |
+| Divide execution | Spread the context load while keeping each session focused |
 
-The two approaches work well together: use subagents to divide the work, and `/brains ask` to bring in context that already lives somewhere else.
+### 1. Start an agent anywhere
+
+Split the terminal, start another Pi session, and give it a task. It works in its own context without adding its tool calls, source files, and conversation history to the main session.
+
+<p align="center">
+  <img src="assets/demo/portable-agent-start-placeholder.svg" alt="Video placeholder showing a terminal split and an independent Pi agent starting work" width="760">
+</p>
+
+### 2. Attach it to the current session
+
+Back in the main TUI, run `/brains inspect` and open the session in GitSense Chat. Choose **All Sessions**, find the new session near the top of the recently active list, and click **Attach**.
+
+<p align="center">
+  <img src="assets/demo/portable-agent-attach-placeholder.svg" alt="Video placeholder showing an independently started Pi session being attached from All Sessions" width="760">
+</p>
+
+### 3. Monitor and interact from one page
+
+The attached agent appears beside the main session. Its messages, tool calls, and status update within roughly two seconds. You can watch it finish, ask it to dig deeper, or have it turn what it found into a report.
+
+<p align="center">
+  <img src="assets/demo/portable-agent-monitor-placeholder.svg" alt="Video placeholder showing two Pi sessions being monitored and messaged from one GitSense Chat page" width="760">
+</p>
+
+### 4. Inspect the work and carry it forward
+
+Open the attached agent's session page whenever you want to see how it worked: the messages it received, the tools it used, and the responses it produced. Bring the useful findings into the main session without bringing along all of the research that produced them.
+
+<p align="center">
+  <img src="assets/demo/portable-agent-inspect-placeholder.svg" alt="Video placeholder showing an attached agent's session history being inspected and its findings carried into the main session" width="760">
+</p>
+
+Start agents wherever it makes sense. Attach them wherever their work becomes useful.
 
 ## How it works
 
@@ -281,15 +277,9 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains checkpoint suggest off` | Disable checkpoint suggestions |
 | `/brains checkpoint suggest status` | Show checkpoint suggestion status |
 | `/brains forget` | Prune entries after the current `/tree` position (with backup) |
+| `/brains summary` | Generate a session summary as the final message |
 | `/brains inspect` | Show inspect view instructions |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
-| `/brains ask` | Open a saved knowledge group in GitSense Chat |
-| `/brains ask <group-name>` | Open a saved knowledge group directly |
-| `/brains ask register <url>` | Save a GitSense Chat group URL for reuse |
-| `/brains ask list` | List saved knowledge groups |
-| `/brains ask groups` | List saved knowledge groups |
-| `/brains ask rename` | Rename a saved knowledge group |
-| `/brains ask delete` | Remove a saved knowledge group |
 | `/brains inbox` | Review messages drafted in GitSense Chat |
 | `/brains inbox list` | List all messages in the session inbox |
 | `/brains inbox status` | Show current inbox settings |
