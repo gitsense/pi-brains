@@ -125,6 +125,28 @@ built up, and send follow-up instructions. Adding an agent does not merge its
 history into the current session; it keeps the sessions together where you can
 work with them directly.
 
+### Why this matters
+
+One agent does not need to carry every file, experiment, tool call, and failed
+path in a single context. You can spread that context across focused Pi
+sessions, compare independent lines of investigation, and bring forward only
+the findings that improve the next decision.
+
+Pi does not ship with a separate subagent system. These are ordinary Pi agents
+running in ordinary sessions, but grouping them in GitSense Chat makes them
+behave much like subagents: you can monitor their progress, inspect what each
+one has seen and done, and send follow-up instructions from one page.
+
+In some ways they are more flexible than conventional subagents. They can start
+independently, remain useful after the original task, and be revisited or
+regrouped later. Their complete sessions remain available instead of being
+reduced to a single response returned to a parent agent.
+
+> This is human-directed collaboration, not automatic multi-agent
+> orchestration. Sessions do not silently share memory or coordinate tasks;
+> you decide which agents to bring together and what context should move
+> between them.
+
 ## How it works
 
 1. **You teach** - Tell Pi what your domain knows, what rules to follow, what mistakes to avoid, or what context to pull in.
