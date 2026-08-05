@@ -9,7 +9,7 @@
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
-  <a href="#portable-agents-not-just-subagents">Portable agents</a> &nbsp;·&nbsp;
+  <a href="#bring-multiple-agents-together">Multiple agents</a> &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
@@ -53,7 +53,7 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
           <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect demo video" width="360">
         </a>
       </p>
-      <p>Open the active session in GitSense Chat to turn a wall of tool calls into actionable insights.</p>
+      <p>Open the current session, add other agents from <strong>All Sessions</strong>, and collaborate with them.</p>
     </td>
   </tr>
   <tr>
@@ -64,7 +64,7 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
           <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions demo video" width="360">
         </a>
       </p>
-      <p>Open GitSense Chat to monitor agents, find any session, and surface insights.</p>
+      <p>Filter all Pi sessions and bring the agents you need into one collaboration page.</p>
     </td>
     <td width="50%" valign="top">
       <p align="center"><code>/brains inbox auto on</code></p>
@@ -76,54 +76,54 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
   </tr>
 </table>
 
-## Portable agents, not just subagents
+## Bring multiple agents together
 
-Subagents are useful when an agent needs to delegate part of its current task. But an agent does not have to begin as someone else's subagent to be useful.
+Every Pi session can keep its own focused context while GitSense Chat gives you
+one place to find, monitor, and talk with the agents you need.
 
-A Pi session can start independently, build up its own context, and later be attached wherever its work is needed. From the current session's GitSense Chat page, you can monitor that agent, read its messages and tool calls, send follow-up instructions, and bring the useful results back into your work.
+<table width="100%">
+  <tr>
+    <th width="35%" align="left">Start with all sessions</th>
+    <th width="65%" align="left">Demo</th>
+  </tr>
+  <tr>
+    <td valign="top">
+      <p><strong><code>/brains sessions</code></strong></p>
+      <p>Open all Pi sessions in GitSense Chat. Filter the list to find the
+      sessions you care about, interact with them, or save a group for ongoing
+      collaboration.</p>
+    </td>
+    <td valign="top" align="center">
+      <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
+        <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions collaboration demo" width="520">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <th width="35%" align="left">Start with the current session</th>
+    <th width="65%" align="left">Demo</th>
+  </tr>
+  <tr>
+    <td valign="top">
+      <p><strong><code>/brains inspect</code></strong></p>
+      <p>Open the current session, choose <strong>All Sessions</strong> in the
+      side panel, and click <strong>Add</strong> beside any agent you want to
+      bring in. The agents appear at the top of the panel, where you can save
+      the selection or click <strong>Collaborate</strong>.</p>
+    </td>
+    <td valign="top" align="center">
+      <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
+        <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect agent attachment demo" width="520">
+      </a>
+    </td>
+  </tr>
+</table>
 
-Attaching a session does not copy its history into the main agent's context. It puts both sessions in the same workspace so you can decide what information is worth carrying over.
-
-| Subagents | Portable agents |
-| --- | --- |
-| Begin with work delegated by a parent session | Can start independently in any terminal |
-| Usually serve the task that created them | Can be attached later wherever their work becomes useful |
-| Return their result to the parent | Keep a first-class session you can revisit and message again |
-| Divide execution | Spread the context load while keeping each session focused |
-
-### 1. Start an agent anywhere
-
-Split the terminal, start another Pi session, and give it a task. It works in its own context without adding its tool calls, source files, and conversation history to the main session.
-
-<p align="center">
-  <img src="assets/demo/portable-agent-start-placeholder.svg" alt="Video placeholder showing a terminal split and an independent Pi agent starting work" width="760">
-</p>
-
-### 2. Attach it to the current session
-
-Back in the main TUI, run `/brains inspect` and open the session in GitSense Chat. Choose **All Sessions**, find the new session near the top of the recently active list, and click **Attach**.
-
-<p align="center">
-  <img src="assets/demo/portable-agent-attach-placeholder.svg" alt="Video placeholder showing an independently started Pi session being attached from All Sessions" width="760">
-</p>
-
-### 3. Monitor and interact from one page
-
-The attached agent appears beside the main session. Its messages, tool calls, and status update within roughly two seconds. You can watch it finish, ask it to dig deeper, or have it turn what it found into a report.
-
-<p align="center">
-  <img src="assets/demo/portable-agent-monitor-placeholder.svg" alt="Video placeholder showing two Pi sessions being monitored and messaged from one GitSense Chat page" width="760">
-</p>
-
-### 4. Inspect the work and carry it forward
-
-Open the attached agent's session page whenever you want to see how it worked: the messages it received, the tools it used, and the responses it produced. Bring the useful findings into the main session without bringing along all of the research that produced them.
-
-<p align="center">
-  <img src="assets/demo/portable-agent-inspect-placeholder.svg" alt="Video placeholder showing an attached agent's session history being inspected and its findings carried into the main session" width="760">
-</p>
-
-Start agents wherever it makes sense. Attach them wherever their work becomes useful.
+Both paths lead to the same collaboration view: one page where you can follow
+each agent's status, messages, and tool calls, understand the context it has
+built up, and send follow-up instructions. Adding an agent does not merge its
+history into the current session; it keeps the sessions together where you can
+work with them directly.
 
 ## How it works
 
