@@ -71,16 +71,24 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
       <p align="center">
         <img src="assets/demo/inbox-auto-on-placeholder.png" alt="Placeholder for the /brains inbox auto on demo video" width="360">
       </p>
-      <p>Craft complex messages ergonomically in GitSense Chat and send them to the TUI automatically.</p>
+      <p>Automatically deliver new inbox messages from GitSense Chat to the TUI.</p>
     </td>
   </tr>
 </table>
 
 ## Spread knowledge. Improve reasoning.
 
-One agent does not need to inspect every workspace itself. Ask it to consult
-independent agents that already have their own focused contexts, then combine
-what they learn into one useful answer.
+Agent sessions learn a lot, then we usually discard them. Reusing what they
+know means finding the session, asking a question, copying the response, and
+pasting it into another chat. That friction often makes starting over feel
+easier.
+
+Pi Brains removes the handoff. Your current agent can talk to agents that
+already know their workspaces and bring the answers back itself. Their context
+may be a little out of date, but they can refresh quickly and help the current
+agent get up to speed without starting from zero.
+
+For example, give the main agent one simple instruction:
 
 > Ask the other two agents to each create and run a script that counts files in
 > their working directory by extension. When both agents reply, combine their
@@ -89,50 +97,6 @@ what they learn into one useful answer.
 <p align="center">
   <img src="assets/demo/connect-agents-placeholder.svg" alt="Placeholder for a demo of one agent consulting two independent agents and combining their replies" width="100%">
 </p>
-
-Each specialist creates and runs the script inside its own workspace. Their
-token counts and tool activity grow independently, while the directory scans,
-file lists, and intermediate output stay out of the main agent's context. The
-demo ends with the main agent turning the two replies into one final summary.
-
-The main session remains available for conversation while Pi Brains tracks the
-outstanding requests. When every specialist has replied, or the wait deadline
-expires, the main agent is informed once with the completed and missing
-responses.
-
-> Agent-to-agent messaging and automatic reply tracking are a planned workflow.
-> The group-creation demos below show the independent-session collaboration
-> available today.
-
-### So, sub-agents?
-
-Connected agents offer many of the context-isolation benefits of sub-agents,
-but they use a different relationship. A sub-agent is usually created by a
-parent for a particular task. A connected agent is an ordinary Pi session that
-started independently and can collaborate without becoming owned by a parent.
-
-| | Sub-agent | Connected independent agent |
-| --- | --- | --- |
-| **Started by** | A parent agent for a task | A user as a normal Pi session |
-| **Relationship** | The parent creates and monitors it | No parent owns it; agents exchange explicit messages |
-| **Context** | Receives the context selected for the delegated task | Keeps its own workspace, history, tools, and domain knowledge |
-| **Lifetime** | Commonly scoped to the parent task | Remains available after the request and can be reused or regrouped |
-| **Result** | Returns a result to its parent | Shares an explicit reply while preserving its complete session |
-
-Both approaches keep investigation noise away from the coordinating agent. A
-specialist can read files, run tools, explore failed paths, and spend tokens in
-its own context. Only the findings needed for the next decision have to move
-back to the main agent.
-
-Independent sessions add flexibility: an agent can become useful before a
-collaboration begins, develop expertise over time, work in a different
-workspace, and later help multiple groups. The tradeoff is that coordination is
-asynchronous—the agent must be available, fetch the request, and explicitly
-reply rather than being controlled through a parent lifecycle.
-
-> Sessions do not silently share memory. You decide which agents to bring
-> together and what questions to send; only their explicit replies move back
-> into the main agent's context.
 
 ### How to create an agent group
 
@@ -339,9 +303,15 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains summary` | Generate a session summary as the final message |
 | `/brains inspect` | Show inspect view instructions |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
-| `/brains inbox` | Review messages drafted in GitSense Chat |
+| `/brains inbox` | Review pending messages in the session inbox |
 | `/brains inbox list` | List all messages in the session inbox |
-| `/brains inbox status` | Show current inbox settings |
+| `/brains inbox info` | Show the mailbox address, message summary, and wait-group progress |
+| `/brains inbox clear` | Dismiss rejected outbound sends |
+| `/brains inbox code generate` | Generate a 90-day Chat inbox code and enable Chat sending |
+| `/brains inbox code delete` | Revoke the Chat inbox code and disable Chat sending |
+| `/brains inbox code status` | Show the current Chat inbox code status |
+| `/brains inbox status` | Show the current auto-accept setting |
+| `/brains inbox auto` | Show or configure automatic inbox acceptance |
 | `/brains inbox auto on` | Automatically accept new inbox messages for this session |
 | `/brains inbox auto off` | Disable automatic inbox acceptance |
 | `/brains inbox auto status` | Show automatic inbox acceptance status |
