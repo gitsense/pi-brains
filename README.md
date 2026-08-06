@@ -9,7 +9,7 @@
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#delegate-work-to-any-pi-session">Delegate work</a> &nbsp;·&nbsp;
-  <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
+  <a href="#teach-pi-how-to-work">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
@@ -94,7 +94,7 @@ Both commands open the same collaboration view, where you can follow each
 agent's status, messages, and tool calls and send follow-up instructions. Each
 agent keeps its own session history and focused context.
 
-## How it works
+## Teach Pi how to work
 
 1. **You teach** - Tell Pi what your domain knows, what rules to follow, what mistakes to avoid, or what context to pull in.
 2. **It remembers** - pi-brains saves that guidance as focused GitSense records at the personal, repo, file, or topic level.
