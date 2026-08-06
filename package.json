@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "description": "Teach Pi durable knowledge and behavior with GitSense",
   "type": "module",
-  "license": "MIT",
+  "author": "Terrence Chen (GitSense)",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gitsense/pi-brains.git"
@@ -31,7 +32,8 @@
     "rules",
     "scripts",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "check": "tsgo --noEmit",
