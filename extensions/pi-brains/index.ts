@@ -16,6 +16,7 @@ import { handleRoleCommand } from "./role.ts";
 import { handleSummaryCommand } from "./summary.ts";
 import { appendBrainsInsightsEntry, registerBrainsInsightsEntryRenderer } from "./insights-entry.ts";
 import { showOutputPanel } from "./output-panel.ts";
+import { buildSearchDialog } from "./search-view.ts";
 import { buildSessionsDialog } from "./sessions-view.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
@@ -171,6 +172,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains sessions - review all Pi sessions in GitSense Chat
       if (command === "sessions") {
         await handleSessionsCommand(controller, ctx as unknown as ExtensionCommandContext);
+        return;
+      }
+
+      // /brains search - search across Pi sessions in GitSense Chat
+      if (command === "search") {
+        await handleSearchCommand(controller, ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -487,6 +494,33 @@ async function handleSessionsCommand(controller: PiBrainsController, ctx: Extens
     try {
       await copyToClipboard(dialog.chatUrl);
       ctx.ui.notify("Sessions URL copied to clipboard", "info");
+    } catch (error) {
+      ctx.ui.notify(`Failed to copy URL: ${formatError(error)}`, "error");
+    }
+  } else if (action === "copy-start") {
+    await copyCommand("gsc app native start", "Start command", ctx);
+  } else if (action === "copy-install") {
+    await copyCommand("gsc app native install", "Install command", ctx);
+  }
+}
+
+async function handleSearchCommand(controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
+  const chatAppStatus = await getChatAppStatus(controller);
+  const dialog = buildSearchDialog(chatAppStatus);
+  const choice = await ctx.ui.select(dialog.message, dialog.options.map(option => option.label));
+  const action = dialog.options.find(option => option.label === choice)?.action;
+
+  if (action === "open-chat") {
+    try {
+      await openExternalUrl(dialog.chatUrl, process.platform);
+      ctx.ui.notify(`Opening ${dialog.chatUrl}`, "info");
+    } catch (error) {
+      ctx.ui.notify(`Failed to open browser: ${formatError(error)}`, "error");
+    }
+  } else if (action === "copy-chat-url") {
+    try {
+      await copyToClipboard(dialog.chatUrl);
+      ctx.ui.notify("Search URL copied to clipboard", "info");
     } catch (error) {
       ctx.ui.notify(`Failed to copy URL: ${formatError(error)}`, "error");
     }
@@ -1321,6 +1355,7 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 - \/brains insights — Show a static session snapshot
 - \/brains inspect — Inspect the live Pi session in a terminal or browser
 - \/brains sessions — Review all Pi sessions in GitSense Chat
+- \/brains search — Search across Pi sessions in GitSense Chat
 - \/brains ask — Open and manage saved knowledge groups
 - \/brains ask register <url> — Save a GitSense Chat group URL
 - \/brains ask list — List saved knowledge groups

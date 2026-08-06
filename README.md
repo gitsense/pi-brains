@@ -8,6 +8,7 @@
 
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
+  <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
   <a href="#delegate-work-to-any-pi-session">Delegate to any session</a> &nbsp;·&nbsp;
   <a href="#teach-pi-how-to-work">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
@@ -31,6 +32,42 @@ Start Pi in a workspace and run:
 ```
 
 If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
+
+## See it in action
+
+Three quick demos. Click a preview to watch.
+
+<table width="100%">
+  <tr>
+    <td width="33%" valign="top">
+      <p align="center"><strong><code>/brains rules on</code></strong></p>
+      <p align="center">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-rules-on.mp4">
+          <img src="assets/demo/brains-rules-on.png" alt="Watch the /brains rules on demo video" width="300">
+        </a>
+      </p>
+      <p>Apply project guidance before Pi acts.</p>
+    </td>
+    <td width="33%" valign="top">
+      <p align="center"><strong><code>/brains sessions</code></strong></p>
+      <p align="center">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
+          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions demo video" width="300">
+        </a>
+      </p>
+      <p>Find and organize existing Pi sessions.</p>
+    </td>
+    <td width="33%" valign="top">
+      <p align="center"><strong><code>/brains inspect</code></strong></p>
+      <p align="center">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
+          <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect demo video" width="300">
+        </a>
+      </p>
+      <p>Inspect a session and connect it with other agents.</p>
+    </td>
+  </tr>
+</table>
 
 ## Delegate work to any Pi session
 
@@ -71,21 +108,11 @@ monitoring their work.
       <p align="center"><strong><code>/brains sessions</code></strong></p>
       <p>Start with all Pi sessions. Filter the list, choose the workers you
       need, and save them as a group.</p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
-          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions collaboration demo" width="360">
-        </a>
-      </p>
     </td>
     <td width="50%" valign="top">
       <p align="center"><strong><code>/brains inspect</code></strong></p>
       <p>Start with the current session, then add other agents from
       <strong>All Sessions</strong>.</p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
-          <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect agent attachment demo" width="360">
-        </a>
-      </p>
     </td>
   </tr>
 </table>
@@ -144,12 +171,6 @@ Start the interactive configuration from Pi:
 ```text
 /brains rules shell
 ```
-
-<p align="center">
-  <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-rules-on.mp4">
-    <img src="assets/demo/brains-rules-on.png" alt="Watch the /brains rules on demo video" width="520">
-  </a>
-</p>
 
 ## Try It Yourself
 
@@ -260,6 +281,7 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains summary` | Generate a session summary as the final message |
 | `/brains inspect` | Show inspect view instructions |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
+| `/brains search` | Open GitSense Chat search across Pi sessions |
 | `/brains inbox` | Review pending messages in the session inbox |
 | `/brains inbox list` | List all messages in the session inbox |
 | `/brains inbox info` | Show the mailbox address, message summary, and wait-group progress |
