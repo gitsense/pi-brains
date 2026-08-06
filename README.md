@@ -35,7 +35,8 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 ## See it in action
 
-Three quick demos. Click a preview to watch.
+Three quick demos. Click a preview to download the video, then open it from
+your browser's Downloads button in the top-right corner.
 
 <table width="100%">
   <tr>
@@ -49,22 +50,22 @@ Three quick demos. Click a preview to watch.
       <p>Apply project guidance before Pi acts.</p>
     </td>
     <td width="33%" valign="top">
-      <p align="center"><strong><code>/brains sessions</code></strong></p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
-          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions demo video" width="300">
-        </a>
-      </p>
-      <p>Find and organize existing Pi sessions.</p>
-    </td>
-    <td width="33%" valign="top">
       <p align="center"><strong><code>/brains inspect</code></strong></p>
       <p align="center">
         <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
           <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect demo video" width="300">
         </a>
       </p>
-      <p>Inspect a session and connect it with other agents.</p>
+      <p>Turn a wall of tool calls into actionable insights.</p>
+    </td>
+    <td width="33%" valign="top">
+      <p align="center"><strong><code>/brains sessions</code></strong></p>
+      <p align="center">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
+          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions demo video" width="300">
+        </a>
+      </p>
+      <p>Find, organize, and coordinate your Pi sessions.</p>
     </td>
   </tr>
 </table>
@@ -106,8 +107,9 @@ monitoring their work.
   <tr>
     <td width="50%" valign="top">
       <p align="center"><strong><code>/brains sessions</code></strong></p>
-      <p>Start with all Pi sessions. Filter the list, choose the workers you
-      need, and save them as a group.</p>
+      <p>Create a group and each session becomes a live card showing its latest
+      message, last activity, and whether the agent is working. Send messages
+      between agents and track their work from one place.</p>
     </td>
     <td width="50%" valign="top">
       <p align="center"><strong><code>/brains inspect</code></strong></p>
