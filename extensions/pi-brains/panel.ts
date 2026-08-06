@@ -80,6 +80,33 @@ export class BrainsPanel implements Component {
       }
     }
 
+    // Agent messaging overlay (§8.2): unread count, awaiting-outbound count,
+    // and wait-group progress — visible to the human without touching agent
+    // context. Rendered from the cached mailbox summary, never from a scan.
+    if (state.mailbox) {
+      const inbound = state.mailbox.mailbox.inbound;
+      const outbound = state.mailbox.mailbox.outbound;
+      const hasMail =
+        inbound.pending > 0 || inbound.delivering > 0 || outbound.awaiting > 0 || state.mailbox.wait_groups.length > 0;
+      if (hasMail) {
+        lines.push("", this.heading("MAIL"));
+        if (inbound.pending > 0) {
+          lines.push(this.theme.fg("accent", `${inbound.pending} unread`));
+        }
+        if (inbound.delivering > 0) {
+          lines.push(this.theme.fg("muted", `${inbound.delivering} being processed`));
+        }
+        if (outbound.awaiting > 0) {
+          lines.push(this.theme.fg("muted", `${outbound.awaiting} awaiting reply`));
+        }
+        for (const group of state.mailbox.wait_groups) {
+          const status = group.status === "complete" ? "complete" : group.status === "timed_out" ? "timed_out" : group.status === "cancelled" ? "cancelled" : "waiting";
+          const color = group.status === "timed_out" ? "warning" : group.status === "complete" ? "success" : "text";
+          lines.push(this.theme.fg(color, `${status} ${group.received}/${group.expected}`));
+        }
+      }
+    }
+
     lines.push(this.heading("DATA COVERAGE"), this.divider(contentWidth), "Current session · structured tools");
     if (state.shellActivityObserved) lines.push(this.theme.fg("muted", "Shell file activity may be missing"));
     if (state.gscStatus === "checking") lines.push(this.theme.fg("dim", "Checking gsc availability"));

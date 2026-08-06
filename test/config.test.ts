@@ -40,6 +40,7 @@ describe("configuration", () => {
       debug: false,
       guideEnabled: false,
       inboxAutoAccept: false,
+      waitGroupCursors: {},
       askGroups: [{
         id: "group-1",
         url: "http://localhost:3357/?chat=pi-sessions&track=expert-a&track-name=Experts",

@@ -19,6 +19,7 @@ export const DEFAULT_CONFIG: PiBrainsConfig = {
   debug: false,
   guideEnabled: false,
   inboxAutoAccept: false,
+  waitGroupCursors: {},
   askGroups: [],
 };
 
@@ -51,6 +52,17 @@ function parseAskGroups(value: unknown): AskGroup[] {
   });
 }
 
+function parseWaitGroupCursors(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+  const result: Record<string, number> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof item === "number" && Number.isInteger(item) && item >= 0) {
+      result[key] = item;
+    }
+  }
+  return result;
+}
+
 export function parseConfig(value: unknown): PiBrainsConfig {
   if (!isRecord(value)) return { ...DEFAULT_CONFIG };
 
@@ -77,6 +89,7 @@ export function parseConfig(value: unknown): PiBrainsConfig {
     debug: typeof value.debug === "boolean" ? value.debug : DEFAULT_CONFIG.debug,
     guideEnabled: typeof value.guideEnabled === "boolean" ? value.guideEnabled : DEFAULT_CONFIG.guideEnabled,
     inboxAutoAccept: typeof value.inboxAutoAccept === "boolean" ? value.inboxAutoAccept : DEFAULT_CONFIG.inboxAutoAccept,
+    waitGroupCursors: parseWaitGroupCursors(value.waitGroupCursors),
     askGroups: parseAskGroups(value.askGroups),
   };
 }

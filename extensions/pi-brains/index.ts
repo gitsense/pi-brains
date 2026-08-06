@@ -10,8 +10,9 @@ import { debugLog } from "./debug-log.ts";
 import { buildInspectDialog } from "./inspect-view.ts";
 import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
-import { handleInboxAutoCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
+import { handleInboxAutoCommand, handleInboxCodeCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
 import { handleForgetCommand } from "./forget.ts";
+import { handleSummaryCommand } from "./summary.ts";
 import { appendBrainsInsightsEntry, registerBrainsInsightsEntryRenderer } from "./insights-entry.ts";
 import { showOutputPanel } from "./output-panel.ts";
 import { buildSessionsDialog } from "./sessions-view.ts";
@@ -182,6 +183,8 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       if (command === "inbox") {
         if (value === "auto" || value.startsWith("auto ")) {
           await handleInboxAutoCommand(value.slice("auto".length), inboxWatcher, ctx);
+        } else if (value === "code" || value.startsWith("code ")) {
+          await handleInboxCodeCommand(controller, ctx, value.slice("code".length).trim());
         } else {
           await handleInboxCommand(controller, ctx, value, inboxWatcher);
         }
@@ -257,6 +260,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains forget - prune entries after the current /tree position (with backup)
       if (command === "forget") {
         await handleForgetCommand(ctx as unknown as ExtensionCommandContext);
+        return;
+      }
+
+      // /brains summary - generate a session summary as the final message
+      if (command === "summary") {
+        await handleSummaryCommand(pi, ctx as unknown as ExtensionCommandContext);
         return;
       }
 
@@ -1320,8 +1329,12 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 - \/brains checkpoint — Create a review checkpoint
 - \/brains checkpoint exit — Return to the main branch
 - \/brains forget — Prune entries after the current /tree position (with backup)
+- \/brains summary — Generate a session summary as the final message
 - \/brains inbox — Review pending GitSense Chat messages
 - \/brains inbox list — List all messages in the session inbox
+- \/brains inbox info — Show mailbox address, summary, and wait-group progress
+- \/brains inbox code generate|delete|status — Manage the Chat inbox code
+- \/brains inbox clear — Dismiss rejected sends
 - \/brains inbox auto on|off|status — Configure automatic inbox acceptance
 - \/brains inbox help — Show inbox commands and settings`;
   await showOutputPanel(ctx, "\/brains Commands", help);

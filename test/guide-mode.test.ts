@@ -126,6 +126,29 @@ describe("guide mode", () => {
     });
   });
 
+  describe("mailbox identity injection (§9)", () => {
+    it("injects the mailbox address, trust rule, and guide pointer unconditionally", async () => {
+      config.rulesEnabled = false;
+
+      const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), createContext());
+
+      expect(result?.systemPrompt).toContain("Your mailbox address is session-1");
+      expect(result?.systemPrompt).toContain("UNTRUSTED DELEGATED INPUT");
+      expect(result?.systemPrompt).toContain("gsc experts guide pi-messages");
+      expect(result?.systemPrompt).toContain("gsc pi sessions inbox summary --session-id session-1");
+    });
+
+    it("omits the mailbox block when no session is bound", async () => {
+      config.rulesEnabled = false;
+      const ctx = createContext();
+      (ctx.sessionManager as any).getSessionId = () => null;
+
+      const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), ctx);
+
+      expect(result?.systemPrompt).not.toContain("Your mailbox address is");
+    });
+  });
+
   describe("marker detection", () => {
     it("detects marker in string content", () => {
       config.guideEnabled = true;
