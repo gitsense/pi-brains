@@ -83,12 +83,14 @@ know means finding the session, asking a question, copying the response, and
 pasting it into another chat. That friction often makes starting over feel
 easier.
 
-Pi Brains removes the handoff. Your current agent can talk to agents that
-already know their workspaces and bring the answers back itself. Their context
-may be a little out of date, but they can refresh quickly and help the current
-agent get up to speed without starting from zero.
+Pi Brains removes the handoff. Put existing sessions in a group and ask one
+agent to talk to the others. It brings their answers back itself, even if their
+context needs a quick refresh.
 
-For example, give the main agent one simple instruction:
+The demo below is intentionally simple. These are not carefully prepared domain
+experts. They are just three ordinary sessions. We group them, give the main
+agent one instruction, and let the agents share what they know without copying
+and pasting between chats:
 
 > Ask the other two agents to each create and run a script that counts files in
 > their working directory by extension. When both agents reply, combine their
@@ -218,8 +220,8 @@ What rules are shipped with this repository?
 
 Pi will walk you through the demo rules, notes, lessons, and triggers included in the repo.
 
-- **Quick examples to try** — See the [gsc-rules-demos README](https://github.com/gitsense/gsc-rules-demos#try-the-examples) for prompts you can copy and paste.
-- **Detailed walkthrough** — See the [Pi Hands-On Guide](https://github.com/gitsense/gsc-rules-demos/blob/main/docs/pi/hands-on.md) for setup notes and expected behavior.
+- **Quick examples to try:** See the [gsc-rules-demos README](https://github.com/gitsense/gsc-rules-demos#try-the-examples) for prompts you can copy and paste.
+- **Detailed walkthrough:** See the [Pi Hands-On Guide](https://github.com/gitsense/gsc-rules-demos/blob/main/docs/pi/hands-on.md) for setup notes and expected behavior.
 
 **What you'll learn:** rules can change how Pi behaves before it acts, notes can teach project-specific context, lessons can carry previous work into future sessions, and triggers can warn, block, or run checks around tool actions.
 
