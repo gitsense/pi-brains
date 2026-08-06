@@ -12,6 +12,7 @@ import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-cata
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 import { handleInboxAutoCommand, handleInboxCodeCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
 import { handleForgetCommand } from "./forget.ts";
+import { handleRoleCommand } from "./role.ts";
 import { handleSummaryCommand } from "./summary.ts";
 import { appendBrainsInsightsEntry, registerBrainsInsightsEntryRenderer } from "./insights-entry.ts";
 import { showOutputPanel } from "./output-panel.ts";
@@ -266,6 +267,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains summary - generate a session summary as the final message
       if (command === "summary") {
         await handleSummaryCommand(pi, ctx as unknown as ExtensionCommandContext);
+        return;
+      }
+
+      // /brains role - assign a worker/expert role to this session
+      if (command === "role") {
+        await handleRoleCommand(pi, controller, ctx as unknown as ExtensionCommandContext, value);
         return;
       }
 
@@ -1330,6 +1337,7 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 - \/brains checkpoint exit — Return to the main branch
 - \/brains forget — Prune entries after the current /tree position (with backup)
 - \/brains summary — Generate a session summary as the final message
+- \/brains role — Assign a worker/expert role to this session (fresh sessions only; default: general purpose)
 - \/brains inbox — Review pending GitSense Chat messages
 - \/brains inbox list — List all messages in the session inbox
 - \/brains inbox info — Show mailbox address, summary, and wait-group progress
