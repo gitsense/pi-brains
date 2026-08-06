@@ -3,7 +3,7 @@
 </p>
 
 <h3 align="center">
-  Teach Pi what to remember and how to behave.
+  Give Pi knowledge and the ability to delegate work.
 </h3>
 
 <p align="center">
@@ -15,7 +15,7 @@
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
-**pi-brains** gives [Pi](https://github.com/earendil-works/pi) persistent, queryable guidance it can use while it works.
+**pi-brains** gives [Pi](https://github.com/earendil-works/pi) persistent, queryable guidance it can use while it works. It also lets Pi delegate tasks to other agents and bring their responses back into the current session.
 
 Tell Pi what your domain knows, what rules to follow, what mistakes to avoid, or what context to pull in. pi-brains saves that guidance as durable GitSense records, then helps Pi query, apply, and verify it at the right moment.
 
