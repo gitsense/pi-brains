@@ -8,8 +8,7 @@
 
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
-  <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
-  <a href="#spread-knowledge-improve-reasoning">Multiple agents</a> &nbsp;·&nbsp;
+  <a href="#delegate-work-to-any-pi-session">Delegate work</a> &nbsp;·&nbsp;
   <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
@@ -33,128 +32,74 @@ Start Pi in a workspace and run:
 
 If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
 
-## See it in action
+## Delegate work to any Pi session
 
-<table width="100%">
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><code>/brains rules on</code></p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-rules-on.mp4">
-          <img src="assets/demo/brains-rules-on.png" alt="Watch the /brains rules on demo video" width="360">
-        </a>
-      </p>
-      <p>Turn on guardrails that stop risky edits and enforce project behavior.</p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><code>/brains inspect</code></p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
-          <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect demo video" width="360">
-        </a>
-      </p>
-      <p>Open the current session, add other agents from <strong>All Sessions</strong>, and collaborate with them.</p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><code>/brains sessions</code></p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
-          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions demo video" width="360">
-        </a>
-      </p>
-      <p>Filter all Pi sessions and bring the agents you need into one collaboration page.</p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><code>/brains inbox auto on</code></p>
-      <p align="center">
-        <img src="assets/demo/inbox-auto-on-placeholder.png" alt="Placeholder for the /brains inbox auto on demo video" width="360">
-      </p>
-      <p>Automatically deliver new inbox messages from GitSense Chat to the TUI.</p>
-    </td>
-  </tr>
-</table>
+Delegating with pi-brains feels like using a subagent, with one important
+difference: the worker can be any existing Pi session. Choose a session that
+already understands the repository, feature, or problem, and give it a task
+directly from the Pi TUI.
 
-## Spread knowledge. Improve reasoning.
+In the session you want to use as the worker, run:
 
-Agent sessions learn a lot, then we usually discard them. Reusing what they
-know means finding the session, asking a question, copying the response, and
-pasting it into another chat. That friction often makes starting over feel
-easier.
+```text
+/brains inbox info
+```
 
-Pi Brains removes the handoff. Put existing sessions in a group and ask one
-agent to talk to the others. It brings their answers back itself, even if their
-context needs a quick refresh.
+Choose **Copy mailbox address**. Then tell another Pi session:
 
-The demo below is intentionally simple. These are not carefully prepared domain
-experts. They are just three ordinary sessions. We group them, give the main
-agent one instruction, and let the agents share what they know without copying
-and pasting between chats:
+```text
+Send a message to 019fc3cc-f702-799d-a7ae-89f0b310e458 and have it review the README changes.
+```
 
-> Ask the other two agents to each create and run a script that counts files in
-> their working directory by extension. When both agents reply, combine their
-> results into one concise summary.
+Pi routes the task to that session. The agent works with the context it has
+already built, then sends its response back to the current session. There is no
+need to switch chats or manually move the response.
 
 <p align="center">
-  <img src="assets/demo/connect-agents-placeholder.svg" alt="Placeholder for a demo of one agent consulting two independent agents and combining their replies" width="100%">
+  <img src="assets/demo/connect-agents-placeholder.svg" alt="Placeholder for a terminal demo showing one Pi session copying its mailbox address and another delegating a README review" width="100%">
 </p>
 
-### How to create an agent group
+### Work in Pi. Organize in GitSense Chat.
 
-Every Pi session keeps its own focused context. GitSense Chat gives you two ways
-to collect the agents you need into one group where you can follow and guide
-their work.
+Agent delegation works directly in the Pi TUI. GitSense Chat is an optional
+visual workspace for finding sessions, organizing them into groups, and
+monitoring their work.
 
 <table width="100%">
   <tr>
-    <th width="35%" align="left">Start with all sessions</th>
-    <th width="65%" align="left">Demo</th>
-  </tr>
-  <tr>
-    <td valign="top">
-      <p><strong><code>/brains sessions</code></strong></p>
-      <p>Open all Pi sessions in GitSense Chat. Filter the list to find the
-      sessions you care about, interact with them, or save a group for ongoing
-      collaboration.</p>
+    <td width="50%" valign="top">
+      <p align="center"><strong><code>/brains sessions</code></strong></p>
+      <p>Start with all Pi sessions. Filter the list, choose the workers you
+      need, and save them as a group.</p>
+      <p align="center">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
+          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions collaboration demo" width="360">
+        </a>
+      </p>
     </td>
-    <td valign="top" align="center">
-      <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
-        <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions collaboration demo" width="520">
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <th width="35%" align="left">Start with the current session</th>
-    <th width="65%" align="left">Demo</th>
-  </tr>
-  <tr>
-    <td valign="top">
-      <p><strong><code>/brains inspect</code></strong></p>
-      <p>Open the current session, choose <strong>All Sessions</strong> in the
-      side panel, and click <strong>Add</strong> beside any agent you want to
-      bring in. The agents appear at the top of the panel, where you can save
-      the selection or click <strong>Collaborate</strong>.</p>
-    </td>
-    <td valign="top" align="center">
-      <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
-        <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect agent attachment demo" width="520">
-      </a>
+    <td width="50%" valign="top">
+      <p align="center"><strong><code>/brains inspect</code></strong></p>
+      <p>Start with the current session, then add other agents from
+      <strong>All Sessions</strong>.</p>
+      <p align="center">
+        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
+          <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect agent attachment demo" width="360">
+        </a>
+      </p>
     </td>
   </tr>
 </table>
 
-Both paths lead to the same collaboration view: one page where you can follow
-each agent's status, messages, and tool calls, understand the context it has
-built up, and send follow-up instructions. Adding an agent does not merge its
-history into the current session; it keeps the sessions together where you can
-work with them directly.
+Both commands open the same collaboration view, where you can follow each
+agent's status, messages, and tool calls and send follow-up instructions. Each
+agent keeps its own session history and focused context.
 
 ## How it works
 
 1. **You teach** - Tell Pi what your domain knows, what rules to follow, what mistakes to avoid, or what context to pull in.
 2. **It remembers** - pi-brains saves that guidance as focused GitSense records at the personal, repo, file, or topic level.
 3. **It applies** - Pi queries those records when they matter: before it starts, before it edits, after it uses a tool, or when a session ends.
+4. **Agents collaborate** - Pi can delegate work to any existing session and bring its response back.
 
 ### What makes it different
 
@@ -162,16 +107,20 @@ pi-brains is not trying to replace hooks, markdown instructions, or search.
 
 Hooks react to events. Markdown shares guidance. Search finds text.
 
-pi-brains gives Pi focused records it can query and apply while it works.
+pi-brains gives Pi focused records it can query and apply while it works. It
+also makes existing Pi sessions addressable as workers.
 
 | Approach | Best at | Limitation |
 | --- | --- | --- |
 | Hooks | Reacting to workflow events | Hard to teach, browse, and query as durable knowledge |
 | Markdown docs | Sharing human-readable guidance | Passive unless Pi knows when and where to read them |
 | Search | Finding matching text or similar passages | Returns matches, not scoped behavioral records |
-| pi-brains | Storing scoped guidance Pi can query, apply, and verify | Complements source and docs rather than replacing them |
+| Subagents | Delegating work in the current workflow | The worker is usually created for the current task |
+| pi-brains | Storing scoped guidance and delegating to existing Pi sessions | Complements source, docs, and newly created subagents |
 
-The result is not that Pi stops reading source. The result is that Pi gets a better starting point, then verifies important findings against source before acting.
+The result is not that Pi stops reading source. Pi gets a better starting point,
+verifies important findings before acting, and can ask a session that already
+has relevant context to help.
 
 ### What rules can do
 
@@ -195,6 +144,12 @@ Start the interactive configuration from Pi:
 ```text
 /brains rules shell
 ```
+
+<p align="center">
+  <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-rules-on.mp4">
+    <img src="assets/demo/brains-rules-on.png" alt="Watch the /brains rules on demo video" width="520">
+  </a>
+</p>
 
 ## Try It Yourself
 

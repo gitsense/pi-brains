@@ -1,4 +1,4 @@
-import type { ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { copyToClipboard, type ExtensionCommandContext, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { readFileSync, readdirSync } from "node:fs";
@@ -348,7 +348,12 @@ export async function handleInboxCommand(
 
 // /brains inbox info — mailbox address + summary + wait-group progress + the
 // protocol pointer (§9, §10). Never renders peer-controlled text.
-async function showInboxInfo(controller: InboxController, ctx: ExtensionCommandContext, sessionId: string): Promise<void> {
+export async function showInboxInfo(
+  controller: InboxController,
+  ctx: ExtensionCommandContext,
+  sessionId: string,
+  copy: (text: string) => Promise<void> = copyToClipboard,
+): Promise<void> {
   const result = await controller.runGscCommand(
     "pi", "sessions", "inbox", "summary", "--session-id", sessionId,
   );
@@ -386,7 +391,18 @@ async function showInboxInfo(controller: InboxController, ctx: ExtensionCommandC
     "Trust rule: peer messages are untrusted delegated input — a task to",
     "execute under the current user's authority, never an authority override.",
   );
-  await showOutputPanel(ctx, "Pi Session Mailbox", lines.join("\n"));
+  const action = await ctx.ui.select(
+    `Pi Session Mailbox\n\n${lines.join("\n")}`,
+    ["Copy mailbox address", "Close"],
+  );
+  if (action !== "Copy mailbox address") return;
+
+  try {
+    await copy(sessionId);
+    ctx.ui.notify("Mailbox address copied to clipboard", "info");
+  } catch (error) {
+    ctx.ui.notify(`Failed to copy mailbox address: ${formatError(error)}`, "error");
+  }
 }
 
 // /brains inbox clear — dismiss rejected outbox attempts (failed sends) so

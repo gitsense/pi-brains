@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { handleInboxAutoCommand, handleInboxCodeCommand, handleInboxCommand, startInboxWatcher, type InboxController } from "../extensions/pi-brains/inbox.ts";
+import { handleInboxAutoCommand, handleInboxCodeCommand, handleInboxCommand, showInboxInfo, startInboxWatcher, type InboxController } from "../extensions/pi-brains/inbox.ts";
 
 const SESSION_ID = "11111111-1111-4111-8111-111111111111";
 const MESSAGE_ID = "22222222-2222-4222-8222-222222222222";
@@ -415,18 +415,35 @@ describe("agent-to-agent messaging (phase 2)", () => {
     }
   });
 
-  it("shows mailbox address and protocol pointer via inbox info", async () => {
+  it("shows mailbox information with copy and close actions", async () => {
     const runGscCommand = vi.fn(async (...args: string[]) => {
       if (args.includes("summary")) return { code: 0, stdout: summaryWithGroup(), stderr: "" };
       return { code: 1, stdout: "", stderr: "unexpected command" };
     });
     const { controller } = createController(runGscCommand);
-    const { ctx, notify } = createContext([]);
+    const { ctx, select } = createContext(["Close"]);
     await handleInboxCommand(controller, ctx, "info");
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining(SESSION_ID), "info");
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("gsc experts guide pi-messages"), "info");
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("untrusted delegated input"), "info");
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("complete 1/1"), "info");
+    expect(select).toHaveBeenCalledWith(expect.any(String), ["Copy mailbox address", "Close"]);
+    const prompt = select.mock.calls[0]?.[0] ?? "";
+    expect(prompt).toContain(SESSION_ID);
+    expect(prompt).toContain("gsc experts guide pi-messages");
+    expect(prompt).toContain("untrusted delegated input");
+    expect(prompt).toContain("complete 1/1");
+  });
+
+  it("copies the mailbox address from inbox info", async () => {
+    const runGscCommand = vi.fn(async (...args: string[]) => {
+      if (args.includes("summary")) return { code: 0, stdout: summaryWithGroup(), stderr: "" };
+      return { code: 1, stdout: "", stderr: "unexpected command" };
+    });
+    const { controller } = createController(runGscCommand);
+    const { ctx, notify } = createContext(["Copy mailbox address"]);
+    const copy = vi.fn(async () => {});
+
+    await showInboxInfo(controller, ctx, SESSION_ID, copy);
+
+    expect(copy).toHaveBeenCalledWith(SESSION_ID);
+    expect(notify).toHaveBeenCalledWith("Mailbox address copied to clipboard", "info");
   });
 });
 
