@@ -3,12 +3,12 @@
 </p>
 
 <h3 align="center">
-  Give Pi knowledge and the ability to delegate work.
+  Give Pi knowledge and turn any session into a worker.
 </h3>
 
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
-  <a href="#delegate-work-to-any-pi-session">Delegate work</a> &nbsp;·&nbsp;
+  <a href="#delegate-work-to-any-pi-session">Delegate to any session</a> &nbsp;·&nbsp;
   <a href="#teach-pi-how-to-work">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
@@ -34,10 +34,10 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 ## Delegate work to any Pi session
 
-Delegating with pi-brains feels like using a subagent, with one important
-difference: the worker can be any existing Pi session. Choose a session that
-already understands the repository, feature, or problem, and give it a task
-directly from the Pi TUI.
+Any existing Pi session can become a knowledge source or a worker. Ask what it
+knows, or give it a task using the context it has already built. It feels like
+delegating to a subagent, except the worker does not have to be created for the
+current task.
 
 In the session you want to use as the worker, run:
 
