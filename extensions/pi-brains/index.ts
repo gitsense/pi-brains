@@ -12,6 +12,7 @@ import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-cata
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 import { handleInboxAutoCommand, handleInboxCodeCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
 import { handleForgetCommand } from "./forget.ts";
+import { startSessionHeartbeat, type SessionHeartbeatHandle } from "./heartbeat.ts";
 import { handleRoleCommand } from "./role.ts";
 import { handleSummaryCommand } from "./summary.ts";
 import { appendBrainsInsightsEntry, registerBrainsInsightsEntryRenderer } from "./insights-entry.ts";
@@ -24,6 +25,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const controller = new PiBrainsController(pi, config);
   let brainsStatusPending = false;
   let inboxWatcher: InboxWatcherHandle | null = null;
+  let sessionHeartbeat: SessionHeartbeatHandle | null = null;
 
   // Initialize checkpoint event handlers
   initCheckpointHandlers(pi);
@@ -51,6 +53,8 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         void saveConfig(config);
       },
     });
+    sessionHeartbeat?.stop();
+    sessionHeartbeat = startSessionHeartbeat(controller, ctx);
     if (config.inboxAutoAccept) {
       ctx.ui.notify("Inbox auto-accept is ON. New messages will be delivered automatically.", "warning");
     }
@@ -122,6 +126,8 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   pi.on("session_shutdown", () => {
     inboxWatcher?.stop();
     inboxWatcher = null;
+    sessionHeartbeat?.stop();
+    sessionHeartbeat = null;
     controller.dispose();
   });
 

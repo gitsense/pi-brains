@@ -95,11 +95,27 @@ function inboxAutoAcceptStatus(watcher: InboxWatcherHandle | null): "ON" | "OFF"
 }
 
 /**
+ * Resolve GSC_HOME the same way gsc's settings.GetGSCHome(false) does: the
+ * environment variable (with ~ expansion) or the ~/.gitsense fallback.
+ * Shared by the inbox watcher and the session heartbeat so both target the
+ * same store the chat app reads.
+ */
+export function resolveGscHome(): { gscHome: string; usingFallback: boolean } {
+  const raw = process.env.GSC_HOME;
+  if (raw && raw.trim() !== "") {
+    const expanded = raw === "~" || raw.startsWith("~/")
+      ? join(homedir(), raw.slice(1))
+      : raw;
+    return { gscHome: resolve(expanded), usingFallback: false };
+  }
+  return { gscHome: join(homedir(), ".gitsense"), usingFallback: true };
+}
+
+/**
  * Resolve the messaging store directories gsc reads/writes for a session,
  * mirroring gsc's settings.GetGSCHome(false) + GetPiSessionsStateDir. This is
  * the exact store that `gsc pi sessions inbox ...` targets.
  *
- * If GSC_HOME is not set in this process, gsc falls back to ~/.gitsense.
  * Messages drafted in GitSense Chat are stored under the chat server's
  * GSC_HOME, so a mismatch here means the watcher checks a different store
  * than the one the chat app writes to.
@@ -110,18 +126,7 @@ function resolveInboxStore(sessionId: string): {
   outboxDir: string;
   usingFallback: boolean;
 } {
-  const raw = process.env.GSC_HOME;
-  let gscHome: string;
-  let usingFallback = false;
-  if (raw && raw.trim() !== "") {
-    const expanded = raw === "~" || raw.startsWith("~/")
-      ? join(homedir(), raw.slice(1))
-      : raw;
-    gscHome = resolve(expanded);
-  } else {
-    gscHome = join(homedir(), ".gitsense");
-    usingFallback = true;
-  }
+  const { gscHome, usingFallback } = resolveGscHome();
   const sessionsDir = join(gscHome, "data", "pi", "sessions");
   return {
     gscHome,

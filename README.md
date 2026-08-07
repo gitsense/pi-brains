@@ -300,12 +300,36 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains dismiss` | Dismiss the GitSense unavailable notice |
 | `/brains help` | Show available commands |
 
+## Session liveness
+
+While a Pi session runs with pi-brains loaded (TUI mode), the extension
+records a heartbeat every 15 seconds in a single shared SQLite store so
+GitSense Chat can tell whether a session is alive or needs to be launched:
+
+```text
+GSC_HOME/data/pi/pi-heartbeats.sqlite3
+```
+
+One row per session in the `heartbeats` table: `session_id` (primary key),
+`pid`, `cwd`, `started_at`, `status` (`alive` | `stopped`), and
+`last_heartbeat_at` (epoch milliseconds), indexed on
+`(status, last_heartbeat_at)`. Writes are upserts with WAL + a busy timeout
+so concurrent Pi sessions share the store safely; rows idle for more than 30
+days are pruned on each write. On a clean shutdown the extension marks the
+row `stopped`; on a crash the row simply goes stale. Consumers should treat a
+session as alive when `status = 'alive'` and `last_heartbeat_at` is fresh,
+and as needing launch when the row is missing, `stopped`, or stale. The
+extension exports `getAliveHeartbeatSessionIds(dbPath, withinMs)` and
+`getHeartbeatRecordsForSessions(dbPath, sessionIds)` for the two lookup
+patterns (recently-alive set, and cross-reference against a session set).
+
 ## Current Boundaries
 
 - File tracking is exact for structured `read`, `edit`, and `write` tools.
 - Arbitrary shell file activity may be missing.
 - Brain analysis and cross-session history require GitSense integration.
 - Brains are guidance, not a replacement for source verification.
+- Liveness is advertised by the extension heartbeat store; a Pi session without pi-brains loaded writes no heartbeat.
 
 ## Development
 
