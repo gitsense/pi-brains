@@ -11,6 +11,7 @@ import { buildInspectDialog } from "./inspect-view.ts";
 import { handleRecorderRulesCommand, handleShellRulesCommand } from "./rule-catalog.ts";
 import { isSuccessfulExpertsInit, showBrainsStatus } from "./brains-status.ts";
 import { handleInboxAutoCommand, handleInboxCodeCommand, handleInboxCommand, startInboxWatcher, type InboxWatcherHandle } from "./inbox.ts";
+import { loadInboxWatcherState, saveInboxWatcherState, type DurableInboxWatcherState } from "./inbox-state.ts";
 import { handleForgetCommand } from "./forget.ts";
 import { startSessionHeartbeat, type SessionHeartbeatHandle } from "./heartbeat.ts";
 import { handleRoleCommand } from "./role.ts";
@@ -26,6 +27,23 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   let brainsStatusPending = false;
   let inboxWatcher: InboxWatcherHandle | null = null;
   let sessionHeartbeat: SessionHeartbeatHandle | null = null;
+  let pendingConfigSave: Promise<void> = Promise.resolve();
+  let pendingInboxStateSave: Promise<void> = Promise.resolve();
+  const persistConfig = (): Promise<void> => {
+    // Keep later writes usable if an earlier filesystem write failed.
+    pendingConfigSave = pendingConfigSave.catch(() => {}).then(() => saveConfig(config));
+    return pendingConfigSave;
+  };
+  const persistInboxState = (sessionId: string, state: DurableInboxWatcherState): Promise<void> => {
+    const snapshot: DurableInboxWatcherState = {
+      notifiedAgentMessageIds: [...state.notifiedAgentMessageIds],
+      waitGroupCursors: { ...state.waitGroupCursors },
+    };
+    pendingInboxStateSave = pendingInboxStateSave
+      .catch(() => {})
+      .then(() => saveInboxWatcherState(sessionId, snapshot));
+    return pendingInboxStateSave;
+  };
 
   // Initialize checkpoint event handlers
   initCheckpointHandlers(pi);
@@ -42,16 +60,33 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
   registerBrainsInsightsEntryRenderer(pi);
 
-  pi.on("session_start", (_event, ctx) => {
+  pi.on("session_start", async (_event, ctx) => {
     brainsStatusPending = false;
     controller.start(ctx);
+    const sessionId = controller.getSessionId();
     inboxWatcher?.stop();
+    const inboxState = sessionId
+      ? await loadInboxWatcherState(sessionId, config.waitGroupCursors)
+      : { notifiedAgentMessageIds: [], waitGroupCursors: { ...config.waitGroupCursors } };
     inboxWatcher = startInboxWatcher(controller, ctx, {
       initialAutoAccept: config.inboxAutoAccept,
       onAutoAcceptChange: (enabled) => {
         config.inboxAutoAccept = enabled;
-        void saveConfig(config);
+        void persistConfig().catch(() => {});
       },
+      notifiedAgentMessageIds: inboxState.notifiedAgentMessageIds,
+      onNotifiedAgentMessageIdsChange: async (messageIds) => {
+        if (!sessionId) return;
+        inboxState.notifiedAgentMessageIds = messageIds;
+        await persistInboxState(sessionId, inboxState);
+      },
+      waitGroupCursors: inboxState.waitGroupCursors,
+      onWaitGroupCursorsChange: async (cursors) => {
+        if (!sessionId) return;
+        inboxState.waitGroupCursors = cursors;
+        await persistInboxState(sessionId, inboxState);
+      },
+      onMailboxSummary: (summary) => controller.setMailboxSummary(summary),
     });
     sessionHeartbeat?.stop();
     sessionHeartbeat = startSessionHeartbeat(controller, ctx);
@@ -123,11 +158,13 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     return result;
   });
 
-  pi.on("session_shutdown", () => {
+  pi.on("session_shutdown", async () => {
     inboxWatcher?.stop();
     inboxWatcher = null;
     sessionHeartbeat?.stop();
     sessionHeartbeat = null;
+    await pendingConfigSave.catch(() => {});
+    await pendingInboxStateSave.catch(() => {});
     controller.dispose();
   });
 

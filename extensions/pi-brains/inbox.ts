@@ -84,9 +84,12 @@ export interface InboxWatcherOptions {
   waitGroupPollIntervalMs?: number;
   initialAutoAccept?: boolean;
   onAutoAcceptChange?: (enabled: boolean) => void;
+  /** Durable message-level notification dedupe for metadata-only agent mail wake-ups. */
+  notifiedAgentMessageIds?: string[];
+  onNotifiedAgentMessageIdsChange?: (messageIds: string[]) => void | Promise<void>;
   /** Durable per-group cursor (§8.1): last notified event_seq per group. */
   waitGroupCursors?: Record<string, number>;
-  onWaitGroupCursorsChange?: (cursors: Record<string, number>) => void;
+  onWaitGroupCursorsChange?: (cursors: Record<string, number>) => void | Promise<void>;
   onMailboxSummary?: (summary: MailboxSummary | null) => void;
 }
 
@@ -627,7 +630,7 @@ function buildYouHaveMailNotice(sessionId: string, messages: InboxMessage[]): st
   const lines = messages.map(message => {
     const from = message.envelope?.sender_session_id ? shortId(message.envelope.sender_session_id) : "unknown";
     const thread = message.envelope?.thread_id ? shortId(message.envelope.thread_id) : shortId(message.message_id);
-    return `- from ${from} · thread ${thread} · ${formatAge(message.created_at)}`;
+    return `- from ${from} · thread ${thread} · message ${shortId(message.message_id)} · ${formatAge(message.created_at)}`;
   });
   return [
     `[pi-brains] You have mail (${messages.length})`,
@@ -713,13 +716,17 @@ export function startInboxWatcher(
   let initialized = false;
   let autoAccept = options.initialAutoAccept ?? false;
   const seen = new Set<string>();
+  const notifiedAgentMessageIds = new Set(options.notifiedAgentMessageIds ?? []);
   const autoFailureNotices = new Set<string>();
   const cursors: Record<string, number> = { ...(options.waitGroupCursors ?? {}) };
   // Last-known summary from the wait-group poll; used for §8 classification
   // (group terminal states) without extra gsc calls.
   let lastSummary: MailboxSummary | null = null;
-  const persistCursors = (): void => {
-    options.onWaitGroupCursorsChange?.({ ...cursors });
+  const persistCursors = async (): Promise<void> => {
+    await options.onWaitGroupCursorsChange?.({ ...cursors });
+  };
+  const persistNotifiedAgentMessageIds = async (): Promise<void> => {
+    await options.onNotifiedAgentMessageIdsChange?.([...notifiedAgentMessageIds]);
   };
 
   const poll = async (): Promise<void> => {
@@ -733,10 +740,13 @@ export function startInboxWatcher(
       );
       if (!result || result.code !== 0 || stopped) return;
       const parsed = parseInboxPoll(result.stdout);
-      const newMessages = parsed.filter(message => message.status === "pending" && !seen.has(message.message_id));
+      const pending = parsed.filter(message => message.status === "pending");
+      const humanNew = pending.filter(message => isHumanMessage(message) && !seen.has(message.message_id));
+      // Unlike human inbox badges, agent wake-ups must include mail that arrived
+      // while Pi was offline. Durable ids, rather than the first poll, provide
+      // restart dedupe without suppressing that offline work.
+      const agentNew = pending.filter(message => !isHumanMessage(message) && !notifiedAgentMessageIds.has(message.message_id));
       parsed.forEach(message => seen.add(message.message_id));
-      const humanNew = newMessages.filter(isHumanMessage);
-      const agentNew = newMessages.filter(message => !isHumanMessage(message));
       if (autoAccept) {
         // Auto-accept applies to human Chat mail only; agent mail is never
         // claimed by the watcher (the agent fetches it, one at a time).
@@ -757,9 +767,15 @@ export function startInboxWatcher(
         ctx.ui.notify(`New ${suffix} in the Pi session inbox. Run /brains inbox to review.`, "info");
       }
       // Agent mail: classification + metadata-only notices (§8). Notifications
-      // for delivering state are never emitted (newMessages is pending-only).
-      if (initialized && agentNew.length > 0) {
+      // for delivering state are never emitted (agentNew is pending-only).
+      if (agentNew.length > 0) {
         await handleAgentMail(controller, sessionId, agentNew, ctx, lastSummary);
+        // Mark every classified message, including wait-group-suppressed replies:
+        // each has now had its one notification policy decision. Persist only
+        // after requesting injection; a crash in between may redeliver, which
+        // preserves the watcher's at-least-once failure mode.
+        agentNew.forEach(message => notifiedAgentMessageIds.add(message.message_id));
+        await persistNotifiedAgentMessageIds();
       }
       initialized = true;
     } catch {
@@ -813,7 +829,7 @@ export function startInboxWatcher(
           controller.sendUserMessage(notice, ctx.isIdle() ? undefined : { deliverAs: "followUp" });
           cursors[group.id] = Math.max(cursors[group.id] ?? 0, event.event_seq);
         }
-        if (unseen.length > 0) persistCursors();
+        if (unseen.length > 0) await persistCursors();
       }
     } catch {
       // Quiet when gsc is unavailable; the next poll retries.

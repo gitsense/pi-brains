@@ -1,7 +1,7 @@
 # Agent-to-Agent Messaging — v1.2.1 Design Spec
 
 **Status:** Architecture approved. Conditional final sign-off received (review round 4); v1.2.1 adds the three lifecycle guards (wait-group capacity, per-group event cursor, stale-claim recovery matrix).
-**Supersedes:** `inbox-agent-messaging-v1.md` (v1.0–v1.2, edited in place); `inbox-agent-messaging-review.md` (review history).
+**Supersedes:** `inbox-agent-messaging-v1.md` (v1.0–v1.2, edited in place); `archive/inbox-agent-messaging-review.md` (review history).
 
 ---
 

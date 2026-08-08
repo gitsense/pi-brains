@@ -279,11 +279,9 @@ describe("agent-to-agent messaging (phase 2)", () => {
     vi.useFakeTimers();
     try {
       const restore = withGscHome();
-      let calls = 0;
       const runGscCommand = vi.fn(async (...args: string[]) => {
         if (args.includes("poll")) {
-          calls += 1;
-          return { code: 0, stdout: JSON.stringify({ session_id: SESSION_ID, messages: calls > 1 ? [JSON.parse(agentMessage())] : [] }), stderr: "" };
+          return { code: 0, stdout: JSON.stringify({ session_id: SESSION_ID, messages: [JSON.parse(agentMessage())] }), stderr: "" };
         }
         if (args.includes("summary")) return { code: 0, stdout: emptySummary(), stderr: "" };
         return { code: 1, stdout: "", stderr: "unexpected command" };
@@ -298,7 +296,47 @@ describe("agent-to-agent messaging (phase 2)", () => {
       expect(notify).toHaveBeenCalledWith(expect.stringContaining("You have mail (1)"), "info");
       expect(notify).toHaveBeenCalledWith(expect.stringContaining("--kind agent --limit 1"), "info");
       expect(notify).toHaveBeenCalledWith(expect.stringContaining("gsc experts guide pi-messages"), "info");
+      expect(notify).toHaveBeenCalledWith(expect.stringContaining("message " + AGENT.slice(0, 8)), "info");
       watcher.stop();
+      restore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("persists agent notification ids and does not redeliver pending mail after restart", async () => {
+    vi.useFakeTimers();
+    try {
+      const restore = withGscHome();
+      const runGscCommand = vi.fn(async (...args: string[]) => {
+        if (args.includes("poll")) {
+          return { code: 0, stdout: JSON.stringify({ session_id: SESSION_ID, messages: [JSON.parse(agentMessage())] }), stderr: "" };
+        }
+        if (args.includes("summary")) return { code: 0, stdout: emptySummary(), stderr: "" };
+        return { code: 1, stdout: "", stderr: "unexpected command" };
+      });
+      const { controller, sendUserMessage } = createController(runGscCommand);
+      const { ctx, notify } = createContext([]);
+      let persisted: string[] = [];
+      const first = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        pollIntervalMs: 10,
+        onNotifiedAgentMessageIdsChange: (messageIds) => { persisted = messageIds; },
+      });
+      await vi.advanceTimersByTimeAsync(10);
+      expect(sendUserMessage).toHaveBeenCalledTimes(1);
+      expect(persisted).toEqual([AGENT]);
+      first.stop();
+
+      sendUserMessage.mockClear();
+      notify.mockClear();
+      const restarted = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        pollIntervalMs: 10,
+        notifiedAgentMessageIds: persisted,
+      });
+      await vi.advanceTimersByTimeAsync(20);
+      expect(sendUserMessage).not.toHaveBeenCalled();
+      expect(notify).not.toHaveBeenCalledWith(expect.stringContaining("You have mail"), "info");
+      restarted.stop();
       restore();
     } finally {
       vi.useRealTimers();
@@ -410,6 +448,43 @@ describe("agent-to-agent messaging (phase 2)", () => {
       await vi.advanceTimersByTimeAsync(10);
       expect(notify.mock.calls.length).toBe(notifyCount);
       watcher.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not replay a wait-group event after restart with its durable cursor", async () => {
+    vi.useFakeTimers();
+    try {
+      const runGscCommand = vi.fn(async (...args: string[]) => {
+        if (args.includes("summary")) return { code: 0, stdout: summaryWithGroup(), stderr: "" };
+        if (args.includes("wait") && args.includes("status")) {
+          return { code: 0, stdout: waitStatus([{ event_id: "evt-1", event_seq: 1, type: "complete", at: "2026-08-05T12:30:00Z", details: '{"expected":1,"received":1}' }]), stderr: "" };
+        }
+        return { code: 1, stdout: "", stderr: "unexpected command" };
+      });
+      const { controller, sendUserMessage } = createController(runGscCommand);
+      const { ctx, notify } = createContext([]);
+      let persisted: Record<string, number> = {};
+      const first = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        waitGroupPollIntervalMs: 10,
+        onWaitGroupCursorsChange: (cursors) => { persisted = cursors; },
+      });
+      await vi.advanceTimersByTimeAsync(10);
+      expect(sendUserMessage).toHaveBeenCalledWith(expect.stringContaining("event evt-1"), undefined);
+      expect(persisted).toEqual({ [GROUP_ID]: 1 });
+      first.stop();
+
+      sendUserMessage.mockClear();
+      notify.mockClear();
+      const restarted = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        waitGroupPollIntervalMs: 10,
+        waitGroupCursors: persisted,
+      });
+      await vi.advanceTimersByTimeAsync(20);
+      expect(sendUserMessage).not.toHaveBeenCalled();
+      expect(notify).not.toHaveBeenCalledWith(expect.stringContaining("event evt-1"), "info");
+      restarted.stop();
     } finally {
       vi.useRealTimers();
     }

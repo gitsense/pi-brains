@@ -2,7 +2,7 @@
 
 > **Status: SUPERSEDED.** This was the original design-review prompt. The design
 > was reviewed, iterated, and settled — see
-> [**`inbox-agent-messaging-v1.md`**](./inbox-agent-messaging-v1.md) for the
+> [**`inbox-agent-messaging-v1.md`**](../inbox-agent-messaging-v1.md) for the
 > current v1 spec (schema v2 envelope, send/reply boundary, wait groups,
 > notification policy, mailbox summary/UI).
 > This file is kept as review history only.

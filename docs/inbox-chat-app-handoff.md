@@ -2,7 +2,7 @@
 
 > Stable, pointable contract for the Chat-app slice. Spec source of truth:
 > [`./inbox-agent-messaging-v1.md`](./inbox-agent-messaging-v1.md) (v1.2.1).
-> Review history: [`./inbox-agent-messaging-review.md`](./inbox-agent-messaging-review.md) (superseded).
+> Review history: [`./archive/inbox-agent-messaging-review.md`](./archive/inbox-agent-messaging-review.md) (superseded).
 
 ## 0. Recent changes (rev 2.2 addendum — these supersede earlier sections where they differ)
 
@@ -13,7 +13,7 @@
 ## 1. Read first (in order)
 
 1. `./inbox-agent-messaging-v1.md` — v1.2.1: §1–§3 (goals/threat/scope), §4 (schema v2), §5 (commands), §8 (notification policy), §10 (**this slice**), §11 (rolling compatibility), §15 (review map), §16 (change surface by repo).
-2. `./inbox-agent-messaging-review.md` — skim only.
+2. `./archive/inbox-agent-messaging-review.md` — historical review; skim only.
 3. Prior phase reports (summarized in §6):
    - **Phase 1 (gsc-cli, done)** — schema v2; `send/reply/fetch/complete/keepalive/wait/summary`; outbox + wait-group stores; dual-read. Code: `~/gsc-cli/internal/pi/sessions/{envelope,inbox,outbox,fetch,waitgroups,summary}.go`, `~/gsc-cli/internal/cli/pi/sessions/inbox.go`.
    - **Phase 2 (pi-brains, done)** — always-on identity/trust/guide pointer; awaiting-aware watcher (metadata-only "you have mail"); pure-reader wait-group wake-ups with durable cursor; overlay mail section; `/brains inbox info`. Code: `~/pi-brains/extensions/pi-brains/{inbox,controller,index,panel,types,config}.ts`.
