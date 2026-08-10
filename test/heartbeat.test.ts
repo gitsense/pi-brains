@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { DEFAULT_HEARTBEAT_INTERVAL_MS, getAliveHeartbeatSessionIds, getHeartbeatRecordsForSessions, heartbeatDbPath, startSessionHeartbeat, type HeartbeatSource } from "../extensions/pi-brains/heartbeat.ts";
+import { dirname, join } from "node:path";
+import { DEFAULT_HEARTBEAT_INTERVAL_MS, detectHeartbeatRuntime, getAliveHeartbeatSessionIds, getHeartbeatRecordsForSessions, heartbeatDbPath, startSessionHeartbeat, type HeartbeatSource } from "../extensions/pi-brains/heartbeat.ts";
 
 const SESSION_ID = "11111111-1111-4111-8111-111111111111";
 const OTHER_SESSION_ID = "22222222-2222-4222-8222-222222222222";
@@ -28,7 +28,11 @@ describe("pi session heartbeat store", () => {
   it("upserts an initial alive heartbeat immediately with session metadata", () => {
     const { dbPath, restore } = withTempStore();
     try {
-      const heartbeat = startSessionHeartbeat(createSource(), { mode: "tui", cwd: "/work/demo" }, { dbPath });
+      const heartbeat = startSessionHeartbeat(createSource(), { mode: "tui", cwd: "/work/demo" }, {
+        dbPath,
+        runtime: "tmux",
+        getAutoAcceptEnabled: () => true,
+      });
 
       const records = getHeartbeatRecordsForSessions(dbPath, [SESSION_ID]);
       expect(records).toHaveLength(1);
@@ -37,6 +41,8 @@ describe("pi session heartbeat store", () => {
       expect(record.pid).toBe(process.pid);
       expect(record.cwd).toBe("/work/demo");
       expect(record.status).toBe("alive");
+      expect(record.runtime).toBe("tmux");
+      expect(record.auto_accept).toBe(true);
       expect(record.started_at).toBeGreaterThan(0);
       expect(record.last_heartbeat_at).toBeGreaterThan(0);
 
@@ -88,6 +94,64 @@ describe("pi session heartbeat store", () => {
     } finally {
       restore();
       vi.useRealTimers();
+    }
+  });
+
+  it("refreshes auto-accept immediately when its setting changes", () => {
+    const { dbPath, restore } = withTempStore();
+    try {
+      let autoAccept = false;
+      const heartbeat = startSessionHeartbeat(createSource(), { mode: "tui", cwd: "/work/demo" }, {
+        dbPath,
+        getAutoAcceptEnabled: () => autoAccept,
+      });
+      expect(getHeartbeatRecordsForSessions(dbPath, [SESSION_ID])[0]!.auto_accept).toBe(false);
+
+      autoAccept = true;
+      heartbeat.refresh();
+      expect(getHeartbeatRecordsForSessions(dbPath, [SESSION_ID])[0]!.auto_accept).toBe(true);
+
+      heartbeat.stop();
+    } finally {
+      restore();
+    }
+  });
+
+  it("detects tmux from the process environment", () => {
+    expect(detectHeartbeatRuntime({})).toBe("terminal");
+    expect(detectHeartbeatRuntime({ TMUX: "/tmp/tmux-501/default,1,0" })).toBe("tmux");
+    expect(detectHeartbeatRuntime({ TMUX: "" })).toBe("terminal");
+  });
+
+  it("migrates an existing v1 heartbeat store", async () => {
+    const { dbPath, restore } = withTempStore();
+    try {
+      const { DatabaseSync } = await import("node:sqlite");
+      mkdirSync(dirname(dbPath), { recursive: true });
+      const db = new DatabaseSync(dbPath);
+      db.exec(`
+        CREATE TABLE heartbeats (
+          session_id TEXT PRIMARY KEY,
+          pid INTEGER NOT NULL,
+          cwd TEXT NOT NULL DEFAULT '',
+          started_at INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'alive',
+          last_heartbeat_at INTEGER NOT NULL
+        )
+      `);
+      db.close();
+
+      const heartbeat = startSessionHeartbeat(createSource(), { mode: "tui", cwd: "/work/demo" }, {
+        dbPath,
+        runtime: "tmux",
+        getAutoAcceptEnabled: () => true,
+      });
+      const record = getHeartbeatRecordsForSessions(dbPath, [SESSION_ID])[0]!;
+      expect(record.runtime).toBe("tmux");
+      expect(record.auto_accept).toBe(true);
+      heartbeat.stop();
+    } finally {
+      restore();
     }
   });
 
@@ -190,7 +254,7 @@ describe("pi session heartbeat store", () => {
     }
   });
 
-  it("uses the default 15s interval constant", () => {
-    expect(DEFAULT_HEARTBEAT_INTERVAL_MS).toBe(15_000);
+  it("uses the default 10s interval constant", () => {
+    expect(DEFAULT_HEARTBEAT_INTERVAL_MS).toBe(10_000);
   });
 });

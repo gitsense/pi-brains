@@ -72,6 +72,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       initialAutoAccept: config.inboxAutoAccept,
       onAutoAcceptChange: (enabled) => {
         config.inboxAutoAccept = enabled;
+        sessionHeartbeat?.refresh();
         void persistConfig().catch(() => {});
       },
       notifiedAgentMessageIds: inboxState.notifiedAgentMessageIds,
@@ -89,7 +90,9 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       onMailboxSummary: (summary) => controller.setMailboxSummary(summary),
     });
     sessionHeartbeat?.stop();
-    sessionHeartbeat = startSessionHeartbeat(controller, ctx);
+    sessionHeartbeat = startSessionHeartbeat(controller, ctx, {
+      getAutoAcceptEnabled: () => inboxWatcher?.isAutoAcceptEnabled() ?? config.inboxAutoAccept,
+    });
     if (config.inboxAutoAccept) {
       ctx.ui.notify("Inbox auto-accept is ON. New messages will be delivered automatically.", "warning");
     }

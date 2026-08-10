@@ -303,7 +303,7 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 ## Session liveness
 
 While a Pi session runs with pi-brains loaded (TUI mode), the extension
-records a heartbeat every 15 seconds in a single shared SQLite store so
+records a heartbeat every 10 seconds in a single shared SQLite store so
 GitSense Chat can tell whether a session is alive or needs to be launched:
 
 ```text
@@ -312,14 +312,20 @@ GSC_HOME/data/pi/pi-heartbeats.sqlite3
 
 One row per session in the `heartbeats` table: `session_id` (primary key),
 `pid`, `cwd`, `started_at`, `status` (`alive` | `stopped`), and
-`last_heartbeat_at` (epoch milliseconds), indexed on
+`last_heartbeat_at` (epoch milliseconds), `runtime` (`tmux` | `terminal`),
+and `auto_accept` (whether human-originated Chat mail will be injected),
+indexed on
 `(status, last_heartbeat_at)`. Writes are upserts with WAL + a busy timeout
 so concurrent Pi sessions share the store safely; rows idle for more than 30
 days are pruned on each write. On a clean shutdown the extension marks the
 row `stopped`; on a crash the row simply goes stale. Consumers should treat a
 session as alive when `status = 'alive'` and `last_heartbeat_at` is fresh,
 and as needing launch when the row is missing, `stopped`, or stale. The
-extension exports `getAliveHeartbeatSessionIds(dbPath, withinMs)` and
+runtime is informational: a detached tmux-hosted Pi process remains alive and
+messageable. A fresh session with `auto_accept = 0` is running but will not
+automatically receive human-originated Chat messages; changing the setting
+refreshes the heartbeat immediately. The extension exports
+`getAliveHeartbeatSessionIds(dbPath, withinMs)` and
 `getHeartbeatRecordsForSessions(dbPath, sessionIds)` for the two lookup
 patterns (recently-alive set, and cross-reference against a session set).
 

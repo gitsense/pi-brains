@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { getConfigPath } from "./config.ts";
 
 export interface DurableInboxWatcherState {
+  /** Message ids, plus message:delivery keys for abandoned lease wake-ups. */
   notifiedAgentMessageIds: string[];
   waitGroupCursors: Record<string, number>;
 }

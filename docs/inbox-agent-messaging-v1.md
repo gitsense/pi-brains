@@ -103,7 +103,10 @@ Storage: one JSON file per message at
   `expired` comes only from `expires_at` passing; no silent deletion.
 - **Two timers, distinct:**
   - **lease** — claim validity while `delivering` (5 min default, renewed by
-    `keepalive`). Lease expiry returns the message to `pending`.
+    `keepalive`). Lease expiry makes the message claimable again with a fresh
+    `delivery_id`; its stored status remains `delivering` until that reclaim.
+    `poll` returns such records with `delivery_lease_expired: true` so clients
+    can issue a recovery wake-up.
   - **`expires_at`** — **thread deadline**: optional, set by the origin on
     `send`, **inherited unchanged by replies**; absent = no expiry. Passing it
     marks the message `expired` (terminal) even while `delivering`. Children can
@@ -128,7 +131,7 @@ Storage: one JSON file per message at
 | `keepalive` | Renew the delivery lease | message id + delivery id | extends lease (never `expires_at`) |
 | `wait create / status / cancel` | Sender-side wait groups | `--session-id <owner>`, outbound ids, deadline | progress, state transitions, notified flags |
 | `summary` | Mailbox summary for UI | `--session-id` | counts + wait-group progress (§10) |
-| `show / list / poll` | Existing, updated for v2 | — | poll stays text-free |
+| `show / list / poll` | Existing, updated for v2 | — | poll stays text-free and marks reclaimable deliveries with `delivery_lease_expired: true` |
 | `accept / ignore` | Manual human-mail review | message id | **enforces `origin: human`** — `origin: agent` rejected with a structured error |
 | `add` | **Chat-only** human ingestion | bridge code `--code` | origin=human, no envelope |
 
@@ -398,8 +401,11 @@ extension watcher:
   fix). Ordering between the two steps is irrelevant.
 - `origin: human` messages are never classified here; they use the existing
   delivery paths.
-- Notifications for `delivering` state are never emitted (being processed →
-  silent).
+- Active `delivering` leases are silent. When a lease expires, `poll` returns
+  it as claimable and the extension emits one recovery notice per abandoned
+  `delivery_id`, including after restart. That recovery notice bypasses normal
+  wait-group reply suppression so fetched-but-uncompleted replies cannot be
+  stranded behind an already-consumed group event.
 
 ### 8.1 Wake-ups: at-least-once, event-identified, cursor-deduped
 

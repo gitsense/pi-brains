@@ -149,6 +149,7 @@ describe("agent-to-agent messaging (phase 2)", () => {
   const AGENT = "33333333-3333-4333-8333-333333333333";
   const PEER = "44444444-4444-4444-8444-444444444444";
   const GROUP_ID = "66666666-6666-4666-8666-666666666666";
+  const DELIVERY_ID = "99999999-9999-4999-8999-999999999999";
 
   function agentMessage(parent: string | null = null): string {
     return JSON.stringify({
@@ -169,6 +170,15 @@ describe("agent-to-agent messaging (phase 2)", () => {
         max_hops: 2,
         path: [{ message_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", from: PEER, to: SESSION_ID }],
       },
+    });
+  }
+
+  function interruptedAgentMessage(deliveryId = DELIVERY_ID, parent: string | null = null): string {
+    return JSON.stringify({
+      ...JSON.parse(agentMessage(parent)),
+      status: "delivering",
+      delivery_id: deliveryId,
+      delivery_lease_expired: true,
     });
   }
 
@@ -343,6 +353,56 @@ describe("agent-to-agent messaging (phase 2)", () => {
     }
   });
 
+  it("renotifies an expired delivery lease once per abandoned delivery id", async () => {
+    vi.useFakeTimers();
+    try {
+      const restore = withGscHome();
+      let deliveryId = DELIVERY_ID;
+      const runGscCommand = vi.fn(async (...args: string[]) => {
+        if (args.includes("poll")) {
+          return { code: 0, stdout: JSON.stringify({ session_id: SESSION_ID, messages: [JSON.parse(interruptedAgentMessage(deliveryId))] }), stderr: "" };
+        }
+        if (args.includes("summary")) return { code: 0, stdout: emptySummary(), stderr: "" };
+        return { code: 1, stdout: "", stderr: "unexpected command" };
+      });
+      const { controller, sendUserMessage } = createController(runGscCommand);
+      const { ctx, notify } = createContext([]);
+      let persisted = [AGENT];
+      const first = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        pollIntervalMs: 10,
+        notifiedAgentMessageIds: persisted,
+        onNotifiedAgentMessageIdsChange: (messageIds) => { persisted = messageIds; },
+      });
+      await vi.advanceTimersByTimeAsync(20);
+      expect(sendUserMessage).toHaveBeenCalledTimes(1);
+      expect(sendUserMessage).toHaveBeenCalledWith(expect.stringContaining("interrupted delivery ready to retry"), undefined);
+      expect(persisted).toEqual([AGENT, `${AGENT}:${DELIVERY_ID}`]);
+      first.stop();
+
+      sendUserMessage.mockClear();
+      notify.mockClear();
+      const restarted = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        pollIntervalMs: 10,
+        notifiedAgentMessageIds: persisted,
+      });
+      await vi.advanceTimersByTimeAsync(20);
+      expect(sendUserMessage).not.toHaveBeenCalled();
+      restarted.stop();
+
+      deliveryId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+      const retried = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        pollIntervalMs: 10,
+        notifiedAgentMessageIds: persisted,
+      });
+      await vi.advanceTimersByTimeAsync(20);
+      expect(sendUserMessage).toHaveBeenCalledTimes(1);
+      retried.stop();
+      restore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("suppresses you-have-mail when the reply matches an awaiting outbound", async () => {
     vi.useFakeTimers();
     try {
@@ -371,6 +431,42 @@ describe("agent-to-agent messaging (phase 2)", () => {
       const watcher = startInboxWatcher(controller, ctx as unknown as ExtensionContext, { pollIntervalMs: 10 });
       await vi.advanceTimersByTimeAsync(20);
       expect(notify).not.toHaveBeenCalledWith(expect.stringContaining("You have mail"), "info");
+      watcher.stop();
+      restore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("wakes for an interrupted grouped reply even after its original notice was suppressed", async () => {
+    vi.useFakeTimers();
+    try {
+      const restore = withGscHome();
+      const PARENT = "55555555-5555-4555-8555-555555555555";
+      writeOutboxRecord(SESSION_ID, {
+        outbox_message_id: PARENT,
+        sender_session_id: SESSION_ID,
+        recipient_session_id: PEER,
+        reply_to_message_id: null,
+        wait_group_id: GROUP_ID,
+        attempt: { id: PARENT, idempotency_key: "88888888-8888-4888-8888-888888888888", request_hash: "h", status: "committed" },
+        created_at: "2026-08-05T11:00:00Z",
+      });
+      const runGscCommand = vi.fn(async (...args: string[]) => {
+        if (args.includes("poll")) {
+          return { code: 0, stdout: JSON.stringify({ session_id: SESSION_ID, messages: [JSON.parse(interruptedAgentMessage(DELIVERY_ID, PARENT))] }), stderr: "" };
+        }
+        if (args.includes("summary")) return { code: 0, stdout: emptySummary(), stderr: "" };
+        return { code: 1, stdout: "", stderr: "unexpected command" };
+      });
+      const { controller, sendUserMessage } = createController(runGscCommand);
+      const { ctx } = createContext([]);
+      const watcher = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        pollIntervalMs: 10,
+        notifiedAgentMessageIds: [AGENT],
+      });
+      await vi.advanceTimersByTimeAsync(20);
+      expect(sendUserMessage).toHaveBeenCalledWith(expect.stringContaining("interrupted delivery ready to retry"), undefined);
       watcher.stop();
       restore();
     } finally {

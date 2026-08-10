@@ -42,6 +42,8 @@ export interface InboxMessage {
   message?: string;
   body?: string;
   delivery_id?: string;
+  /** Poll-only metadata: the prior delivery lease expired and can be reclaimed. */
+  delivery_lease_expired?: boolean;
   envelope?: InboxEnvelope;
 }
 
@@ -84,7 +86,7 @@ export interface InboxWatcherOptions {
   waitGroupPollIntervalMs?: number;
   initialAutoAccept?: boolean;
   onAutoAcceptChange?: (enabled: boolean) => void;
-  /** Durable message-level notification dedupe for metadata-only agent mail wake-ups. */
+  /** Durable keys for metadata-only agent mail and abandoned-lease wake-ups. */
   notifiedAgentMessageIds?: string[];
   onNotifiedAgentMessageIdsChange?: (messageIds: string[]) => void | Promise<void>;
   /** Durable per-group cursor (§8.1): last notified event_seq per group. */
@@ -630,7 +632,8 @@ function buildYouHaveMailNotice(sessionId: string, messages: InboxMessage[]): st
   const lines = messages.map(message => {
     const from = message.envelope?.sender_session_id ? shortId(message.envelope.sender_session_id) : "unknown";
     const thread = message.envelope?.thread_id ? shortId(message.envelope.thread_id) : shortId(message.message_id);
-    return `- from ${from} · thread ${thread} · message ${shortId(message.message_id)} · ${formatAge(message.created_at)}`;
+    const recovery = message.status === "delivering" ? " · interrupted delivery ready to retry" : "";
+    return `- from ${from} · thread ${thread} · message ${shortId(message.message_id)} · ${formatAge(message.created_at)}${recovery}`;
   });
   return [
     `[pi-brains] You have mail (${messages.length})`,
@@ -659,6 +662,13 @@ async function handleAgentMail(
   const { awaiting, terminal } = classifyOutbound(records, summary);
   const recipientMail: InboxMessage[] = [];
   for (const message of messages) {
+    // Poll only returns claimable messages. A delivering result therefore has
+    // an expired lease and needs a fresh wake-up even when its grouped reply
+    // was suppressed during the original delivery attempt.
+    if (message.status === "delivering") {
+      recipientMail.push(message);
+      continue;
+    }
     const parent = message.envelope?.reply_to_message_id ?? null;
     // Grouped outbound replies are suppressed here: the wait-group watcher
     // emits the aggregate complete/timed_out/late_reply wake-up (§8.1).
@@ -728,6 +738,15 @@ export function startInboxWatcher(
   const persistNotifiedAgentMessageIds = async (): Promise<void> => {
     await options.onNotifiedAgentMessageIdsChange?.([...notifiedAgentMessageIds]);
   };
+  const notificationKey = (message: InboxMessage): string => {
+    // Pending mail is notified once per message. An expired delivering lease
+    // is notified once per abandoned delivery id, so a later failed retry can
+    // wake the agent again without replaying every two-second poll.
+    if (message.status === "delivering" && message.delivery_id) {
+      return `${message.message_id}:${message.delivery_id}`;
+    }
+    return message.message_id;
+  };
 
   const poll = async (): Promise<void> => {
     if (stopped || inFlight) return;
@@ -740,12 +759,15 @@ export function startInboxWatcher(
       );
       if (!result || result.code !== 0 || stopped) return;
       const parsed = parseInboxPoll(result.stdout);
+      // gsc poll is the claimability boundary: it returns pending mail plus
+      // delivering mail whose five-minute lease has expired. Do not discard
+      // the latter based on its persisted status.
       const pending = parsed.filter(message => message.status === "pending");
       const humanNew = pending.filter(message => isHumanMessage(message) && !seen.has(message.message_id));
       // Unlike human inbox badges, agent wake-ups must include mail that arrived
       // while Pi was offline. Durable ids, rather than the first poll, provide
       // restart dedupe without suppressing that offline work.
-      const agentNew = pending.filter(message => !isHumanMessage(message) && !notifiedAgentMessageIds.has(message.message_id));
+      const agentNew = parsed.filter(message => !isHumanMessage(message) && !notifiedAgentMessageIds.has(notificationKey(message)));
       parsed.forEach(message => seen.add(message.message_id));
       if (autoAccept) {
         // Auto-accept applies to human Chat mail only; agent mail is never
@@ -766,15 +788,15 @@ export function startInboxWatcher(
         const suffix = humanNew.length === 1 ? "message" : "messages";
         ctx.ui.notify(`New ${suffix} in the Pi session inbox. Run /brains inbox to review.`, "info");
       }
-      // Agent mail: classification + metadata-only notices (§8). Notifications
-      // for delivering state are never emitted (agentNew is pending-only).
+      // Agent mail: classification + metadata-only notices (§8). Expired
+      // delivery leases receive a new notice for each abandoned delivery id.
       if (agentNew.length > 0) {
         await handleAgentMail(controller, sessionId, agentNew, ctx, lastSummary);
         // Mark every classified message, including wait-group-suppressed replies:
         // each has now had its one notification policy decision. Persist only
         // after requesting injection; a crash in between may redeliver, which
         // preserves the watcher's at-least-once failure mode.
-        agentNew.forEach(message => notifiedAgentMessageIds.add(message.message_id));
+        agentNew.forEach(message => notifiedAgentMessageIds.add(notificationKey(message)));
         await persistNotifiedAgentMessageIds();
       }
       initialized = true;
