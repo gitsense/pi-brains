@@ -68,6 +68,29 @@ describe("pi session heartbeat store", () => {
     }
   });
 
+  it("refreshes started_at when a session heartbeat producer restarts", () => {
+    vi.useFakeTimers();
+    const { dbPath, restore } = withTempStore();
+    try {
+      vi.setSystemTime(new Date("2026-08-09T12:00:00.000Z"));
+      const first = startSessionHeartbeat(createSource(), { mode: "tui", cwd: "/work/demo" }, { dbPath });
+      const firstStartedAt = getHeartbeatRecordsForSessions(dbPath, [SESSION_ID])[0]!.started_at;
+      first.stop();
+
+      vi.setSystemTime(new Date("2026-08-09T12:01:00.000Z"));
+      const restarted = startSessionHeartbeat(createSource(), { mode: "tui", cwd: "/work/demo" }, { dbPath });
+      const restartedRecord = getHeartbeatRecordsForSessions(dbPath, [SESSION_ID])[0]!;
+
+      expect(restartedRecord.started_at).toBeGreaterThan(firstStartedAt);
+      expect(restartedRecord.status).toBe("alive");
+
+      restarted.stop();
+    } finally {
+      restore();
+      vi.useRealTimers();
+    }
+  });
+
   it("stop() marks the row stopped and stops further writes", async () => {
     vi.useFakeTimers();
     try {

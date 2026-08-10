@@ -36,6 +36,7 @@ const UPSERT_SQL = `
   ON CONFLICT(session_id) DO UPDATE SET
     pid = excluded.pid,
     cwd = excluded.cwd,
+    started_at = excluded.started_at,
     status = excluded.status,
     last_heartbeat_at = excluded.last_heartbeat_at
 `;
