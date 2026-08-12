@@ -537,7 +537,11 @@ describe("agent-to-agent messaging (phase 2)", () => {
       await vi.advanceTimersByTimeAsync(10);
       expect(notify).toHaveBeenCalledWith(expect.stringContaining("1/1 replies received"), "info");
       expect(notify).toHaveBeenCalledWith(expect.stringContaining("event evt-1"), "info");
-      expect(notify).toHaveBeenCalledWith(expect.stringContaining("fetch --wait-group-id " + GROUP_ID), "info");
+      expect(notify).toHaveBeenCalledWith(
+        expect.stringContaining("fetch --session-id " + SESSION_ID + " --wait-group-id " + GROUP_ID),
+        "info",
+      );
+      expect(notify).toHaveBeenCalledWith(expect.stringContaining("complete each claimed reply"), "info");
       expect(onSummary).toHaveBeenCalled();
       expect(onCursors).toHaveBeenCalledWith({ [GROUP_ID]: 1 });
       const notifyCount = notify.mock.calls.length;

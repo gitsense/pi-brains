@@ -239,12 +239,17 @@ If `expires_at` passes while `delivering` → `expired`; subsequent `reply` or
 
 ```
 fetch --session-id <me> --id <msg>             # one specific message
-fetch --session-id <me> --wait-group-id <g>       # replies for a wait group (sender wake-up path)
+fetch --session-id <me> --wait-group-id <g>     # claim replies for a wait group (sender wake-up path)
 fetch --session-id <me> --kind agent --limit 1 # next agent message (recipient processing loop)
 ```
 
 - **Never claims `origin: human` messages.** Human mail stays on its existing
   path (auto-accept or `/brains inbox` accept/ignore review).
+- Every fetch of a nonterminal agent message, including
+  `fetch --wait-group-id`, creates a delivery lease and returns
+  `status: delivering`. After processing, the caller must `complete` each
+  returned message using its `message_id` and `delivery_id`; use `keepalive`
+  if processing may outlast the lease.
 - `fetch --wait-group-id` returns the group's replies **including expired ones**
   (flagged `expired`) — they arrived before the thread deadline by construction
   (§4) and must remain retrievable.
@@ -427,7 +432,8 @@ extension watcher:
   the replies itself, it will still receive one redundant injected wake-up
   (at-least-once); treat it as a no-op confirmation — the event id identifies
   it. Canonical pattern: send → end turn → wake-up → fetch (§12).
-- **Complete** → "N/N replies received — fetch them (`fetch --wait-group-id <g>`)
+- **Complete** → "N/N replies received — fetch them
+  (`fetch --wait-group-id <g>`), process them, complete every claimed reply,
   and respond to the human."
 - **Timeout** → "missing replies from X, Z — nudge or cancel."
 - **Late reply after terminal state** → one `late_reply` event per terminal
@@ -547,7 +553,9 @@ start of v2 writes.
    `fetch --kind agent --limit 1` → process → `keepalive` if long → `reply
    --delivery-id …` (or explicit new origin) → `complete`.
 5. Sender's group completes → **one** wake-up → `fetch --wait-group-id <g>` →
-   answer the human. Overlay showed `waiting 1/3` → `3/3`.
+   process replies → `complete` each returned `delivering` message using its
+   `message_id` and `delivery_id` → answer the human. Overlay showed
+   `waiting 1/3` → `3/3`.
 6. Timeout → wake-up lists missing replies → human nudges. Late replies after
    timeout → one aggregate notify (then only overlay/summary).
 

@@ -689,12 +689,12 @@ async function handleAgentMail(
  * remains the source of truth. The stable event_id is included so a redelivery
  * after a crash is recognizable.
  */
-function buildWaitGroupNotice(groupId: string, event: WaitGroupEvent): string {
+function buildWaitGroupNotice(sessionId: string, groupId: string, event: WaitGroupEvent): string {
   const prefix = `[pi-brains] wait group ${shortId(groupId)} (event ${event.event_id}):`;
   switch (event.type) {
     case "complete": {
       const details = parseEventDetails(event.details);
-      return `${prefix} ${details.received ?? "?"}/${details.expected ?? "?"} replies received — fetch them (gsc pi sessions inbox fetch --wait-group-id ${groupId}) and respond to the human.`;
+      return `${prefix} ${details.received ?? "?"}/${details.expected ?? "?"} replies received — fetch them (gsc pi sessions inbox fetch --session-id ${sessionId} --wait-group-id ${groupId}), process them, complete each claimed reply using its message_id and delivery_id, and respond to the human.`;
     }
     case "timed_out": {
       const details = parseEventDetails(event.details);
@@ -844,7 +844,7 @@ export function startInboxWatcher(
         const cursor = cursors[group.id] ?? 0;
         const unseen = status.events.filter(event => event.event_seq > cursor);
         for (const event of unseen) {
-          const notice = buildWaitGroupNotice(group.id, event);
+          const notice = buildWaitGroupNotice(sessionId, group.id, event);
           ctx.ui.notify(notice, "info");
           // §8.1: inject the aggregate wake-up so the sender agent is woken
           // (ctx.ui.notify is human-visible only). At-least-once by contract.
