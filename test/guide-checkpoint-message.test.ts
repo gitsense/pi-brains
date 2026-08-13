@@ -37,6 +37,9 @@ describe("guide checkpoint message", () => {
       previousCheckpointId: null,
       anchorLeafId: "anchor-leaf-456",
       sessionId: "session-789",
+      trackedFiles: [],
+      toolNames: [],
+      ruleIds: [],
     };
 
     // Simulate the checkpoint message creation flow

@@ -371,5 +371,61 @@ describe("guide mode", () => {
         rmSync(dir, { recursive: true, force: true });
       }
     });
+
+    it("commits checkpoint state only after verification", () => {
+      const dir = mkdtempSync(join(tmpdir(), "pi-brains-guide-checkpoint-lifecycle-"));
+      try {
+        const sessionFile = join(dir, "session.jsonl");
+        const ctx = createContext(sessionFile);
+
+        controller.start(ctx);
+        controller.setGuideEnabled(true);
+        controller.recordToolResult({
+          type: "tool_result",
+          toolCallId: "call-1",
+          toolName: "read",
+          input: { path: "src/first.ts" },
+          content: [{ type: "text", text: "ok" }],
+          isError: false,
+        } as any, ctx);
+
+        const failed = controller.requestGuideCheckpoint("manual");
+        expect(failed.trackedFiles).toContain("/repo/src/first.ts");
+        expect(failed.toolNames).toContain("read");
+        controller.failGuideCheckpoint(failed.checkpointId, "append failed");
+
+        const retry = controller.requestGuideCheckpoint("manual");
+        let entries = readFileSync(join(dir, "session.checkpoints.jsonl"), "utf8")
+          .trim()
+          .split("\n")
+          .map(line => JSON.parse(line));
+        let workState = entries.filter((entry: any) => entry.type === "work_state").at(-1);
+        expect(workState.previousCheckpointId).toBeNull();
+        expect(workState.facts.toolCallsSinceLastCheckpoint).toBe(1);
+
+        expect(controller.completeGuideCheckpoint(retry.checkpointId)).toBe(true);
+        controller.recordToolResult({
+          type: "tool_result",
+          toolCallId: "call-2",
+          toolName: "write",
+          input: { path: "src/second.ts" },
+          content: [{ type: "text", text: "ok" }],
+          isError: false,
+        } as any, ctx);
+        controller.requestGuideCheckpoint("manual");
+
+        entries = readFileSync(join(dir, "session.checkpoints.jsonl"), "utf8")
+          .trim()
+          .split("\n")
+          .map(line => JSON.parse(line));
+        workState = entries.filter((entry: any) => entry.type === "work_state").at(-1);
+        expect(workState.previousCheckpointId).toBe(retry.checkpointId);
+        expect(workState.facts.toolCallsSinceLastCheckpoint).toBe(1);
+        expect(entries.some((entry: any) => entry.type === "checkpoint_failed" && entry.checkpointId === failed.checkpointId)).toBe(true);
+        expect(entries.some((entry: any) => entry.type === "checkpoint_verified" && entry.checkpointId === retry.checkpointId)).toBe(true);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
   });
 });

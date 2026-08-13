@@ -445,4 +445,13 @@ export class CheckpointLog {
       ...data,
     });
   }
+
+  /** Log a checkpoint only after gsc can read the persisted record. */
+  logCheckpointVerified(data: { checkpointId: string }): void {
+    this.logEvent({
+      type: "checkpoint_verified",
+      guideEnabled: true,
+      ...data,
+    });
+  }
 }

@@ -27,6 +27,9 @@ export interface GuideCheckpointRequestResult {
   previousCheckpointId: string | null;
   anchorLeafId: string | null;
   sessionId: string | null;
+  trackedFiles: string[];
+  toolNames: string[];
+  ruleIds: string[];
 }
 
 const PI_WORKSTATE_MARKER = "[PI_WORKSTATE_REQUEST]";
@@ -144,6 +147,7 @@ export class PiBrainsController {
   private guideLatestRuleId: string | null = null;
   private guideToolsSinceCheckpoint: GuideCheckpointPayloadTool[] = [];
   private guideRulesSinceCheckpoint: GuideCheckpointPayloadRule[] = [];
+  private guidePendingCheckpoints = new Map<string, { files: Set<string> }>();
 
   constructor(pi: ExtensionAPI, config: PiBrainsConfig) {
     this.pi = pi;
@@ -1123,17 +1127,12 @@ export class PiBrainsController {
     this.guideDebug.logWorkStateV1(workStateEvent);
     this.guideDebug.logCheckpointPayloadV1(payloadEvent);
 
-    // Update checkpoint state
+    // A request is not a persisted checkpoint. Keep evidence and the last
+    // successful checkpoint unchanged until gsc verification succeeds.
     this.guideCheckpointCount++;
-    this.guideLastCheckpointId = checkpointId;
-    this.guideLastCheckpointFiles = new Set(currentFiles);
-    this.guideToolCallsSinceCheckpoint = 0;
-    this.guideFailedToolCallsSinceCheckpoint = 0;
-    this.guideRulesTriggeredSinceCheckpoint = 0;
-    this.guideLatestToolName = null;
-    this.guideLatestRuleId = null;
-    this.guideToolsSinceCheckpoint = [];
-    this.guideRulesSinceCheckpoint = [];
+    if (source === "manual") {
+      this.guidePendingCheckpoints.set(checkpointId, { files: new Set(currentFiles) });
+    }
 
     return {
       logPath: this.guideDebug.getLogFilePath(),
@@ -1141,7 +1140,40 @@ export class PiBrainsController {
       previousCheckpointId,
       anchorLeafId,
       sessionId,
+      trackedFiles: [...currentFiles],
+      toolNames: [...new Set(this.guideToolsSinceCheckpoint.map(tool => tool.toolName))],
+      ruleIds: [...new Set(this.guideRulesSinceCheckpoint.flatMap(rule => rule.ruleId ? [rule.ruleId] : []))],
     };
+  }
+
+  /** Commit checkpoint bookkeeping after the persisted record is verified. */
+  completeGuideCheckpoint(checkpointId: string): boolean {
+    const pending = this.guidePendingCheckpoints.get(checkpointId);
+    if (!pending) return false;
+
+    this.guidePendingCheckpoints.delete(checkpointId);
+    this.guideLastCheckpointId = checkpointId;
+    this.guideLastCheckpointFiles = pending.files;
+    this.guideToolCallsSinceCheckpoint = 0;
+    this.guideFailedToolCallsSinceCheckpoint = 0;
+    this.guideRulesTriggeredSinceCheckpoint = 0;
+    this.guideLatestToolName = null;
+    this.guideLatestRuleId = null;
+    this.guideToolsSinceCheckpoint = [];
+    this.guideRulesSinceCheckpoint = [];
+    this.consumePendingSuggestion(checkpointId);
+    this.guideDebug.logCheckpointVerified({ checkpointId });
+    return true;
+  }
+
+  /** Abort a pending checkpoint without discarding accumulated evidence. */
+  failGuideCheckpoint(checkpointId: string, error: string): void {
+    this.guidePendingCheckpoints.delete(checkpointId);
+    this.guideDebug.logCheckpointFailed({
+      checkpointId,
+      error,
+      pendingSuggestion: this.guidePendingSuggestion !== null,
+    });
   }
 
   /**
