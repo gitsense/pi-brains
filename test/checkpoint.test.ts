@@ -25,6 +25,9 @@ describe("checkpoint instructions", () => {
     expect(instructions).toContain('- tools: ["read","edit"]');
     expect(instructions).toContain('- rules: ["rule-ui"]');
     expect(instructions).toContain("Optimize the checkpoint for future discovery");
+    expect(instructions).toContain("Aim for 1200 characters or fewer; 2000 characters is the hard maximum");
+    expect(instructions).toContain("Move enumerated facts and history into evidence, decisions, risks, and open_questions");
+    expect(instructions).toContain(".current_understanding | length");
     expect(instructions).toContain("--repo '/tmp/repo with '\\''quote'\\''' --target personal");
   });
 

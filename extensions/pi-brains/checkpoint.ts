@@ -302,6 +302,7 @@ IMPORTANT RULES:
 - If a previous checkpoint exists, carry forward any decisions, risks, or open questions that still matter. Do not include resolved items unless they remain relevant.
 - Do not leave placeholder values. For optional array fields, use [] when there are no supported items. For optional string fields, omit the field or use "" only if the schema requires it.
 - Optimize the checkpoint for future discovery. In goal, summary, current_understanding, and topics, use concrete feature names, component names, domain terms, and user-visible concepts that another agent is likely to search for later. Avoid generic phrases such as "fix issue", "continue implementation", or "miscellaneous changes".
+- Keep current_understanding as a concise synthesis of the current mental model, not a chronology. Aim for 1200 characters or fewer; 2000 characters is the hard maximum. Move enumerated facts and history into evidence, decisions, risks, and open_questions.
 
 You are creating a checkpoint for this session. Follow ALL steps in order.
 
@@ -346,7 +347,7 @@ REQUIRED AI-GENERATED FIELDS:
 - goal: The broader objective of the work (max 240 chars)
   Example: "Update checkpoint schema to v1 with branch-aware filtering"
 
-- current_understanding: What you currently believe is true about the work state (max 1200 chars)
+- current_understanding: What you currently believe is true about the work state (target: max 1200 chars; hard maximum: 2000 chars)
   Example: "The checkpoint schema needs to support branch-aware filtering so that checkpoints created on scratch branches are not visible on the main branch."
 
 - next_action: The immediate next concrete step (max 240 chars)
@@ -398,6 +399,8 @@ OPTIONAL FIELDS (omit if not applicable):
   Example: {"status": "focused", "focus": "high", "reason": "Recent work remains centered on checkpoint schema"}
 
 STEP 2: Validate checkpoint
+Before validation, confirm that current_understanding is no more than 2000 characters and preferably no more than 1200. For example:
+Run: jq -r '.current_understanding | length' /tmp/checkpoint-${checkpointId}.json
 Run: gsc sessions checkpoints validate --from-file /tmp/checkpoint-${checkpointId}.json
 If validation fails, fix the errors and re-validate (up to 2 attempts).
 
