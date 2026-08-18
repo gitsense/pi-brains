@@ -18,6 +18,7 @@ export const DEFAULT_CONFIG: PiBrainsConfig = {
   rulesEnabled: true,
   debug: false,
   guideEnabled: false,
+  snapshotSuggestionSessionIds: [],
   inboxAutoAccept: false,
   waitGroupCursors: {},
   askGroups: [],
@@ -63,6 +64,11 @@ function parseWaitGroupCursors(value: unknown): Record<string, number> {
   return result;
 }
 
+function parseStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((item): item is string => typeof item === "string" && item.trim() !== ""))];
+}
+
 export function parseConfig(value: unknown): PiBrainsConfig {
   if (!isRecord(value)) return { ...DEFAULT_CONFIG };
 
@@ -88,6 +94,7 @@ export function parseConfig(value: unknown): PiBrainsConfig {
     rulesEnabled: typeof value.rulesEnabled === "boolean" ? value.rulesEnabled : DEFAULT_CONFIG.rulesEnabled,
     debug: typeof value.debug === "boolean" ? value.debug : DEFAULT_CONFIG.debug,
     guideEnabled: typeof value.guideEnabled === "boolean" ? value.guideEnabled : DEFAULT_CONFIG.guideEnabled,
+    snapshotSuggestionSessionIds: parseStringList(value.snapshotSuggestionSessionIds),
     inboxAutoAccept: typeof value.inboxAutoAccept === "boolean" ? value.inboxAutoAccept : DEFAULT_CONFIG.inboxAutoAccept,
     waitGroupCursors: parseWaitGroupCursors(value.waitGroupCursors),
     askGroups: parseAskGroups(value.askGroups),

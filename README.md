@@ -279,11 +279,19 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains checkpoint suggest on` | Enable checkpoint suggestions |
 | `/brains checkpoint suggest off` | Disable checkpoint suggestions |
 | `/brains checkpoint suggest status` | Show checkpoint suggestion status |
+| `/brains snapshots` | Show snapshot status for the current session |
+| `/brains snapshots list` | List each stage's directory, manifest, Git object database, and commit |
+| `/brains snapshots create` | Capture the exact recognized file contents at the current session leaf |
+| `/brains snapshots suggest on` | Let the agent suggest snapshots at meaningful review boundaries for this session |
+| `/brains snapshots suggest off` | Disable snapshot suggestions for this session |
+| `/brains snapshots suggest status` | Show snapshot suggestion and pending-reminder status |
+| `/brains snapshots clear` | Move the current session's snapshots to a recoverable archive |
 | `/brains forget` | Prune entries after the current `/tree` position (with backup) |
 | `/brains summary` | Generate a session summary as the final message |
 | `/brains inspect` | Show inspect view instructions |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
 | `/brains search` | Open GitSense Chat search across Pi sessions |
+| `/brains me` | Show and copy this agent's session ID, process ID, and inbox auto-accept status |
 | `/brains inbox` | Review pending messages in the session inbox |
 | `/brains inbox list` | List all messages in the session inbox |
 | `/brains inbox info` | Show the mailbox address, message summary, and wait-group progress |
@@ -299,6 +307,27 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains inbox help` | Show inbox commands and current settings |
 | `/brains dismiss` | Dismiss the GitSense unavailable notice |
 | `/brains help` | Show available commands |
+
+### Session snapshots
+
+Session snapshots preserve the exact contents of files recognized from session
+activity, including files outside a Git repository. Run `/brains snapshots
+create` before a broad change or after a verified milestone. If the recognized
+file tree has not changed, GitSense reuses the latest stage instead of creating
+a duplicate. Run `/brains snapshots list` to see the filesystem location of
+every stage and manifest, plus the shared Git object database and commit IDs.
+
+`/brains snapshots suggest on` adds compact guidance to this session's system
+prompt so the agent can recommend useful review boundaries. Suggestions are
+advisory: Pi Brains removes the internal marker, shows one notification, and
+waits for you to run the create command. The setting is durable and scoped to
+the current session.
+
+Snapshots may include recognized files outside the working repository. Common
+credential paths and `.env`/private-key files are excluded. The defaults also
+exclude files over 64 MiB and cap each stage at 256 MiB. `clear` asks for
+confirmation and moves data under `GSC_HOME/data/pi/snapshot-trash` rather than
+deleting it immediately.
 
 ## Session liveness
 

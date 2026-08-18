@@ -30,9 +30,14 @@ export interface GuideCheckpointRequestResult {
   trackedFiles: string[];
   toolNames: string[];
   ruleIds: string[];
+  /** Git HEAD of the workspace repo when this session started (null if unavailable). */
+  sessionStartHead: string | null;
+  /** Git branch of the workspace repo when this session started (null if unavailable). */
+  sessionStartBranch: string | null;
 }
 
 const PI_WORKSTATE_MARKER = "[PI_WORKSTATE_REQUEST]";
+const PI_SNAPSHOT_SUGGEST_MARKER = "[PI_SNAPSHOT_SUGGEST]";
 
 const GUIDE_INSTRUCTION = `Checkpoint suggestions are enabled.
 
@@ -63,6 +68,21 @@ Suggest a checkpoint after meaningful transitions such as:
 Pi Brains will capture the marker, remove it from the visible/persisted
 assistant message, and record a pending checkpoint suggestion.
 The user will be notified and can run /brains checkpoint to create the checkpoint.`;
+
+const SNAPSHOT_SUGGESTION_INSTRUCTION = `Session snapshot suggestions are enabled.
+
+Suggest a snapshot only at meaningful review boundaries:
+- before a risky or broad change
+- after a verified milestone
+- before compaction or handoff
+
+Do not suggest snapshots merely because time passed or after every turn.
+When a snapshot would help, emit this exact marker at the end of your response:
+
+[PI_SNAPSHOT_SUGGEST]
+
+Do not explain the marker.
+Do not run the snapshot command yourself. Pi Brains will remove the marker and notify the user.`;
 
 const OVERLAY_OWNER_WIDGET = "pi-brains-overlay-owner";
 type NoticeLevel = Parameters<ExtensionContext["ui"]["notify"]>[1];
@@ -148,6 +168,9 @@ export class PiBrainsController {
   private guideToolsSinceCheckpoint: GuideCheckpointPayloadTool[] = [];
   private guideRulesSinceCheckpoint: GuideCheckpointPayloadRule[] = [];
   private guidePendingCheckpoints = new Map<string, { files: Set<string> }>();
+  private snapshotSuggestionPending = false;
+  private sessionStartHead: string | null = null;
+  private sessionStartBranch: string | null = null;
 
   constructor(pi: ExtensionAPI, config: PiBrainsConfig) {
     this.pi = pi;
@@ -232,13 +255,58 @@ export class PiBrainsController {
     const leafId = ctx.sessionManager.getLeafId?.() ?? null;
 
     if (sessionId !== this.boundSessionId || sessionFile !== this.boundSessionFile) {
+      this.snapshotSuggestionPending = false;
       this.sessionId = sessionId;
       this.boundSessionId = sessionId;
       this.boundSessionFile = sessionFile;
       this.telemetry.setSession(sessionFile);
       this.guideDebug.setSession(sessionFile, sessionId, leafId);
       this.bashObservability.bindSession(sessionFile);
+      // Capture the workspace HEAD and branch at session start so checkpoint
+      // audits can diff "changes since this session began" instead of the whole
+      // tree, guarded against mid-session branch switches.
+      this.sessionStartHead = null;
+      this.sessionStartBranch = null;
+      void this.captureSessionStartGitState();
     }
+  }
+
+  /**
+   * Capture the workspace git HEAD and branch at session start (best effort).
+   * Used as the baseline for checkpoint file-change reconciliation.
+   */
+  private async captureSessionStartGitState(): Promise<void> {
+    const cwd = this.cwd;
+    if (!cwd) {
+      this.sessionStartHead = null;
+      this.sessionStartBranch = null;
+      return;
+    }
+    try {
+      const [head, branch] = await Promise.all([
+        this.pi.exec("git", ["-C", cwd, "rev-parse", "HEAD"], { cwd, timeout: 5000 }),
+        this.pi.exec("git", ["-C", cwd, "rev-parse", "--abbrev-ref", "HEAD"], { cwd, timeout: 5000 }),
+      ]);
+      this.sessionStartHead = head.code === 0 && head.stdout.trim() ? head.stdout.trim() : null;
+      this.sessionStartBranch = branch.code === 0 && branch.stdout.trim() ? branch.stdout.trim() : null;
+    } catch {
+      this.sessionStartHead = null;
+      this.sessionStartBranch = null;
+    }
+  }
+
+  /**
+   * Get the git HEAD captured when the current session started.
+   */
+  getSessionStartHead(): string | null {
+    return this.sessionStartHead;
+  }
+
+  /**
+   * Get the git branch captured when the current session started.
+   */
+  getSessionStartBranch(): string | null {
+    return this.sessionStartBranch;
   }
 
   refreshSessionState(ctx: ExtensionContext): void {
@@ -713,6 +781,10 @@ export class PiBrainsController {
     if (guideInstruction) {
       systemPromptParts.push(guideInstruction);
     }
+    const snapshotInstruction = this.getSnapshotSuggestionInstruction();
+    if (snapshotInstruction) {
+      systemPromptParts.push(snapshotInstruction);
+    }
     const bashInstruction = this.bashObservability.getInstruction();
     if (bashInstruction) {
       systemPromptParts.push(bashInstruction);
@@ -1143,6 +1215,8 @@ export class PiBrainsController {
       trackedFiles: [...currentFiles],
       toolNames: [...new Set(this.guideToolsSinceCheckpoint.map(tool => tool.toolName))],
       ruleIds: [...new Set(this.guideRulesSinceCheckpoint.flatMap(rule => rule.ruleId ? [rule.ruleId] : []))],
+      sessionStartHead: this.getSessionStartHead(),
+      sessionStartBranch: this.getSessionStartBranch(),
     };
   }
 
@@ -1183,6 +1257,48 @@ export class PiBrainsController {
     if (!this.config.guideEnabled) return null;
     this.guideDebug.logGuidanceInjected();
     return GUIDE_INSTRUCTION;
+  }
+
+  isSnapshotSuggestionsEnabled(): boolean {
+    return this.sessionId !== null && this.config.snapshotSuggestionSessionIds.includes(this.sessionId);
+  }
+
+  setSnapshotSuggestionsEnabled(enabled: boolean): boolean {
+    if (!this.sessionId) return false;
+    const sessions = new Set(this.config.snapshotSuggestionSessionIds);
+    if (enabled) sessions.add(this.sessionId);
+    else sessions.delete(this.sessionId);
+    this.config.snapshotSuggestionSessionIds = [...sessions];
+    if (!enabled) this.snapshotSuggestionPending = false;
+    void this.persistConfig();
+    return true;
+  }
+
+  isSnapshotSuggestionPending(): boolean {
+    return this.snapshotSuggestionPending;
+  }
+
+  clearSnapshotSuggestion(): void {
+    this.snapshotSuggestionPending = false;
+  }
+
+  getSnapshotSuggestionInstruction(): string | null {
+    return this.isSnapshotSuggestionsEnabled() ? SNAPSHOT_SUGGESTION_INSTRUCTION : null;
+  }
+
+  processAssistantMessageForSnapshotMarker(message: Record<string, unknown>): {
+    message: Record<string, unknown>;
+    newlySuggested: boolean;
+  } | undefined {
+    if (!this.isSnapshotSuggestionsEnabled() || message.role !== "assistant") return undefined;
+    const content = message.content as string | Array<{ type: string; text?: string }>;
+    if (!this.contentHasMarker(content, PI_SNAPSHOT_SUGGEST_MARKER)) return undefined;
+    const newlySuggested = !this.snapshotSuggestionPending;
+    this.snapshotSuggestionPending = true;
+    return {
+      message: { ...message, content: this.removeNamedMarkerFromContent(content, PI_SNAPSHOT_SUGGEST_MARKER) },
+      newlySuggested,
+    };
   }
 
   /**
@@ -1227,14 +1343,18 @@ export class PiBrainsController {
    * Detect if marker exists in message content.
    */
   private detectMarkerInContent(content: string | Array<{ type: string; text?: string }>): boolean {
+    return this.contentHasMarker(content, PI_WORKSTATE_MARKER);
+  }
+
+  private contentHasMarker(content: string | Array<{ type: string; text?: string }>, marker: string): boolean {
     if (typeof content === "string") {
-      return content.includes(PI_WORKSTATE_MARKER);
+      return content.includes(marker);
     }
 
     if (Array.isArray(content)) {
       for (const block of content) {
         if (block.type === "text" && typeof block.text === "string") {
-          if (block.text.includes(PI_WORKSTATE_MARKER)) {
+          if (block.text.includes(marker)) {
             return true;
           }
         }
@@ -1248,8 +1368,12 @@ export class PiBrainsController {
    * Remove marker from message content, preserving all other content.
    */
   private removeMarkerFromContent(content: string | Array<{ type: string; text?: string }>): string | Array<{ type: string; text?: string }> {
+    return this.removeNamedMarkerFromContent(content, PI_WORKSTATE_MARKER);
+  }
+
+  private removeNamedMarkerFromContent(content: string | Array<{ type: string; text?: string }>, marker: string): string | Array<{ type: string; text?: string }> {
     if (typeof content === "string") {
-      return content.replaceAll(PI_WORKSTATE_MARKER, "").trimEnd();
+      return content.replaceAll(marker, "").trimEnd();
     }
 
     if (Array.isArray(content)) {
@@ -1257,7 +1381,7 @@ export class PiBrainsController {
         if (block.type === "text" && typeof block.text === "string") {
           return {
             ...block,
-            text: block.text.replaceAll(PI_WORKSTATE_MARKER, "").trimEnd(),
+            text: block.text.replaceAll(marker, "").trimEnd(),
           };
         }
         return block;

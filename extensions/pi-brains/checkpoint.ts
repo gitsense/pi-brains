@@ -148,6 +148,13 @@ export async function handleCheckpoint(options: CheckpointOptions): Promise<Chec
   const checkpointResult = controller.requestGuideCheckpoint("manual");
   const checkpointId = checkpointResult.checkpointId;
   debugLog("Got checkpoint ID", { checkpointId });
+
+  // Resolve the git baseline used by STEP 1 and the post-append audit:
+  // previous checkpoint head (if any) takes precedence over the session-start
+  // head, so the two stay consistent within a multi-checkpoint session.
+  const baselineHead = (await resolvePreviousCheckpointHead(sessionId, leafId, cwd))
+    ?? checkpointResult.sessionStartHead;
+  debugLog("Resolved checkpoint baseline", { baselineHead, sessionStartBranch: checkpointResult.sessionStartBranch });
   
   // Step 2: Create scratch branch and send instructions
   debugLog("Creating scratch branch");
@@ -164,6 +171,8 @@ export async function handleCheckpoint(options: CheckpointOptions): Promise<Chec
       files: checkpointResult.trackedFiles,
       tools: checkpointResult.toolNames,
       rules: checkpointResult.ruleIds,
+      baselineHead,
+      sessionStartBranch: checkpointResult.sessionStartBranch,
     },
   );
 }
@@ -182,7 +191,7 @@ async function createCheckpointBranch(
   leafId: string,
   cwd: string,
   checkpointId: string,
-  tracked: { files: string[]; tools: string[]; rules: string[] },
+  tracked: { files: string[]; tools: string[]; rules: string[]; baselineHead: string | null; sessionStartBranch: string | null },
 ): Promise<CheckpointResult> {
   if (!sessionFile) {
     return { success: false, error: "No session file" };
@@ -290,9 +299,14 @@ export function buildCheckpointInstructions(
   leafId: string,
   checkpointId: string,
   repoPath: string,
-  tracked: { files: string[]; tools: string[]; rules: string[] } = { files: [], tools: [], rules: [] },
+  tracked: { files: string[]; tools: string[]; rules: string[]; baselineHead: string | null; sessionStartBranch: string | null } = { files: [], tools: [], rules: [], baselineHead: null, sessionStartBranch: null },
 ): string {
   const trackedFiles = repoRelativeTrackedFiles(tracked.files, repoPath);
+  const baselineHead = tracked.baselineHead ?? null;
+  const sessionStartBranch = tracked.sessionStartBranch ?? null;
+  const gitReconcileStep = baselineHead
+    ? `   - If the baseline head is known (${baselineHead}), run: git diff --name-only ${baselineHead}\n   - If you switched branches this session (you started on ${sessionStartBranch ?? "an unknown branch"}) or no baseline applies, run: git status --porcelain --untracked-files=all`
+    : `   - Run: git status --porcelain --untracked-files=all`;
   return `Create a checkpoint for this session.
 
 IMPORTANT RULES:
@@ -318,7 +332,17 @@ Carry forward any decisions, risks, or open questions that still matter.
 Do not include resolved items unless they remain relevant.
 If no checkpoints exist, proceed without review.
 
-STEP 1: Write checkpoint JSON
+STEP 1: Audit ALL file changes
+Every file changed by THIS session must be recorded in file_changes. The conversation is the only reliable source of what you did; git output is only a completeness aid. The working tree may contain changes made by OTHER agents, the user, or earlier work — never record a file just because git lists it. Include a file only when this conversation evidences you changed it.
+Build the authoritative change list:
+1. Start from the tracked baseline in files (above) — these came from read/edit/write tool calls and are unambiguously yours. Keep them with method "edit" or "write" ("read" is not a change; do not include read-only files).
+2. Review the bash commands below (and any others in this conversation) for file-modifying operations: git apply, git am, patch, sed -i, perl -i, perl -e, awk, tee, redirections (> and >>), heredocs (cat > file <<EOF), touch, mv, cp, rm, git rm, and any other command that created, modified, moved, or deleted a file. For each, add the concrete target path with method "bash". Use the exact path visible in the command text or tool output; never guess or invent a path.
+3. Reconcile with git as a completeness check — it CANNOT distinguish your changes from others', so adjudicate every candidate against the conversation:
+${gitReconcileStep}
+   git diff --name-only also surfaces files committed mid-session. For each listed file, include it in file_changes ONLY if the conversation evidences you changed it. Ignore files changed by other agents or the user, and pre-existing changes.
+4. Identify the repository for every file outside the workspace repo (from its absolute path or cd/pwd output) and add a matching entry to the repositories legend.
+
+STEP 2: Write checkpoint JSON
 Write the complete checkpoint JSON to /tmp/checkpoint-${checkpointId}.json based on the conversation.
 Do NOT use the template command - write the JSON directly from scratch.
 This avoids unicode escape issues and makes the file easier to edit if needed.
@@ -336,11 +360,33 @@ METADATA FIELDS (use these exact values):
 - createdAt: <current ISO timestamp>
 - privacy: {"containsTranscript": false, "containsRawToolOutput": false, "safeToCommit": false}
 - files: ${JSON.stringify(trackedFiles)}
+- file_changes: <authoritative array of every file changed in this session> (see rules below)
+- repositories: <legend resolving every file_changes[].repository id> (see rules below)
 - tools: ${JSON.stringify(tracked.tools)}
 - rules: ${JSON.stringify(tracked.rules)}
 
 Do not add workspace_repository. The gsc append command derives and overwrites repository metadata from --repo.
-The files, tools, and rules above come from Pi Brains tracking. Preserve them exactly; do not infer replacements. Empty arrays are valid.
+The tools and rules above come from Pi Brains tracking; preserve them exactly. Empty arrays are valid.
+The files value above is only the tool-tracked baseline (read/edit/write calls). Bash-driven changes are NOT tracked automatically, which is why STEP 1 audits every change. file_changes is the authoritative list, and gsc derives the stored files field from its workspace-repository entries.
+
+file_changes rules:
+- Each entry: {"path": "...", "repository": "...", "method": "...", "change": "..."}
+- path: relative to the file's own repository root; never absolute; no "..".
+- repository: OMIT for files in the workspace repo (the repo --repo points at). For files in OTHER repositories, set the repository id — it MUST match an id in the repositories legend below. This is how checkpoints record changes across multiple repositories.
+- method: "edit" (edit tool), "write" (write tool), "bash" (changed via a shell command), or "unknown".
+- change: "modified" (default), "created", "deleted", or "moved". For "moved", record the destination path and add a separate entry for the source with change "deleted".
+- REQUIRED: include EVERY file changed this session — via tools OR bash (STEP 1). Do not omit a file just because it was not a read/edit/write call.
+- Only include paths with direct evidence in the conversation. Never guess.
+- Example entry: {"path": "internal/sessions/models.go", "repository": "gsc-cli", "method": "bash", "change": "modified"}
+
+repositories legend rules:
+- Each entry: {"id": "...", "root": "...", "remote"?: "...", "branch"?: "...", "head"?: "..."}
+- id: a short stable repository id (the git root basename, e.g. "gsc-cli", "pi-brains").
+- root: the machine-local absolute checkout path (e.g. "/Users/you/gsc-cli"). This is how consumers resolve file paths as root + "/" + path.
+- REQUIRED: every repository id referenced by file_changes must appear here. Include one entry per repository touched outside the workspace repo.
+- You MAY include the workspace repo too, but you may omit it — gsc appends it with its root automatically.
+- Derive roots from absolute paths or cd/pwd output visible in the conversation; never invent a root.
+- Example: [{"id": "gsc-cli", "root": "/Users/you/gsc-cli"}, {"id": "pi-brains", "root": "/Users/you/pi-brains"}]
 
 REQUIRED AI-GENERATED FIELDS:
 
@@ -398,23 +444,23 @@ OPTIONAL FIELDS (omit if not applicable):
   - reason: Why you chose this status and focus (max 300 chars)
   Example: {"status": "focused", "focus": "high", "reason": "Recent work remains centered on checkpoint schema"}
 
-STEP 2: Validate checkpoint
+STEP 3: Validate checkpoint
 Before validation, confirm that current_understanding is no more than 2000 characters and preferably no more than 1200. For example:
 Run: jq -r '.current_understanding | length' /tmp/checkpoint-${checkpointId}.json
 Run: gsc sessions checkpoints validate --from-file /tmp/checkpoint-${checkpointId}.json
 If validation fails, fix the errors and re-validate (up to 2 attempts).
 
-STEP 3: Append checkpoint
+STEP 4: Append checkpoint
 Run: gsc sessions checkpoints append --from-file /tmp/checkpoint-${checkpointId}.json --repo ${shellQuote(repoPath)} --target personal
 
-STEP 4: Verify checkpoint
+STEP 5: Verify checkpoint
 Run: gsc sessions checkpoints list --session ${sessionId} --branch ${leafId}
 Confirm the checkpoint appears in the list.
 Run: gsc sessions checkpoints show ${checkpointId}
-Confirm the checkpoint can be shown.
+Confirm the checkpoint can be shown and that its file_changes match your audit (files not listed may have been missed).
 
-STEP 5: Report result
-Report the checkpoint ID and confirmation that all verification steps passed.`;
+STEP 6: Report result
+Report the checkpoint ID, the file change count, and confirmation that all verification steps passed.`;
 }
 
 function shellQuote(value: string): string {
@@ -465,4 +511,70 @@ async function verifyCheckpoint(checkpointId: string, cwd: string): Promise<void
       reject(err);
     });
   });
+}
+
+// Command runner
+
+interface CommandResult {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+}
+
+function runCommand(command: string, args: string[], cwd: string, timeoutMs = 15_000): Promise<CommandResult> {
+  return new Promise((resolve) => {
+    const proc = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], cwd });
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => proc.kill(), timeoutMs);
+    proc.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+    proc.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+    proc.on("close", (exitCode) => {
+      clearTimeout(timer);
+      resolve({ ok: exitCode === 0, stdout, stderr });
+    });
+    proc.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({ ok: false, stdout, stderr: err.message });
+    });
+  });
+}
+
+/**
+ * Resolve the previous checkpoint's workspace head for a session/branch, used
+ * as the git baseline for file-change reconciliation. The current checkpoint
+ * does not exist yet when this runs, so the latest record is the previous one.
+ */
+async function resolvePreviousCheckpointHead(sessionId: string, leafId: string, cwd: string): Promise<string | null> {
+  try {
+    const result = await runCommand(
+      "gsc",
+      ["sessions", "checkpoints", "list", "--session", sessionId, "--branch", leafId, "--format", "json"],
+      cwd,
+    );
+    if (!result.ok) return null;
+    let records: Array<{ createdAt?: string; workspace_repository?: { head?: string } }>;
+    try {
+      records = JSON.parse(result.stdout);
+    } catch {
+      return null;
+    }
+    let latestHead: string | null = null;
+    let latestCreatedAt = "";
+    for (const record of records) {
+      const head = record.workspace_repository?.head;
+      if (!head) continue;
+      if (!latestHead || (record.createdAt ?? "") >= latestCreatedAt) {
+        latestHead = head;
+        latestCreatedAt = record.createdAt ?? "";
+      }
+    }
+    return latestHead;
+  } catch {
+    return null;
+  }
 }

@@ -40,6 +40,8 @@ describe("guide checkpoint message", () => {
       trackedFiles: [],
       toolNames: [],
       ruleIds: [],
+      sessionStartHead: null,
+      sessionStartBranch: null,
     };
 
     // Simulate the checkpoint message creation flow

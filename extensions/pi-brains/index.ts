@@ -14,8 +14,10 @@ import { handleInboxAutoCommand, handleInboxCodeCommand, handleInboxCommand, sta
 import { loadInboxWatcherState, saveInboxWatcherState, type DurableInboxWatcherState } from "./inbox-state.ts";
 import { handleForgetCommand } from "./forget.ts";
 import { startSessionHeartbeat, type SessionHeartbeatHandle } from "./heartbeat.ts";
+import { handleMeCommand } from "./me.ts";
 import { handleRoleCommand } from "./role.ts";
 import { handleSummaryCommand } from "./summary.ts";
+import { handleSnapshotsCommand } from "./snapshots.ts";
 import { appendBrainsInsightsEntry, registerBrainsInsightsEntryRenderer } from "./insights-entry.ts";
 import { showOutputPanel } from "./output-panel.ts";
 import { buildSearchDialog } from "./search-view.ts";
@@ -25,6 +27,10 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
   const controller = new PiBrainsController(pi, config);
   let brainsStatusPending = false;
+  // Only true when the user ran /brains to initialize: the auto status panel
+  // at agent_end must not fire for agent-driven `gsc experts init` runs (for
+  // example a lead agent following its onboarding instructions).
+  let expectBrainsStatus = false;
   let inboxWatcher: InboxWatcherHandle | null = null;
   let sessionHeartbeat: SessionHeartbeatHandle | null = null;
   let pendingConfigSave: Promise<void> = Promise.resolve();
@@ -62,6 +68,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
   pi.on("session_start", async (_event, ctx) => {
     brainsStatusPending = false;
+    expectBrainsStatus = false;
     controller.start(ctx);
     const sessionId = controller.getSessionId();
     inboxWatcher?.stop();
@@ -128,7 +135,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
   pi.on("tool_result", (event, ctx) => {
     controller.recordToolResult(event, ctx);
-    if (isSuccessfulExpertsInit(event)) {
+    if (expectBrainsStatus && isSuccessfulExpertsInit(event)) {
       brainsStatusPending = true;
     }
     return controller.handleToolResult(event, ctx);
@@ -144,8 +151,14 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
   pi.on("message_end", async (event, ctx) => {
     controller.refreshSessionState(ctx);
-
-    return undefined;
+    const processed = controller.processAssistantMessageForSnapshotMarker(
+      event.message as unknown as Record<string, unknown>,
+    );
+    if (!processed) return undefined;
+    if (processed.newlySuggested) {
+      ctx.ui.notify("Agent suggests a session snapshot. Run /brains snapshots create.", "info");
+    }
+    return { message: processed.message as unknown as typeof event.message };
   });
 
   pi.on("session_compact", (_event, ctx) => {
@@ -156,6 +169,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     const result = await controller.handleStop(event, ctx);
     if (brainsStatusPending) {
       brainsStatusPending = false;
+      expectBrainsStatus = false;
       await showBrainsStatus(controller, ctx as unknown as ExtensionCommandContext);
     }
     return result;
@@ -221,6 +235,12 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
         return;
       }
 
+      // /brains snapshots - capture and manage session file snapshots
+      if (command === "snapshots") {
+        await handleSnapshotsCommand(value, controller, ctx as unknown as ExtensionCommandContext);
+        return;
+      }
+
       // /brains search - search across Pi sessions in GitSense Chat
       if (command === "search") {
         await handleSearchCommand(controller, ctx as unknown as ExtensionCommandContext);
@@ -230,6 +250,18 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
       // /brains ask - open and manage saved knowledge groups
       if (command === "ask") {
         await handleAskCommand(controller, config, ctx as unknown as ExtensionCommandContext, value);
+        return;
+      }
+
+      // /brains me - show the current agent identity for GitSense Chat
+      if (command === "me") {
+        if (value) {
+          ctx.ui.notify("Usage: /brains me", "warning");
+          return;
+        }
+        await handleMeCommand(controller, ctx as unknown as ExtensionCommandContext, {
+          autoAcceptEnabled: inboxWatcher?.isAutoAcceptEnabled() ?? config.inboxAutoAccept,
+        });
         return;
       }
 
@@ -394,6 +426,7 @@ Once installed, run /brains again to enable expert context.`;
   }
   // Hide the working spinner from the previous turn before sending
   ctx.ui.setWorkingVisible(false);
+  expectBrainsStatus = true;
   controller.sendUserMessage("run `gsc experts init` and follow instructions");
 }
 
@@ -1115,9 +1148,15 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 
 - \/brains checkpoint — Create a review checkpoint
 - \/brains checkpoint exit — Return to the main branch
+- \/brains snapshots — Show snapshot status for this session
+- \/brains snapshots list — List stage, manifest, and Git object locations
+- \/brains snapshots create — Capture recognized files at the current session leaf
+- \/brains snapshots suggest on|off|status — Configure milestone suggestions for this session
+- \/brains snapshots clear — Move this session's snapshots to a recoverable archive
 - \/brains forget — Prune entries after the current /tree position (with backup)
 - \/brains summary — Generate a session summary as the final message
 - \/brains role — Assign a worker/expert role to this session (fresh sessions only; default: general purpose)
+- \/brains me — Show and copy this agent's Chat identity
 - \/brains inbox — Review pending GitSense Chat messages
 - \/brains inbox list — List all messages in the session inbox
 - \/brains inbox info — Show mailbox address, summary, and wait-group progress

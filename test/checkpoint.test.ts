@@ -12,6 +12,8 @@ describe("checkpoint instructions", () => {
         files: ["/tmp/repo with 'quote'/components/pi/cards.ts", "/tmp/outside.ts"],
         tools: ["read", "edit"],
         rules: ["rule-ui"],
+        baselineHead: null,
+        sessionStartBranch: null,
       },
     );
 
@@ -31,10 +33,50 @@ describe("checkpoint instructions", () => {
     expect(instructions).toContain("--repo '/tmp/repo with '\\''quote'\\''' --target personal");
   });
 
+  it("requires a full file-change audit including bash-driven changes", () => {
+    const instructions = buildCheckpointInstructions("session", "leaf", "checkpoint", "/repo", {
+      files: ["/repo/src/a.ts"],
+      tools: ["edit"],
+      rules: [],
+      baselineHead: "abc123",
+      sessionStartBranch: "main",
+    });
+
+    expect(instructions).toContain("STEP 1: Audit ALL file changes");
+    expect(instructions).toContain("git status --porcelain --untracked-files=all");
+    expect(instructions).toContain("git diff --name-only abc123");
+    expect(instructions).toContain("switched branches this session");
+    expect(instructions).toContain("never record a file just because git lists it");
+    expect(instructions).toContain("adjudicate every candidate against the conversation");
+    expect(instructions).toContain("file_changes");
+    expect(instructions).toContain('"bash" (changed via a shell command)');
+    expect(instructions).toContain('"repository"');
+    expect(instructions).toContain("repositories legend");
+    expect(instructions).toContain('root + "/" + path');
+    expect(instructions).toContain('For "moved", record the destination path');
+    expect(instructions).not.toContain("Bash commands observed");
+    expect(instructions).not.toContain("perl -i -pe");
+    expect(instructions).not.toContain("Preserve them exactly; do not infer replacements");
+  });
+
+  it("falls back to git status when no baseline is available", () => {
+    const instructions = buildCheckpointInstructions("session", "leaf", "checkpoint", "/repo", {
+      files: [],
+      tools: [],
+      rules: [],
+      baselineHead: null,
+      sessionStartBranch: null,
+    });
+
+    expect(instructions).toContain("git status --porcelain --untracked-files=all");
+    expect(instructions).not.toContain("git diff --name-only <");
+    expect(instructions).not.toContain("(unknown)");
+  });
+
   it("uses contiguous workflow step numbers", () => {
     const instructions = buildCheckpointInstructions("session", "leaf", "checkpoint", "/repo");
     const steps = [...instructions.matchAll(/^STEP (\d+):/gm)].map((match) => Number(match[1]));
 
-    expect(steps).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(steps).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 });

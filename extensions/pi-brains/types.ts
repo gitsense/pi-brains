@@ -22,6 +22,8 @@ export interface PiBrainsConfig {
   rulesEnabled: boolean;
   debug: boolean;
   guideEnabled: boolean;
+  /** Session UUIDs whose snapshot suggestion prompt is enabled. */
+  snapshotSuggestionSessionIds: string[];
   inboxAutoAccept: boolean;
   waitGroupCursors: Record<string, number>;
   askGroups: AskGroup[];

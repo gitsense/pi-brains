@@ -19,6 +19,7 @@ describe("configuration", () => {
         showModel: false,
         showRepositories: false,
         dismissedNotices: ["gsc-missing-v1", 4],
+        snapshotSuggestionSessionIds: ["session-a", "session-a", 4, "session-b"],
         askGroups: [{
           id: "group-1",
           url: "http://localhost:3357/?chat=pi-sessions&track=expert-a&track-name=Experts",
@@ -39,6 +40,7 @@ describe("configuration", () => {
       rulesEnabled: true,
       debug: false,
       guideEnabled: false,
+      snapshotSuggestionSessionIds: ["session-a", "session-b"],
       inboxAutoAccept: false,
       waitGroupCursors: {},
       askGroups: [{
