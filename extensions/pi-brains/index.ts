@@ -194,7 +194,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
       // /brains - show initialization and help options
       if (!command) {
-        await initializeBrains(controller, ctx as unknown as ExtensionContext);
+        expectBrainsStatus = await initializeBrains(controller, ctx as unknown as ExtensionContext);
         return;
       }
 
@@ -388,7 +388,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   });
 }
 
-async function initializeBrains(controller: PiBrainsController, ctx: ExtensionContext): Promise<void> {
+async function initializeBrains(controller: PiBrainsController, ctx: ExtensionContext): Promise<boolean> {
   // Check availability without sending anything to the model. Session startup
   // normally performs this check; retry explicitly if it is still pending.
   let gscAvailable = controller.getGscStatus() === "available";
@@ -410,7 +410,7 @@ Build from source (Go 1.21+):
 
 Once installed, run /brains again to enable expert context.`;
     ctx.ui.notify(installMsg, "warning");
-    return;
+    return false;
   }
 
   const initialized = controller.hasRunExpertsInit(ctx);
@@ -419,15 +419,15 @@ Once installed, run /brains again to enable expert context.`;
     "Help",
     "Cancel",
   ]);
-  if (!choice || choice === "Cancel") return;
+  if (!choice || choice === "Cancel") return false;
   if (choice === "Help") {
     await showHelp(ctx as unknown as ExtensionCommandContext);
-    return;
+    return false;
   }
   // Hide the working spinner from the previous turn before sending
   ctx.ui.setWorkingVisible(false);
-  expectBrainsStatus = true;
   controller.sendUserMessage("run `gsc experts init` and follow instructions");
+  return true;
 }
 
 async function handleRulesCommand(value: string | undefined, controller: PiBrainsController, ctx: ExtensionCommandContext): Promise<void> {
