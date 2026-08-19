@@ -1,0 +1,3851 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-19T02:30:34.686Z",
+  "manifest": {
+    "name": "Code Intent Discovery Metadata",
+    "database_name": "code-intent",
+    "description": "Discovery-optimized manifest tracking code file purposes, Action-Object keywords, functional parent domains, interface patterns, and logic constraints. Helps AI agents understand file intent and relationships for efficient navigation and modification decisions across JavaScript and plaintext codebases.",
+    "tags": []
+  },
+  "repositories": [
+    {
+      "ref": "R0",
+      "name": "gitsense/pi-brains"
+    }
+  ],
+  "branches": [
+    {
+      "ref": "B0",
+      "name": "staging"
+    }
+  ],
+  "analyzers": [
+    {
+      "ref": "A0",
+      "id": "code-intent::file-content::default",
+      "name": "Code Intent",
+      "description": "Generates a discovery-optimized summary and metadata, including Action-Object keywords, functional parent domains, interface types, and logic constraints.",
+      "version": "3.1.0"
+    }
+  ],
+  "fields": [
+    {
+      "ref": "F0",
+      "analyzer_ref": "A0",
+      "name": "file_path",
+      "display_name": "File Path",
+      "type": "string",
+      "description": ""
+    },
+    {
+      "ref": "F1",
+      "analyzer_ref": "A0",
+      "name": "file_name",
+      "display_name": "File Name",
+      "type": "string",
+      "description": ""
+    },
+    {
+      "ref": "F2",
+      "analyzer_ref": "A0",
+      "name": "file_extension",
+      "display_name": "File Extension",
+      "type": "string",
+      "description": ""
+    },
+    {
+      "ref": "F3",
+      "analyzer_ref": "A0",
+      "name": "chat_id",
+      "display_name": "Chat Id",
+      "type": "string",
+      "description": ""
+    },
+    {
+      "ref": "F4",
+      "analyzer_ref": "A0",
+      "name": "purpose",
+      "display_name": "Purpose",
+      "type": "string",
+      "description": "A change-centric summary starting with \"Modify this file to change...\" or \"Use this file to change...\"."
+    },
+    {
+      "ref": "F5",
+      "analyzer_ref": "A0",
+      "name": "type",
+      "display_name": "Type",
+      "type": "string",
+      "description": "The standardized category of the file (e.g., `source_code`, `documentation`, `blog_post`). Must be a value defined in `keyword-map.json` or a standard default."
+    },
+    {
+      "ref": "F6",
+      "analyzer_ref": "A0",
+      "name": "dates",
+      "display_name": "Dates",
+      "type": "string",
+      "description": "An array of date strings formatted as `yyyy-mm-dd_type` (e.g., `[\"2023-10-27_published\", \"2023-11-05_modified\"]`). Null if no dates."
+    },
+    {
+      "ref": "F7",
+      "analyzer_ref": "A0",
+      "name": "keywords",
+      "display_name": "Keywords",
+      "type": "array",
+      "description": "An array of 3-7 specific, high-discrimination keywords. MUST be \"Action-Object\" pairs. MUST exclude stop words. Quality over quantity."
+    },
+    {
+      "ref": "F8",
+      "analyzer_ref": "A0",
+      "name": "parent_keywords",
+      "display_name": "Parent Keywords",
+      "type": "array",
+      "description": "An array of 2-5 broader, functional domain keywords that group the specific keywords."
+    },
+    {
+      "ref": "F9",
+      "analyzer_ref": "A0",
+      "name": "key_entities",
+      "display_name": "Key Entities",
+      "type": "array",
+      "description": "A list of the most important named components within the file."
+    },
+    {
+      "ref": "F10",
+      "analyzer_ref": "A0",
+      "name": "mechanism",
+      "display_name": "Mechanism",
+      "type": "string",
+      "description": "The interface/pattern type (e.g., `cli-command`, `rest-api`, `webhook-handler`, `factory-pattern`). Null if not applicable."
+    },
+    {
+      "ref": "F11",
+      "analyzer_ref": "A0",
+      "name": "logic_constraints",
+      "display_name": "Logic Constraints",
+      "type": "string",
+      "description": "A list of hardcoded business logic or configuration constants found in the file. Null if none found."
+    }
+  ],
+  "data": [
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/ask-groups.test.ts",
+      "language": "typescript",
+      "chat_id": 14153,
+      "fields": {
+        "F0": "test/ask-groups.test.ts",
+        "F1": "ask-groups.test",
+        "F2": "ts",
+        "F3": "14153",
+        "F4": "Modify this file to change how ask-group URL parsing, construction, session deduplication, and renaming are validated in unit tests.",
+        "F5": "test",
+        "F6": "[\"2026-08-03_test\"]",
+        "F7": [
+          "parse-url-params",
+          "build-ask-group-url",
+          "create-session-track",
+          "rename-group-metadata",
+          "validate-url-fields",
+          "deduplicate-sessions",
+          "extract-tracked-ids"
+        ],
+        "F8": [
+          "url-handling",
+          "session-management",
+          "ask-group-operations",
+          "vitest-testing"
+        ],
+        "F9": [
+          "parseAskGroupUrl",
+          "buildAskGroupUrl",
+          "createAskGroup",
+          "renameAskGroup",
+          "GROUP_URL",
+          "CURRENT_SESSION"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"URL requires params: chat=pi-sessions, track, track-name\",\"session tracking uses comma-separated format\",\"chat must equal pi-sessions\",\"track-name and track are required fields\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/bash-observability-trigger.test.ts",
+      "language": "typescript",
+      "chat_id": 14154,
+      "fields": {
+        "F0": "test/bash-observability-trigger.test.ts",
+        "F1": "bash-observability-trigger.test",
+        "F2": "ts",
+        "F3": "14154",
+        "F4": "Modify this file to change how gsc bash observability rule triggers are tested or validated.",
+        "F5": "test",
+        "F7": [
+          "test-trigger-behavior",
+          "validate-pipeline-detection",
+          "verify-bundle-integrity",
+          "block-unwrapped-commands",
+          "suggest-command-rewrite",
+          "handle-command-prefixes",
+          "detect-quoted-separators"
+        ],
+        "F8": [
+          "bash-observability",
+          "rule-engine",
+          "command-validation"
+        ],
+        "F9": [
+          "run",
+          "advisory",
+          "strict"
+        ]
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/bash-observability.test.ts",
+      "language": "typescript",
+      "chat_id": 14155,
+      "fields": {
+        "F0": "test/bash-observability.test.ts",
+        "F1": "bash-observability.test",
+        "F2": "ts",
+        "F3": "14155",
+        "F4": "Modify this file to change how BashObservability class behavior is tested or validated.",
+        "F5": "test",
+        "F7": [
+          "test-session-registration",
+          "verify-brain-discovery",
+          "decorate-tool-calls",
+          "handle-registration-failure",
+          "re-register-session-switch",
+          "bind-session-context"
+        ],
+        "F8": [
+          "bash-observability",
+          "session-management",
+          "agent-integration"
+        ],
+        "F9": [
+          "BashObservability",
+          "DebugLogger",
+          "createSubject",
+          "registration",
+          "bashEvent"
+        ]
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/brains-status.test.ts",
+      "language": "typescript",
+      "chat_id": 14156,
+      "fields": {
+        "F0": "test/brains-status.test.ts",
+        "F1": "brains-status.test",
+        "F2": "ts",
+        "F3": "14156",
+        "F4": "Use this file to change how brains-status rendering, observability modes, and rule-count queries are validated in unit tests.",
+        "F5": "test",
+        "F7": [
+          "render-status-message",
+          "query-expertise-status",
+          "detect-observability-mode",
+          "mock-run-command",
+          "verify-notification-output",
+          "check-rule-count",
+          "classify-policy-state"
+        ],
+        "F8": [
+          "status-display",
+          "observability",
+          "rule-management",
+          "testing"
+        ],
+        "F9": [
+          "showBrainsStatus",
+          "isSuccessfulExpertsInit",
+          "BrainsStatusController",
+          "createContext",
+          "renderedStatus",
+          "bashResult"
+        ],
+        "F10": "vitest-unit-test",
+        "F11": "[\"observability-states: Off, Disabled, Best effort, Enforced\",\"rules-states: Unavailable, ON\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/checkpoint.test.ts",
+      "language": "typescript",
+      "chat_id": 14157,
+      "fields": {
+        "F0": "test/checkpoint.test.ts",
+        "F1": "checkpoint.test",
+        "F2": "ts",
+        "F3": "14157",
+        "F4": "Use this file to change how checkpoint instruction generation is validated, including provenance, file-change auditing, baseline fallback, and step numbering.",
+        "F5": "test",
+        "F7": [
+          "build-checkpoint-instructions",
+          "audit-file-changes",
+          "query-git-status",
+          "derive-repository-metadata",
+          "validate-step-numbers",
+          "fallback-baseline-git",
+          "extract-provenance"
+        ],
+        "F8": [
+          "checkpoint-management",
+          "git-operations",
+          "session-tracking",
+          "testing"
+        ],
+        "F9": [
+          "buildCheckpointInstructions",
+          "baselineHead",
+          "sessionStartBranch",
+          "checkpoint",
+          "leaf",
+          "session"
+        ],
+        "F10": "vitest-unit-test",
+        "F11": "[\"checkpoint-max-length: 2000 characters\",\"checkpoint-target-length: 1200 characters\",\"contiguous-workflow-steps: 0-6\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/config.test.ts",
+      "language": "typescript",
+      "chat_id": 14158,
+      "fields": {
+        "F0": "test/config.test.ts",
+        "F1": "config.test",
+        "F2": "ts",
+        "F3": "14158",
+        "F4": "Modify this file to change configuration parsing tests, adjust default fallback behavior, or update expected validation rules for the pi-brains extension config.",
+        "F5": "test",
+        "F7": [
+          "parse-config",
+          "validate-inputs",
+          "default-fallback",
+          "accept-customization",
+          "preserve-groups",
+          "normalize-options",
+          "test-validation"
+        ],
+        "F8": [
+          "configuration-management",
+          "input-validation",
+          "testing",
+          "extension-setup"
+        ],
+        "F9": [
+          "parseConfig",
+          "DEFAULT_CONFIG"
+        ],
+        "F10": "test-suite"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/controller.test.ts",
+      "language": "typescript",
+      "chat_id": 14159,
+      "fields": {
+        "F0": "test/controller.test.ts",
+        "F1": "controller.test",
+        "F2": "ts",
+        "F3": "14159",
+        "F4": "Modify this file to change how the overlay lifecycle is validated, including visibility thresholds, disposal behavior, and responsive overlay configuration.",
+        "F5": "test",
+        "F7": [
+          "overlay-lifecycle",
+          "controller-test",
+          "responsive-overlay",
+          "render-validation",
+          "disposal-handling",
+          "set-hidden",
+          "non-capturing"
+        ],
+        "F8": [
+          "testing",
+          "ui-components",
+          "overlay-management"
+        ],
+        "F9": [
+          "PiBrainsController",
+          "OverlayHandle",
+          "OverlayOptions",
+          "TUI",
+          "DEFAULT_CONFIG"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"width-38\",\"max-height-100-percent\",\"visible-threshold-width-100\",\"visible-threshold-height-40\",\"set-hidden-true\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/file-tree.test.ts",
+      "language": "typescript",
+      "chat_id": 14160,
+      "fields": {
+        "F0": "test/file-tree.test.ts",
+        "F1": "file-tree.test",
+        "F2": "ts",
+        "F3": "14160",
+        "F4": "Use this file to change the behavior of buildFileTree and renderTree functions for directory visualization and path collapse logic.",
+        "F5": "test",
+        "F7": [
+          "build-file-tree",
+          "render-tree-structure",
+          "collapse-single-child",
+          "truncate-long-lines",
+          "directory-glyph-rendering",
+          "path-branching",
+          "ignore-external-files"
+        ],
+        "F8": [
+          "file-tree",
+          "directory-visualization",
+          "path-processing",
+          "ui-rendering"
+        ],
+        "F9": [
+          "buildFileTree",
+          "renderTree"
+        ],
+        "F10": "test-module",
+        "F11": "[\"width-limit-40\",\"width-limit-20\",\"ellipsis-truncation\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/forget.test.ts",
+      "language": "typescript",
+      "chat_id": 14161,
+      "fields": {
+        "F0": "test/forget.test.ts",
+        "F1": "forget.test",
+        "F2": "ts",
+        "F3": "14161",
+        "F4": "Use this file to change the behavior of session forget/trim operations including branch detection, backup creation, and entry removal.",
+        "F5": "test",
+        "F7": [
+          "analyze-session-tail",
+          "build-forget-table",
+          "create-backup-note",
+          "perform-forget-ops",
+          "detect-branch-conflict",
+          "trim-session-entries",
+          "preserve-malformed-lines"
+        ],
+        "F8": [
+          "session-management",
+          "backup-handling",
+          "session-lifecycle",
+          "data-integrity"
+        ],
+        "F9": [
+          "analyzeForget",
+          "buildForgetTable",
+          "getBackupPath",
+          "buildBackupNote",
+          "performForgetFileOps",
+          "SessionEntry"
+        ],
+        "F10": "test-module",
+        "F11": "[\"session-version-3\",\"backup-extension-.bak\",\"temp-file-cleanup\",\"malformed-line-tolerance\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/glyphs.test.ts",
+      "language": "typescript",
+      "chat_id": 14162,
+      "fields": {
+        "F0": "test/glyphs.test.ts",
+        "F1": "glyphs.test",
+        "F2": "ts",
+        "F3": "14162",
+        "F4": "Use this file to change the test coverage for token visualization functions, validating formatting of compact tokens and rendering of token glyphs across different font sizes and output modes.",
+        "F5": "test",
+        "F7": [
+          "format-compact-tokens",
+          "render-token-glyphs",
+          "render-glyph-text",
+          "ascii-fallback",
+          "fixed-height-rendering"
+        ],
+        "F8": [
+          "visualization",
+          "testing",
+          "token-management"
+        ],
+        "F9": [
+          "formatCompactTokens",
+          "renderGlyphText",
+          "renderTokenGlyphs"
+        ],
+        "F10": "vitest-test",
+        "F11": "[\"formatCompactTokens: 999->'999', 1500->'1.5K', 20000->'20K', 128000->'128K', 1000000->'1M'\",\"Fixed rendering heights: 5 lines for 3x5 font, 7 lines for 5x7 font\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/guidance-context.test.ts",
+      "language": "typescript",
+      "chat_id": 14163,
+      "fields": {
+        "F0": "test/guidance-context.test.ts",
+        "F1": "guidance-context.test",
+        "F2": "ts",
+        "F3": "14163",
+        "F4": "Use this file to change the test coverage for guidance context detection logic, validating the recognition of successful tool results and compaction summaries that indicate GitSense initialization.",
+        "F5": "test",
+        "F7": [
+          "has-GitSense-guidance",
+          "get-active-context-items",
+          "tool-result-detection",
+          "compaction-summary",
+          "session-entry-processing"
+        ],
+        "F8": [
+          "guidance-context",
+          "testing",
+          "session-management"
+        ],
+        "F9": [
+          "hasGitSenseGuidance",
+          "getActiveContextItems"
+        ],
+        "F10": "vitest-test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/guide-checkpoint-message.test.ts",
+      "language": "typescript",
+      "chat_id": 14164,
+      "fields": {
+        "F0": "/testbed/test/guide-checkpoint-message.test.ts",
+        "F1": "guide-checkpoint-message",
+        "F2": "ts",
+        "F3": "14164",
+        "F4": "Modify this file to change how checkpoint message creation, anchor navigation, send failure recovery, or debug event logging is tested.",
+        "F5": "test",
+        "F7": [
+          "create-scratch-message",
+          "navigate-anchor-leaf",
+          "restore-original-leaf",
+          "log-checkpoint-events",
+          "handle-send-failure",
+          "trigger-turn-flag",
+          "log-message-lifecycle"
+        ],
+        "F8": [
+          "checkpoint-system",
+          "guide-mode",
+          "session-management",
+          "debug-logging"
+        ],
+        "F9": [
+          "CheckpointLog",
+          "GuideCheckpointRequestResult",
+          "navigateTree",
+          "sendMessage",
+          "sessionManager"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"triggerTurn: false for scratch messages\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/guide-mode.test.ts",
+      "language": "typescript",
+      "chat_id": 14165,
+      "fields": {
+        "F0": "/testbed/test/guide-mode.test.ts",
+        "F1": "guide-mode",
+        "F2": "ts",
+        "F3": "14165",
+        "F4": "Modify this file to change how guide mode activation, marker detection/removal, snapshot suggestion deduplication, or checkpoint lifecycle is tested.",
+        "F5": "test",
+        "F7": [
+          "inject-guide-instructions",
+          "detect-workstate-marker",
+          "remove-marker-content",
+          "handle-snapshot-suggestion",
+          "inject-mailbox-identity",
+          "track-checkpoint-lifecycle",
+          "count-changed-files"
+        ],
+        "F8": [
+          "guide-mode",
+          "marker-processing",
+          "checkpoint-system",
+          "system-prompt-injection",
+          "snapshot-management"
+        ],
+        "F9": [
+          "PiBrainsController",
+          "DEFAULT_CONFIG",
+          "BeforeAgentStartEvent",
+          "PI_WORKSTATE_MARKER",
+          "PI_SNAPSHOT_SUGGEST_MARKER",
+          "ExtensionContext"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"snapshotSuggestionSessionIds whitelist\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/heartbeat.test.ts",
+      "language": "typescript",
+      "chat_id": 14166,
+      "fields": {
+        "F0": "test/heartbeat.test.ts",
+        "F1": "heartbeat.test",
+        "F2": "ts",
+        "F3": "14166",
+        "F4": "Use this file to change the test coverage for the TUI heartbeat system that tracks live pi-brains session status via SQLite.",
+        "F5": "test",
+        "F7": [
+          "heartbeat-upsert",
+          "heartbeat-refresh",
+          "heartbeat-stop",
+          "heartbeat-migrate",
+          "heartbeat-prune",
+          "alive-session-query",
+          "runtime-detection"
+        ],
+        "F8": [
+          "heartbeat-system",
+          "session-monitoring",
+          "sqlite-persistence",
+          "tui-lifecycle"
+        ],
+        "F9": [
+          "startSessionHeartbeat",
+          "getHeartbeatRecordsForSessions",
+          "getAliveHeartbeatSessionIds",
+          "detectHeartbeatRuntime",
+          "heartbeatDbPath",
+          "HeartbeatSource",
+          "DEFAULT_HEARTBEAT_INTERVAL_MS"
+        ],
+        "F10": "vitest-unit-test",
+        "F11": "[\"default-interval-10s\",\"retention-window-30s\",\"prune-threshold-31d\",\"v1-migration-schema\",\"skipped-before-session-id\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/inbox-state.test.ts",
+      "language": "typescript",
+      "chat_id": 14167,
+      "fields": {
+        "F0": "test/inbox-state.test.ts",
+        "F1": "inbox-state.test",
+        "F2": "ts",
+        "F3": "14167",
+        "F4": "Use this file to change the test coverage for durable inbox watcher state persistence including notification deduplication and wait-group cursor restoration.",
+        "F5": "test",
+        "F7": [
+          "inbox-state-save",
+          "inbox-state-load",
+          "notification-dedup",
+          "waitgroup-cursor-restore",
+          "legacy-config-fallback"
+        ],
+        "F8": [
+          "inbox-notification",
+          "state-persistence",
+          "session-config"
+        ],
+        "F9": [
+          "saveInboxWatcherState",
+          "loadInboxWatcherState",
+          "getInboxWatcherStatePath"
+        ],
+        "F10": "vitest-unit-test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/inbox.test.ts",
+      "language": "typescript",
+      "chat_id": 14168,
+      "fields": {
+        "F0": "test/inbox.test.ts",
+        "F1": "inbox.test",
+        "F2": "ts",
+        "F3": "14168",
+        "F4": "Use this file to change how inbox commands, message acceptance, auto-acceptance watchers, agent-to-agent envelopes, wait-group cursors, mailbox summaries, inbox code lifecycle, and rejected-send clearing are tested.",
+        "F5": "test",
+        "F7": [
+          "accept-pending-message",
+          "auto-accept-watcher",
+          "agent-envelope-validation",
+          "wait-group-cursor-persistence",
+          "mailbox-summary-display",
+          "code-generate-delete",
+          "clear-rejected-sends"
+        ],
+        "F8": [
+          "session-management",
+          "message-delivery",
+          "agent-communication",
+          "wait-group-orchestration"
+        ],
+        "F9": [
+          "InboxController",
+          "handleInboxCommand",
+          "handleInboxAutoCommand",
+          "handleInboxCodeCommand",
+          "startInboxWatcher",
+          "showInboxInfo"
+        ],
+        "F10": "test-suite",
+        "F11": "[\"schema-version-1\",\"schema-version-2\",\"max-hops-2\",\"hop-1\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/insights-entry.test.ts",
+      "language": "typescript",
+      "chat_id": 14169,
+      "fields": {
+        "F0": "test/insights-entry.test.ts",
+        "F1": "insights-entry.test",
+        "F2": "ts",
+        "F3": "14169",
+        "F4": "Use this file to change how the brains insights custom-entry renderer is registered with the Pi extension API and how Markdown snapshots are appended without sending messages.",
+        "F5": "test",
+        "F7": [
+          "register-entry-renderer",
+          "append-insights-snapshot",
+          "custom-entry-registration",
+          "markdown-entry-write",
+          "extension-api-hook"
+        ],
+        "F8": [
+          "insights-system",
+          "extension-api",
+          "ui-rendering"
+        ],
+        "F9": [
+          "registerBrainsInsightsEntryRenderer",
+          "appendBrainsInsightsEntry"
+        ],
+        "F10": "test-suite"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/inspect-view.test.ts",
+      "language": "typescript",
+      "chat_id": 14170,
+      "fields": {
+        "F0": "test/inspect-view.test.ts",
+        "F1": "inspect-view.test",
+        "F2": "ts",
+        "F3": "14170",
+        "F4": "Modify this file to change how the inspect dialog UI is tested across different session and chat app states. This test suite validates the buildInspectDialog function.",
+        "F5": "test",
+        "F7": [
+          "inspect-dialog",
+          "session-status",
+          "chat-app-state",
+          "dialog-options",
+          "copy-terminal",
+          "session-url",
+          "wait-mode"
+        ],
+        "F8": [
+          "session-management",
+          "dialog-ui",
+          "test-suite"
+        ],
+        "F9": [
+          "buildInspectDialog",
+          "ChatAppStatus",
+          "SESSION_ID",
+          "GSC_COMMAND",
+          "session-file-exists"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"session-url-pattern: http://127.0.0.1:3357/?chat=pi-${SESSION_ID}\",\"wait-flag: --cwd '--wait'\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/me.test.ts",
+      "language": "typescript",
+      "chat_id": 14171,
+      "fields": {
+        "F0": "test/me.test.ts",
+        "F1": "me.test",
+        "F2": "ts",
+        "F3": "14171",
+        "F4": "Modify this file to change how the /brains me command and agent identity contract are tested. This test suite validates the handleMeCommand function.",
+        "F5": "test",
+        "F7": [
+          "agent-identity",
+          "handle-me-command",
+          "format-agent-identity",
+          "clipboard-copy",
+          "session-binding",
+          "tui-validation",
+          "identity-contract"
+        ],
+        "F8": [
+          "agent-management",
+          "command-handling",
+          "test-suite"
+        ],
+        "F9": [
+          "formatAgentIdentity",
+          "handleMeCommand",
+          "SESSION_ID",
+          "ExtensionCommandContext",
+          "autoAcceptEnabled"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"identity-format: ${SESSION_ID}::${PID}::${autoAcceptEnabled ? 'on' : 'off'}\",\"mode-restriction: tui-only\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/panel.test.ts",
+      "language": "typescript",
+      "chat_id": 14172,
+      "fields": {
+        "F0": "/test/panel.test.ts",
+        "F1": "panel.test",
+        "F2": "ts",
+        "F3": "14172",
+        "F4": "Modify this file to change how the brains panel renders context tokens, model info, repository tracking, mailbox activity, and static snapshots for user review.",
+        "F5": "test",
+        "F7": [
+          "render-panel-snapshot",
+          "mailbox-section-display",
+          "context-token-display",
+          "panel-visibility-toggle",
+          "wait-group-progress",
+          "repository-grouping",
+          "test-panel-lines"
+        ],
+        "F8": [
+          "testing",
+          "panel-rendering",
+          "mailbox-monitoring",
+          "context-management"
+        ],
+        "F9": [
+          "BrainsPanel",
+          "renderBrainsPanelSnapshot",
+          "PanelState",
+          "DEFAULT_CONFIG",
+          "mailbox"
+        ],
+        "F10": "test-file"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/repositories.test.ts",
+      "language": "typescript",
+      "chat_id": 14173,
+      "fields": {
+        "F0": "/test/repositories.test.ts",
+        "F1": "repositories.test",
+        "F2": "ts",
+        "F3": "14173",
+        "F4": "Modify this file to change how repository resolution, git-based root detection, and file grouping behavior is validated for the brains extension.",
+        "F5": "test",
+        "F7": [
+          "resolve-repository-root",
+          "group-files-by-repo",
+          "cache-directory-lookup",
+          "git-exec-mocking",
+          "repository-caching"
+        ],
+        "F8": [
+          "testing",
+          "repository-management",
+          "file-organization"
+        ],
+        "F9": [
+          "RepositoryResolver",
+          "resolveFiles",
+          "getRepositories",
+          "ExtensionAPI"
+        ],
+        "F10": "test-file"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/role.test.ts",
+      "language": "typescript",
+      "chat_id": 14174,
+      "fields": {
+        "F0": "test/role.test.ts",
+        "F1": "role.test",
+        "F2": "ts",
+        "F3": "14174",
+        "F4": "Modify this file to change test coverage for role name derivation, conversation detection guards, or charter formatting in pi-brains agent configuration.",
+        "F5": "test",
+        "F7": [
+          "derive-name",
+          "build-charter",
+          "detect-conversation",
+          "truncate-length",
+          "extract-first-line",
+          "count-message-entries"
+        ],
+        "F8": [
+          "agent-configuration",
+          "session-management",
+          "worker-testing"
+        ],
+        "F9": [
+          "deriveRoleName",
+          "hasExistingConversation",
+          "buildRoleCharter"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"max-name-length-61\",\"min-conversation-messages-2\",\"single-acknowledgment-pattern-ok\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/rule-catalog.test.ts",
+      "language": "typescript",
+      "chat_id": 14175,
+      "fields": {
+        "F0": "test/rule-catalog.test.ts",
+        "F1": "rule-catalog.test",
+        "F2": "ts",
+        "F3": "14175",
+        "F4": "Modify this file to change test coverage for shell observability rule installation, recorder rule management, or bundle versioning logic in pi-brains.",
+        "F5": "test",
+        "F7": [
+          "install-shell-bundle",
+          "check-rule-status",
+          "delete-selected-policy",
+          "import-rule-bundle",
+          "manage-recorder-scope",
+          "resolve-bundle-conflict",
+          "parse-revision-tag"
+        ],
+        "F8": [
+          "rule-management",
+          "shell-observability",
+          "agent-extension"
+        ],
+        "F9": [
+          "handleRecorderRulesCommand",
+          "handleShellRulesCommand",
+          "RuleCatalogController"
+        ],
+        "F10": "unit-test",
+        "F11": "[\"personal-scope-only-for-recorder\",\"bundle-revision-tagging\",\"scope-options-personal-repo\",\"on-conflict-replace-default\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/rules.test.ts",
+      "language": "typescript",
+      "chat_id": 14176,
+      "fields": {
+        "F0": "test/rules.test.ts",
+        "F1": "rules",
+        "F2": "ts",
+        "F3": "14176",
+        "F4": "Modify this file to change how rule instructions are rendered, how delivery keys are generated, or how the rule controller handles lifecycle events and blocking behavior.",
+        "F5": "test",
+        "F7": [
+          "instruction-rendering",
+          "rule-delivery",
+          "tool-path-normalization",
+          "pre-tool-use",
+          "post-tool-use",
+          "context-command",
+          "execution-result"
+        ],
+        "F8": [
+          "rule-management",
+          "agent-lifecycle",
+          "tool-execution",
+          "session-handling",
+          "context-delivery"
+        ],
+        "F9": [
+          "PiBrainsController",
+          "RuleDeliveryTracker",
+          "renderInstructionTemplate",
+          "normalizeToolPath",
+          "buildDeliveryKey",
+          "GscRulesResponse",
+          "ExecutionResult",
+          "RulesJsonResponse"
+        ],
+        "F10": "test",
+        "F11": "[\"timeout-3000ms\",\"schemaVersion-1\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/search-view.test.ts",
+      "language": "typescript",
+      "chat_id": 14177,
+      "fields": {
+        "F0": "test/search-view.test.ts",
+        "F1": "search-view",
+        "F2": "ts",
+        "F3": "14177",
+        "F4": "Modify this file to change how the search dialog is constructed for different ChatAppStatus states or to add new state-specific action options.",
+        "F5": "test",
+        "F7": [
+          "search-dialog",
+          "chat-status",
+          "url-generation",
+          "install-check",
+          "tab-search"
+        ],
+        "F8": [
+          "search-interface",
+          "chat-application",
+          "user-interface"
+        ],
+        "F9": [
+          "buildSearchDialog",
+          "ChatAppStatus"
+        ],
+        "F10": "test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/sessions-view.test.ts",
+      "language": "typescript",
+      "chat_id": 14178,
+      "fields": {
+        "F0": "test/sessions-view.test.ts",
+        "F1": "sessions-view.test",
+        "F2": "ts",
+        "F3": "14178",
+        "F4": "Modify this file to change the expected behavior of the sessions dialog under different ChatAppStatus states.",
+        "F5": "test",
+        "F7": [
+          "dialog-build",
+          "status-check",
+          "chat-url-format",
+          "open-chat-action",
+          "copy-chat-url",
+          "install-help-message",
+          "option-action-list"
+        ],
+        "F8": [
+          "dialog-testing",
+          "chat-app-status",
+          "ui-dialogs"
+        ],
+        "F9": [
+          "buildSessionsDialog",
+          "ChatAppStatus"
+        ],
+        "F10": "unit-test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/snapshots.test.ts",
+      "language": "typescript",
+      "chat_id": 14179,
+      "fields": {
+        "F0": "test/snapshots.test.ts",
+        "F1": "snapshots.test",
+        "F2": "ts",
+        "F3": "14179",
+        "F4": "Modify this file to change the test coverage for snapshot lifecycle commands including create, list, clear, and suggest operations.",
+        "F5": "test",
+        "F7": [
+          "snapshot-create",
+          "snapshot-clear",
+          "snapshot-list",
+          "suggestions-toggle",
+          "run-gsc-command",
+          "confirm-dialog",
+          "archive-snapshots",
+          "file-tree-check"
+        ],
+        "F8": [
+          "snapshot-management",
+          "command-handling",
+          "test-utilities"
+        ],
+        "F9": [
+          "handleSnapshotsCommand",
+          "SnapshotCommandController",
+          "createController",
+          "createContext"
+        ],
+        "F10": "unit-test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/summary.test.ts",
+      "language": "typescript",
+      "chat_id": 14180,
+      "fields": {
+        "F0": "test/summary.test.ts",
+        "F1": "summary.test",
+        "F2": "ts",
+        "F3": "14180",
+        "F4": "Modify this file to change the test cases for the summary instruction builder.",
+        "F5": "test",
+        "F7": [
+          "test-instructions",
+          "markdown-validation",
+          "session-title-derivation",
+          "agent-output-constraints",
+          "summary-generation",
+          "vitest-describe"
+        ],
+        "F8": [
+          "testing",
+          "summary-generation",
+          "instruction-building",
+          "session-management"
+        ],
+        "F9": [
+          "buildSummaryInstructions"
+        ],
+        "F10": "unit-test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/telemetry.test.ts",
+      "language": "typescript",
+      "chat_id": 14181,
+      "fields": {
+        "F0": "test/telemetry.test.ts",
+        "F1": "telemetry.test",
+        "F2": "ts",
+        "F3": "14181",
+        "F4": "Modify this file to change test coverage for the rule telemetry writer, including sidecar path derivation, outcome resolution, and event persistence.",
+        "F5": "test",
+        "F7": [
+          "sidecar-path-derivation",
+          "telemetry-event-writing",
+          "outcome-resolution-testing",
+          "jsonl-append",
+          "toolCallId-preservation",
+          "rule-event-builder"
+        ],
+        "F8": [
+          "testing",
+          "telemetry",
+          "event-management",
+          "file-io"
+        ],
+        "F9": [
+          "deriveSidecarPath",
+          "resolveOutcome",
+          "RuleTelemetryWriter",
+          "buildTelemetryEvent",
+          "RULE_TELEMETRY_SCHEMA_VERSION"
+        ],
+        "F10": "unit-test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "test/touched-files.test.ts",
+      "language": "typescript",
+      "chat_id": 14182,
+      "fields": {
+        "F0": "test/touched-files.test.ts",
+        "F1": "touched-files.test",
+        "F2": "ts",
+        "F3": "14182",
+        "F4": "Use this file to change how TouchedFileTracker's deduplication, bash detection, and conversation replay behaviors are verified.",
+        "F5": "test",
+        "F7": [
+          "track-file-changes",
+          "replay-tool-calls",
+          "bash-command-detection",
+          "tool-result-processing",
+          "dedup-file-tracking",
+          "record-result-validation",
+          "vitest-test-suite"
+        ],
+        "F8": [
+          "testing",
+          "file-tracking",
+          "conversation-replay",
+          "extension-utilities"
+        ],
+        "F9": [
+          "TouchedFileTracker",
+          "ToolResultEvent",
+          "result"
+        ],
+        "F10": "unit-test"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "scripts/build-bash-observability-bundles.mjs",
+      "language": "plaintext",
+      "chat_id": 14184,
+      "fields": {
+        "F0": "scripts/build-bash-observability-bundles.mjs",
+        "F1": "build-bash-observability-bundles",
+        "F2": "mjs",
+        "F3": "14184",
+        "F4": "Use this file to change how observability bundles are constructed, including variant priorities, command filter patterns, trigger asset compilation, and the JSON schema applied to generated rule manifests.",
+        "F5": "source_code",
+        "F6": "[\"2026-07-17_build_date\"]",
+        "F7": [
+          "build-bundles",
+          "generate-bundle",
+          "hash-sha256",
+          "write-bundle",
+          "extract-trigger",
+          "read-source",
+          "command-filter-regex"
+        ],
+        "F8": [
+          "agent-observability",
+          "build-pipeline",
+          "rule-management",
+          "bundle-configuration"
+        ],
+        "F9": [
+          "variants",
+          "ruleID",
+          "triggerSha256",
+          "exportedAt",
+          "bundle",
+          "triggerSource",
+          "commandFilter"
+        ],
+        "F10": "build-script",
+        "F11": "[\"timeoutMs-3000\",\"priority-advisory-60\",\"priority-strict-100\",\"hash-length-12\",\"schema-version-gsc.rules.bundle.v1\",\"trigger-runtime-node\",\"command-filter-targets-rg-grep-find-ls-head-tail-wc-sort-uniq\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "rules/gsc-bash-observability/advisory-trigger.mjs",
+      "language": "plaintext",
+      "chat_id": 14187,
+      "fields": {
+        "F0": "rules/gsc-bash-observability/advisory-trigger.mjs",
+        "F1": "advisory-trigger",
+        "F2": "mjs",
+        "F3": "14187",
+        "F4": "Use this file to change how the advisory steering trigger detects unwrapped discovery commands and rewrites them with gsc bash wrapping for observability tracking.",
+        "F5": "source_code",
+        "F7": [
+          "detect-unwrapped-commands",
+          "rewrite-shell-command",
+          "split-shell-segments",
+          "extract-command-head",
+          "passive-steer-notice",
+          "validate-shell-wrapping",
+          "build-guidance-message"
+        ],
+        "F8": [
+          "shell-policy",
+          "observability",
+          "command-detection",
+          "pipeline-handling"
+        ],
+        "F9": [
+          "supported",
+          "splitShellComposition",
+          "shellWords",
+          "commandHead",
+          "findUnwrappedCommands",
+          "rewriteCommand",
+          "buildGuidance"
+        ],
+        "F10": "policy-trigger",
+        "F11": "[\"supported-commands: rg,grep,find,ls,head,tail,wc,sort,uniq\",\"delivery-mode: passiveSteer\",\"block: false\",\"session-alias-placeholder: <session-alias>\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "rules/gsc-bash-observability/advisory.bundle.json",
+      "language": "json",
+      "chat_id": 14188,
+      "fields": {
+        "F0": "rules/gsc-bash-observability/advisory.bundle.json",
+        "F1": "advisory.bundle",
+        "F2": "json",
+        "F3": "14188",
+        "F4": "Modify this bundle to change the shell command observability rules, supported discovery commands, Node.js trigger timeout, or the inline instruction text that guides Pi toward wrapping pipeline segments with session-scoped evidence recording.",
+        "F5": "configuration",
+        "F6": "[\"2026-07-17_exported\",\"2026-07-17_created\",\"2026-07-17_updated\",\"2026-07-17_confirmed\"]",
+        "F7": [
+          "wrap-discovery-commands",
+          "detect-rg-grep-find",
+          "rewrite-shell-wrapper",
+          "record-search-evidence",
+          "bundle-rule-deployment",
+          "instrument-pipeline-segments"
+        ],
+        "F8": [
+          "agent-observability",
+          "shell-tooling",
+          "rules-engine",
+          "session-analytics"
+        ],
+        "F9": [
+          "rule_pi_bash_observability_v1",
+          "trigger.mjs",
+          "agent-observability",
+          "gsc bash"
+        ],
+        "F10": "rules-bundle",
+        "F11": "[\"timeout-3000ms\",\"priority-60\",\"frequency-always\",\"supported-commands-rg-grep-find-ls-head-tail-wc-sort-uniq\",\"file-permissions-420\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "rules/gsc-bash-observability/README.md",
+      "language": "markdown",
+      "chat_id": 14189,
+      "fields": {
+        "F0": "rules/gsc-bash-observability/README.md",
+        "F1": "README",
+        "F2": "md",
+        "F3": "14189",
+        "F4": "Use this file to change the observable shell discovery rule configuration, modes, and installation instructions for Pi Brains.",
+        "F5": "readme",
+        "F7": [
+          "activate-advisory-mode",
+          "activate-strict-mode",
+          "route-shell-discovery",
+          "invoke-gsc-bash",
+          "import-bundle",
+          "run-trigger-scan",
+          "generate-wrapper-rewrite"
+        ],
+        "F8": [
+          "shell-observability",
+          "pi-brains-rules",
+          "command-discovery",
+          "executable-bundles",
+          "documentation"
+        ],
+        "F9": [
+          "Observable Shell Discovery Rules",
+          "advisory.bundle.json",
+          "strict.bundle.json",
+          "gsc bash",
+          "/brains rules shell"
+        ],
+        "F10": "documentation"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "rules/gsc-bash-observability/strict-trigger.mjs",
+      "language": "plaintext",
+      "chat_id": 14190,
+      "fields": {
+        "F0": "rules/gsc-bash-observability/strict-trigger.mjs",
+        "F1": "strict-trigger",
+        "F2": "mjs",
+        "F3": "14190",
+        "F4": "Use this file to change how the strict blocking trigger prevents execution of unwrapped shell discovery commands until they are wrapped with gsc bash for mandatory observability.",
+        "F5": "source_code",
+        "F7": [
+          "block-unwrapped-command",
+          "enforce-shell-observability",
+          "split-shell-segments",
+          "extract-command-head",
+          "steer-delivery-mode",
+          "detect-violations",
+          "strict-policy-trigger"
+        ],
+        "F8": [
+          "shell-policy",
+          "observability",
+          "command-detection",
+          "pipeline-handling"
+        ],
+        "F9": [
+          "supported",
+          "splitShellSegments",
+          "shellWords",
+          "commandHead",
+          "findUnwrappedCommands"
+        ],
+        "F10": "policy-trigger",
+        "F11": "[\"supported-commands: rg,grep,find,ls,head,tail,wc,sort,uniq\",\"delivery-mode: steer\",\"block: true\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "rules/gsc-bash-observability/strict.bundle.json",
+      "language": "json",
+      "chat_id": 14191,
+      "fields": {
+        "F0": "rules/gsc-bash-observability/strict.bundle.json",
+        "F1": "strict.bundle",
+        "F2": "json",
+        "F3": "14191",
+        "F4": "Modify this file to change the set of blocked discovery commands, the bash wrapper enforcement behavior, or the trigger timeout and priority settings for shell observability rules.",
+        "F5": "configuration",
+        "F6": "[\"2026-07-17_created\",\"2026-07-17_published\"]",
+        "F7": [
+          "bash-observability",
+          "command-filtering",
+          "rule-configuration",
+          "session-tracking",
+          "tool-interception",
+          "trigger-execution",
+          "evidence-capture"
+        ],
+        "F8": [
+          "agent-observability",
+          "tool-governance",
+          "runtime-enforcement"
+        ],
+        "F9": [
+          "rule_pi_bash_observability_v1",
+          "gsc-bash-observability-strict-v1",
+          "trigger.mjs"
+        ],
+        "F10": "trigger-based",
+        "F11": "[\"timeoutMs: 3000\",\"priority: 100\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "rules/README.md",
+      "language": "markdown",
+      "chat_id": 14192,
+      "fields": {
+        "F0": "rules/README.md",
+        "F1": "README",
+        "F2": "md",
+        "F3": "14192",
+        "F4": "Use this file to change how Pi Brains rules are discovered, configured, installed, and managed across personal or repository scopes.",
+        "F5": "readme",
+        "F7": [
+          "configure-rule-pack",
+          "install-rule-pack",
+          "remove-rule-pack",
+          "list-rule-packs",
+          "import-rule-bundle",
+          "inspect-rule-bundle",
+          "run-rule-dry-run"
+        ],
+        "F8": [
+          "rule-management",
+          "pi-brains",
+          "command-line-interface",
+          "rule-catalog",
+          "documentation"
+        ],
+        "F9": [
+          "Pi Brains Rule Catalog",
+          "gsc-bash-observability",
+          "advisory.bundle.json",
+          "strict.bundle.json",
+          "/brains rules shell"
+        ],
+        "F10": "documentation"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rules/adapters.ts",
+      "language": "typescript",
+      "chat_id": 14196,
+      "fields": {
+        "F0": "extensions/pi-brains/rules/adapters.ts",
+        "F1": "adapters",
+        "F2": "ts",
+        "F3": "14196",
+        "F4": "Modify this file to change how tool calls and lifecycle events from the coding agent are mapped into standardized RuleQuery objects for the rule engine.",
+        "F5": "source_code",
+        "F7": [
+          "map-tool-events",
+          "normalize-file-paths",
+          "bash-command-parsing",
+          "extract-rule-queries",
+          "tool-adapter-registry",
+          "event-handler-dispatch",
+          "lifecycle-event-mapping"
+        ],
+        "F8": [
+          "rule-engine",
+          "event-processing",
+          "tool-integration",
+          "extension-architecture"
+        ],
+        "F9": [
+          "BUILTIN_TOOL_ADAPTERS",
+          "getRuleQueries",
+          "getInputRuleQueries",
+          "getToolResultRuleQueries",
+          "getStopRuleQueries",
+          "normalizeToolPath",
+          "readStringField",
+          "getBeforeAgentStartRuleQueries",
+          "getAgentStartRuleQueries",
+          "getContextRuleQueries",
+          "getSessionBeforeCompactRuleQueries",
+          "getSessionCompactRuleQueries"
+        ],
+        "F10": "adapter-pattern"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rules/delivery.ts",
+      "language": "typescript",
+      "chat_id": 14197,
+      "fields": {
+        "F0": "extensions/pi-brains/rules/delivery.ts",
+        "F1": "delivery",
+        "F2": "ts",
+        "F3": "14197",
+        "F4": "Modify this file to change rule delivery deduplication, event tracking, or delivery key generation logic.",
+        "F5": "source_code",
+        "F7": [
+          "track-delivery",
+          "generate-delivery-key",
+          "record-decision-event",
+          "deduplicate-execution",
+          "hash-identifier",
+          "build-static-delivery-key",
+          "build-trigger-delivery-key"
+        ],
+        "F8": [
+          "rule-delivery",
+          "deduplication",
+          "event-tracking",
+          "decision-logging"
+        ],
+        "F9": [
+          "RuleDeliveryTracker",
+          "buildDeliveryKey",
+          "buildTriggerDeliveryKey",
+          "createRuleEvent",
+          "hashString",
+          "RuleDecisionEvent"
+        ],
+        "F10": "in-memory-delivery-tracker",
+        "F11": "[\"MAX_EVENTS=100\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rules/engine.ts",
+      "language": "typescript",
+      "chat_id": 14198,
+      "fields": {
+        "F0": "extensions/pi-brains/rules/engine.ts",
+        "F1": "engine",
+        "F2": "ts",
+        "F3": "14198",
+        "F4": "Modify this file to change rule evaluation logic, trigger execution, context building, or lifecycle event handling.",
+        "F5": "source_code",
+        "F7": [
+          "evaluate-lifecycle-event",
+          "execute-rule-trigger",
+          "build-execution-context",
+          "match-rule-query",
+          "partition-rule-types",
+          "deliver-instruction-packet",
+          "evaluate-trigger-frequency"
+        ],
+        "F8": [
+          "rule-engine",
+          "lifecycle-processing",
+          "trigger-execution",
+          "context-construction",
+          "gsc-integration"
+        ],
+        "F9": [
+          "RuleEngine",
+          "evaluate",
+          "evaluateWithExecute",
+          "evaluateBeforeAgentStart",
+          "evaluateToolResult",
+          "evaluateStop",
+          "evaluateTrigger",
+          "buildExecutionContext",
+          "buildTriggerContext",
+          "buildMatchedRulePacket",
+          "PI_AGENT_CONTEXT",
+          "MatchedRulePacket"
+        ],
+        "F10": "lifecycle-event-pipeline",
+        "F11": "[\"version=1\",\"debug_path=.gitsense/rules/triggers/debug/\",\"MAX_EVENTS=100\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rules/gsc-client.ts",
+      "language": "typescript",
+      "chat_id": 14199,
+      "fields": {
+        "F0": "extensions/pi-brains/rules/gsc-client.ts",
+        "F1": "gsc-client",
+        "F2": "ts",
+        "F3": "14199",
+        "F4": "Modify this file to change how the GSC CLI is invoked for fetching, validating, and executing rules across lifecycle events.",
+        "F5": "source_code",
+        "F7": [
+          "fetch-rules",
+          "run-trigger",
+          "execute-rules",
+          "validate-response",
+          "create-tempdir",
+          "abort-signal",
+          "filter-tool"
+        ],
+        "F8": [
+          "rule-management",
+          "api-client",
+          "cli-integration"
+        ],
+        "F9": [
+          "GscRulesClient",
+          "getRules",
+          "runTrigger",
+          "getRulesJson",
+          "executeRules",
+          "validateGscRulesResponse",
+          "validateMatchedGscRule",
+          "validateGscTriggerRunResult"
+        ],
+        "F10": "cli-wrapper",
+        "F11": "[\"timeout-3000ms\",\"timeout-10000ms\",\"timeout-30000ms\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rules/instructions.ts",
+      "language": "typescript",
+      "chat_id": 14200,
+      "fields": {
+        "F0": "extensions/pi-brains/rules/instructions.ts",
+        "F1": "instructions",
+        "F2": "ts",
+        "F3": "14200",
+        "F4": "Modify this file to change how matched GSC rule instructions are formatted into user-facing messages with variable substitution.",
+        "F5": "source_code",
+        "F7": [
+          "render-message",
+          "format-instructions",
+          "substitute-variables",
+          "build-rule-block",
+          "parse-template"
+        ],
+        "F8": [
+          "rule-display",
+          "message-formatting",
+          "template-engine"
+        ],
+        "F9": [
+          "renderRuleBlockMessage",
+          "renderInstructionTemplate"
+        ],
+        "F10": "template-renderer",
+        "F11": "[\"regex-template-pattern\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rules/telemetry.ts",
+      "language": "typescript",
+      "chat_id": 14201,
+      "fields": {
+        "F0": "extensions/pi-brains/rules/telemetry.ts",
+        "F1": "telemetry",
+        "F2": "ts",
+        "F3": "14201",
+        "F4": "Modify this file to change how rule execution events are tracked and written to sidecar JSONL files.",
+        "F5": "source_code",
+        "F7": [
+          "telemetry-write",
+          "event-build",
+          "outcome-resolve",
+          "sidecar-derive",
+          "jsonl-append",
+          "session-track",
+          "schema-define"
+        ],
+        "F8": [
+          "telemetry",
+          "event-tracking",
+          "observability",
+          "diagnostics"
+        ],
+        "F9": [
+          "RuleTelemetryWriter",
+          "RuleTelemetryEventV1",
+          "buildTelemetryEvent",
+          "resolveOutcome",
+          "deriveSidecarPath",
+          "RULE_TELEMETRY_SCHEMA_VERSION"
+        ],
+        "F10": "telemetry-writer",
+        "F11": "[\"schema-version-1\",\"jsonl-extension-replacement\",\"default-recursive-mkdir\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rules/types.ts",
+      "language": "typescript",
+      "chat_id": 14202,
+      "fields": {
+        "F0": "extensions/pi-brains/rules/types.ts",
+        "F1": "types",
+        "F2": "ts",
+        "F3": "14202",
+        "F4": "Modify this file to change the TypeScript type contracts defining the rules engine's API surface and data structures.",
+        "F5": "source_code",
+        "F7": [
+          "type-define",
+          "interface-export",
+          "schema-establish",
+          "context-define",
+          "trigger-type",
+          "execution-result",
+          "lifecycle-event"
+        ],
+        "F8": [
+          "type-system",
+          "schema-definition",
+          "api-contracts",
+          "typescript-types"
+        ],
+        "F9": [
+          "RuleAction",
+          "LifecycleEvent",
+          "V1TriggerContext",
+          "V1TriggerResult",
+          "ExecutionResult",
+          "GscRule",
+          "MatchedGscRule",
+          "RulesJsonResponse"
+        ],
+        "F10": "type-definition-file",
+        "F11": "[\"default-lifecycle-event-pre-tool-use\",\"schema-version-1\",\"three-delivery-modes\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/ask-groups.ts",
+      "language": "typescript",
+      "chat_id": 14203,
+      "fields": {
+        "F0": "extensions/pi-brains/ask-groups.ts",
+        "F1": "ask-groups",
+        "F2": "ts",
+        "F3": "14203",
+        "F4": "Modify this file to change how knowledge group URLs are parsed, validated, or how tracked session IDs are extracted and appended when building group URLs.",
+        "F5": "source_code",
+        "F7": [
+          "parse-group-url",
+          "track-session",
+          "create-group",
+          "rename-group",
+          "build-group-url",
+          "extract-session-ids",
+          "validate-group-url"
+        ],
+        "F8": [
+          "knowledge-groups",
+          "url-management",
+          "group-operations"
+        ],
+        "F9": [
+          "parseAskGroupUrl",
+          "createAskGroup",
+          "renameAskGroup",
+          "buildAskGroupUrl",
+          "getAskGroupDetails",
+          "ParsedAskGroupUrl"
+        ],
+        "F10": "utility-module",
+        "F11": "[\"GROUP_CHAT constant is 'pi-sessions'\",\"protocol must be http or https\",\"tracked session IDs are deduplicated\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/ask.ts",
+      "language": "typescript",
+      "chat_id": 14204,
+      "fields": {
+        "F0": "extensions/pi-brains/ask.ts",
+        "F1": "ask",
+        "F2": "ts",
+        "F3": "14204",
+        "F4": "Modify this file to change how the /brains ask command routes subcommands, displays group pickers, registers new groups, or persists configuration changes.",
+        "F5": "source_code",
+        "F7": [
+          "open-group-picker",
+          "register-group-url",
+          "show-group-list",
+          "show-ask-help",
+          "delete-group",
+          "rename-saved-group",
+          "select-group-option"
+        ],
+        "F8": [
+          "command-handling",
+          "knowledge-groups",
+          "ui-interaction",
+          "config-persistence"
+        ],
+        "F9": [
+          "handleAskCommand",
+          "AskController",
+          "openAskGroupPicker",
+          "registerAskGroup",
+          "renameSavedAskGroup",
+          "deleteSavedAskGroup",
+          "showAskGroupList",
+          "showAskSetup",
+          "showAskHelp"
+        ],
+        "F10": "cli-command-handler",
+        "F11": "[\"'list' and 'groups' both alias to group list command\",\"'delete' and 'remove' both alias to delete command\",\"select options include 'Close' and 'Cancel' sentinel values\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/bash-observability.ts",
+      "language": "typescript",
+      "chat_id": 14205,
+      "fields": {
+        "F0": "extensions/pi-brains/bash-observability.ts",
+        "F1": "bash-observability",
+        "F2": "ts",
+        "F3": "14205",
+        "F4": "Modify this file to change how bash sessions are registered, how tool calls are decorated with environment variables, or how available brains are discovered and refreshed for the Pi coding agent.",
+        "F5": "source_code",
+        "F7": [
+          "register-session",
+          "decorate-toolcall",
+          "refresh-brains",
+          "resolve-alias",
+          "validate-registration",
+          "parse-shell-response",
+          "track-composition"
+        ],
+        "F8": [
+          "session-management",
+          "shell-observability",
+          "command-instrumentation",
+          "cli-integration"
+        ],
+        "F9": [
+          "BashObservability",
+          "BashSessionRegistration",
+          "BrainsResponse",
+          "DebugLogger",
+          "ExtensionAPI",
+          "ToolCallEvent"
+        ],
+        "F10": "event-decoration",
+        "F11": "[\"registration-timeout-5000ms\",\"brains-timeout-5000ms\",\"alias-regex-^[a-z0-9]{4,32}$\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/brains-status.ts",
+      "language": "typescript",
+      "chat_id": 14206,
+      "fields": {
+        "F0": "extensions/pi-brains/brains-status.ts",
+        "F1": "brains-status",
+        "F2": "ts",
+        "F3": "14206",
+        "F4": "Modify this file to change how GitSense brains status is displayed, how rules are parsed, or how the diagnostic panel formats guidance, discovery, observability, and rules information.",
+        "F5": "source_code",
+        "F7": [
+          "display-status",
+          "parse-brains-summary",
+          "list-rules",
+          "check-guidance-context",
+          "format-observability",
+          "format-discovery",
+          "detect-shell-mode"
+        ],
+        "F8": [
+          "status-reporting",
+          "configuration-display",
+          "shell-policy-management",
+          "diagnostic-output"
+        ],
+        "F9": [
+          "BrainsStatusController",
+          "isSuccessfulExpertsInit",
+          "showBrainsStatus",
+          "ListedRule",
+          "BrainsSummary",
+          "StatusRow",
+          "SHELL_RULE_ID"
+        ],
+        "F10": "diagnostic-command",
+        "F11": "[\"shell-rule-id-rule_pi_bash_observability_v1\",\"strict-mode-trigger-contains-strict\",\"advisory-mode-trigger-contains-advisory\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/chat-app.ts",
+      "language": "typescript",
+      "chat_id": 14207,
+      "fields": {
+        "F0": "extensions/pi-brains/chat-app.ts",
+        "F1": "chat-app",
+        "F2": "ts",
+        "F3": "14207",
+        "F4": "Modify this file to change how the chat application status is queried, URLs are built, or external links are opened.",
+        "F5": "source_code",
+        "F7": [
+          "spawn-process",
+          "get-status",
+          "build-url",
+          "open-external",
+          "parse-output",
+          "check-installed",
+          "detect-platform"
+        ],
+        "F8": [
+          "chat-app",
+          "process-management",
+          "url-management",
+          "platform-detection"
+        ],
+        "F9": [
+          "ChatAppController",
+          "ChatAppStatus",
+          "GscCommandResult",
+          "getChatAppStatus",
+          "buildChatUrl",
+          "openExternalUrl"
+        ],
+        "F10": "cli-interface",
+        "F11": "[\"LOCAL_CHAT_HOST = http://127.0.0.1\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/checkpoint-log.ts",
+      "language": "typescript",
+      "chat_id": 14208,
+      "fields": {
+        "F0": "extensions/pi-brains/checkpoint-log.ts",
+        "F1": "checkpoint-log",
+        "F2": "ts",
+        "F3": "14208",
+        "F4": "Modify this file to change how guide checkpoint events are logged, buffered, or persisted to JSONL files.",
+        "F5": "source_code",
+        "F7": [
+          "log-event",
+          "log-checkpoint",
+          "set-session",
+          "record-event",
+          "write-jsonl",
+          "track-leaf",
+          "manage-buffer"
+        ],
+        "F8": [
+          "checkpoint-management",
+          "event-logging",
+          "session-tracking",
+          "guide-system"
+        ],
+        "F9": [
+          "CheckpointLog",
+          "GuideWorkStateEventV1",
+          "GuideCheckpointPayloadEventV1",
+          "GuideCheckpointSource",
+          "GuideCheckpointFacts",
+          "GuideCheckpointCounters"
+        ],
+        "F10": "jsonl-logger",
+        "F11": "[\"MAX_RECENT_GUIDE_EVENTS = 20\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/checkpoint.ts",
+      "language": "typescript",
+      "chat_id": 14209,
+      "fields": {
+        "F0": "extensions/pi-brains/checkpoint.ts",
+        "F1": "checkpoint",
+        "F2": "ts",
+        "F3": "14209",
+        "F4": "Modify this file to change the /brains checkpoint command workflow, including scratch branch creation, agent instruction generation, and checkpoint verification flow.",
+        "F5": "source_code",
+        "F7": [
+          "create-checkpoint",
+          "verify-checkpoint",
+          "build-instructions",
+          "manage-branch-state",
+          "track-checkpoint-state",
+          "resolve-previous-head",
+          "send-workflow-instructions"
+        ],
+        "F8": [
+          "checkpoint-lifecycle",
+          "branch-management",
+          "git-operations",
+          "state-tracking",
+          "instruction-generation"
+        ],
+        "F9": [
+          "handleCheckpoint",
+          "handleCheckpointExit",
+          "buildCheckpointInstructions",
+          "verifyCheckpoint",
+          "createCheckpointBranch",
+          "resolvePreviousCheckpointHead",
+          "repoRelativeTrackedFiles",
+          "runCommand"
+        ],
+        "F10": "cli-command",
+        "F11": "[\"command-timeout-15000ms\",\"agent-end-wait-500ms\",\"max-review-attempts-2\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/config.ts",
+      "language": "typescript",
+      "chat_id": 14210,
+      "fields": {
+        "F0": "extensions/pi-brains/config.ts",
+        "F1": "config",
+        "F2": "ts",
+        "F3": "14210",
+        "F4": "Modify this file to change PiBrains configuration persistence, default values, validation rules, and the file path resolution logic.",
+        "F5": "source_code",
+        "F7": [
+          "load-config",
+          "save-config",
+          "parse-config",
+          "parse-ask-groups",
+          "resolve-config-path",
+          "parse-wait-group-cursors",
+          "manage-dismissed-notices"
+        ],
+        "F8": [
+          "configuration-system",
+          "user-settings",
+          "data-validation",
+          "persistence-layer"
+        ],
+        "F9": [
+          "DEFAULT_CONFIG",
+          "loadConfig",
+          "saveConfig",
+          "parseConfig",
+          "parseAskGroups",
+          "parseWaitGroupCursors",
+          "getConfigPath",
+          "isRecord"
+        ],
+        "F10": "config-file",
+        "F11": "[\"min-terminal-width-60\",\"min-config-width-24\",\"max-config-width-80\",\"valid-fonts-3x5-5x7\",\"valid-glyphs-ascii-block\",\"valid-brightness-dim-normal\",\"config-path-~/.pi/agent/pi-brains.json\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/controller.ts",
+      "language": "typescript",
+      "chat_id": 14211,
+      "fields": {
+        "F0": "extensions/pi-brains/controller.ts",
+        "F1": "controller",
+        "F2": "ts",
+        "F3": "14211",
+        "F4": "Modify this file to change how pi-brains orchestrates lifecycle events, evaluates rules, manages guide checkpoints, buffers passive steer messages, and renders the TUI panel overlay.",
+        "F5": "source_code",
+        "F7": [
+          "evaluate-rules",
+          "handle-tool-result",
+          "request-checkpoint",
+          "detect-marker",
+          "inject-guidance",
+          "persist-config",
+          "detect-gsc"
+        ],
+        "F8": [
+          "lifecycle-management",
+          "rule-engine",
+          "guide-checkpoint",
+          "panel-rendering",
+          "session-binding"
+        ],
+        "F9": [
+          "PiBrainsController",
+          "OverlayOwner",
+          "RuleEngine",
+          "GuideCheckpointRequestResult",
+          "GITSENSE_SYSTEM_PROMPT"
+        ],
+        "F10": "extension-controller",
+        "F11": "[\"passiveSteerMaxLength=5\",\"passiveSteerMaxChars=2000\",\"timeout-5000-ms\",\"timeout-30000-ms\",\"timeout-120000-ms\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/debug-log.ts",
+      "language": "typescript",
+      "chat_id": 14212,
+      "fields": {
+        "F0": "extensions/pi-brains/debug-log.ts",
+        "F1": "debug-log",
+        "F2": "ts",
+        "F3": "14212",
+        "F4": "Modify this file to change how pi-brains writes timestamped debug logs to ~/.pi/agent/debug/pi-brains-checkpoint.log for troubleshooting extension behavior.",
+        "F5": "source_code",
+        "F7": [
+          "write-debug-log",
+          "get-log-path",
+          "clear-log-file"
+        ],
+        "F8": [
+          "logging",
+          "debugging"
+        ],
+        "F9": [
+          "debugLog",
+          "getLogFilePath",
+          "clearLog",
+          "LOG_FILE",
+          "LOG_DIR"
+        ],
+        "F10": "logging-utility",
+        "F11": "[\"log-dir-home-pi-agent-debug\",\"log-file-pi-brains-checkpoint-log\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/debug.ts",
+      "language": "typescript",
+      "chat_id": 14213,
+      "fields": {
+        "F0": "extensions/pi-brains/debug.ts",
+        "F1": "debug",
+        "F2": "ts",
+        "F3": "14213",
+        "F4": "Modify this file to change how debug logs are formatted, stored, or gated.",
+        "F5": "source_code",
+        "F7": [
+          "debug-logging",
+          "file-append",
+          "timestamp-format",
+          "log-file-creation",
+          "directory-creation",
+          "error-capture",
+          "silent-failure"
+        ],
+        "F8": [
+          "logging",
+          "debugging",
+          "diagnostics",
+          "utilities"
+        ],
+        "F9": [
+          "DebugLogger",
+          "getLogFilePath",
+          "log",
+          "warn",
+          "error",
+          "writeToFile"
+        ],
+        "F10": "utility-class",
+        "F11": "[\"debug-mode-gated\",\"silent-failure\",\"timestamp-format-iso\",\"log-path-default-.gitsense/debug/\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/file-tree.ts",
+      "language": "typescript",
+      "chat_id": 14214,
+      "fields": {
+        "F0": "extensions/pi-brains/file-tree.ts",
+        "F1": "file-tree",
+        "F2": "ts",
+        "F3": "14214",
+        "F4": "Modify this file to change how file paths are organized into hierarchical tree structures or how the tree is visually rendered.",
+        "F5": "source_code",
+        "F7": [
+          "trie-construction",
+          "path-segmentation",
+          "tree-rendering",
+          "line-truncation",
+          "directory-collapse",
+          "sort-by-type",
+          "relative-path"
+        ],
+        "F8": [
+          "file-system",
+          "tree-structures",
+          "visualization",
+          "data-structures"
+        ],
+        "F9": [
+          "TreeNode",
+          "TrieValue",
+          "buildFileTree",
+          "renderTree",
+          "trieToNodes",
+          "truncateLine"
+        ],
+        "F10": "data-structure",
+        "F11": "[\"max-width-truncation\",\"directory-collapse-threshold\",\"path-separator-slash\",\"indent-style-unicode-box-drawing\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/forget.ts",
+      "language": "typescript",
+      "chat_id": 14215,
+      "fields": {
+        "F0": "extensions/pi-brains/forget.ts",
+        "F1": "forget",
+        "F2": "ts",
+        "F3": "14215",
+        "F4": "Modify this file to change how session entries are pruned, how linear chain validation works, or how the backup-and-rename atomic rewrite is performed.",
+        "F5": "source_code",
+        "F7": [
+          "forget-entries",
+          "backup-file",
+          "rewrite-session",
+          "analyze-linearity",
+          "validate-ancestry",
+          "build-preview-table",
+          "handle-command"
+        ],
+        "F8": [
+          "entry-pruning",
+          "lifecycle-management",
+          "file-operations",
+          "cli-command"
+        ],
+        "F9": [
+          "ForgetAnalysis",
+          "ForgetFileResult",
+          "analyzeForget",
+          "performForgetFileOps",
+          "handleForgetCommand",
+          "buildForgetTable",
+          "buildBackupNote"
+        ],
+        "F10": "cli-command",
+        "F11": "[\"preview-max-30-characters\",\"backup-overwritten-on-repeat\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/glyphs.ts",
+      "language": "typescript",
+      "chat_id": 14216,
+      "fields": {
+        "F0": "extensions/pi-brains/glyphs.ts",
+        "F1": "glyphs",
+        "F2": "ts",
+        "F3": "14216",
+        "F4": "Modify this file to change how token counts are abbreviated, which glyphs are rendered, or how ASCII-art font styles are applied to displayable text.",
+        "F5": "source_code",
+        "F7": [
+          "render-glyphs",
+          "format-token-count",
+          "map-pixel-pattern",
+          "scale-abbr-number",
+          "choose-font-style"
+        ],
+        "F8": [
+          "display-rendering",
+          "token-metrics",
+          "ascii-art"
+        ],
+        "F9": [
+          "COMPACT_GLYPHS",
+          "WIDE_GLYPHS",
+          "formatCompactTokens",
+          "renderGlyphText",
+          "renderTokenGlyphs"
+        ],
+        "F10": "utility-module",
+        "F11": "[\"thousand-separator-K\",\"million-separator-M\",\"billion-separator-B\",\"compact-font-5-rows\",\"wide-font-7-rows\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/guidance-context.ts",
+      "language": "typescript",
+      "chat_id": 14217,
+      "fields": {
+        "F0": "extensions/pi-brains/guidance-context.ts",
+        "F1": "guidance-context",
+        "F2": "ts",
+        "F3": "14217",
+        "F4": "Modify this file to change how expert initialization commands are detected and how active context items are filtered from session managers to determine GitSense guidance presence.",
+        "F5": "source_code",
+        "F7": [
+          "detect-experts-init",
+          "filter-active-context",
+          "check-guidance-presence",
+          "parse-compaction-summary",
+          "extract-tool-call-ids",
+          "match-bash-command",
+          "verify-completion-status"
+        ],
+        "F8": [
+          "context-management",
+          "session-lifecycle",
+          "guidance-tracking"
+        ],
+        "F9": [
+          "isExpertsInitCommand",
+          "getActiveContextItems",
+          "hasGitSenseGuidance",
+          "summaryRecordsGuidance",
+          "isRecord",
+          "EXPERTS_INIT_COMMAND",
+          "COMPLETION_LANGUAGE"
+        ],
+        "F10": "utility-functions"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/heartbeat.ts",
+      "language": "typescript",
+      "chat_id": 14218,
+      "fields": {
+        "F0": "extensions/pi-brains/heartbeat.ts",
+        "F1": "heartbeat",
+        "F2": "ts",
+        "F3": "14218",
+        "F4": "Modify this file to change the heartbeat interval, database schema, liveness detection queries, pruning thresholds, or runtime auto-accept behavior for terminal sessions.",
+        "F5": "source_code",
+        "F7": [
+          "upsert-heartbeat-row",
+          "detect-runtime-mode",
+          "open-sqlite-store",
+          "prune-stale-records",
+          "mark-status-stopped",
+          "start-heartbeat-interval",
+          "query-alive-ids"
+        ],
+        "F8": [
+          "liveness-tracking",
+          "sqlite-persistence",
+          "session-registry"
+        ],
+        "F9": [
+          "startSessionHeartbeat",
+          "getAliveHeartbeatSessionIds",
+          "getHeartbeatRecordsForSessions",
+          "heartbeatDbPath",
+          "detectHeartbeatRuntime",
+          "SessionHeartbeatHandle",
+          "HeartbeatRecord",
+          "OpenHeartbeatStore"
+        ],
+        "F10": "sqlite-persistence",
+        "F11": "[\"default-interval-10000ms\",\"prune-age-30-days\",\"sqlite-wal-journal-mode\",\"sqlite-normal-synchronous\",\"pragma-user-version-2\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/inbox-state.ts",
+      "language": "typescript",
+      "chat_id": 14219,
+      "fields": {
+        "F0": "extensions/pi-brains/inbox-state.ts",
+        "F1": "inbox-state",
+        "F2": "ts",
+        "F3": "14219",
+        "F4": "Modify this file to change how the inbox watcher's durable state (notified message IDs, wait group cursors) is persisted to disk using atomic JSON files.",
+        "F5": "source_code",
+        "F7": [
+          "load-watcher-state",
+          "save-watcher-state",
+          "atomic-rename",
+          "durable-lease",
+          "session-state-path",
+          "normalize-state"
+        ],
+        "F8": [
+          "state-persistence",
+          "inbox-lifecycle",
+          "configuration-management"
+        ],
+        "F9": [
+          "DurableInboxWatcherState",
+          "loadInboxWatcherState",
+          "saveInboxWatcherState",
+          "getInboxWatcherStatePath"
+        ],
+        "F10": "state-file-io"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/inbox.ts",
+      "language": "typescript",
+      "chat_id": 14220,
+      "fields": {
+        "F0": "extensions/pi-brains/inbox.ts",
+        "F1": "inbox",
+        "F2": "ts",
+        "F3": "14220",
+        "F4": "Modify this file to change how the Pi session inbox watcher polls for, classifies, and handles human/agent messages, including auto-accept, wait-group notifications, and the user-facing inbox command interface.",
+        "F5": "source_code",
+        "F7": [
+          "poll-inbox",
+          "deliver-message",
+          "classify-agent-mail",
+          "wait-group-notice",
+          "auto-accept-user",
+          "mailbox-address-copy",
+          "inbox-clear-rejected"
+        ],
+        "F8": [
+          "inbox-messaging",
+          "agent-communication",
+          "user-interface",
+          "session-management"
+        ],
+        "F9": [
+          "InboxWatcherHandle",
+          "InboxController",
+          "handleInboxCommand",
+          "startInboxWatcher",
+          "buildWaitGroupNotice",
+          "handleAgentMail",
+          "showInboxInfo"
+        ],
+        "F10": "tui-command"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/index.ts",
+      "language": "typescript",
+      "chat_id": 14221,
+      "fields": {
+        "F0": "extensions/pi-brains/index.ts",
+        "F1": "index",
+        "F2": "ts",
+        "F3": "14221",
+        "F4": "Modify this file to change extension initialization, command registration, event handling, inbox watcher configuration, checkpoint workflows, or post-compact enrichment logic.",
+        "F5": "source_code",
+        "F7": [
+          "register-command",
+          "handle-session",
+          "persist-config",
+          "start-heartbeat",
+          "manage-inbox",
+          "create-checkpoint",
+          "enrich-compact",
+          "run-experts-init"
+        ],
+        "F8": [
+          "extension-lifecycle",
+          "session-management",
+          "git-integration",
+          "tui-management"
+        ],
+        "F9": [
+          "PiBrainsController",
+          "loadConfig",
+          "saveConfig",
+          "startInboxWatcher",
+          "startSessionHeartbeat",
+          "handleCheckpoint",
+          "handlePostCompact",
+          "registerBrainsInsightsEntryRenderer"
+        ],
+        "F10": "extension-entry-point",
+        "F11": "[\"exec-timeout-10000\",\"post-compact-sleep-500ms\",\"platform-darwin-linux-win32\",\"default-config-visible-true\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/insights-entry.ts",
+      "language": "typescript",
+      "chat_id": 14222,
+      "fields": {
+        "F0": "extensions/pi-brains/insights-entry.ts",
+        "F1": "insights-entry",
+        "F2": "ts",
+        "F3": "14222",
+        "F4": "Modify this file to change how durable insights snapshots are rendered within the Pi transcript UI without polluting model context.",
+        "F5": "source_code",
+        "F7": [
+          "register-entry-renderer",
+          "append-insights-entry",
+          "dynamic-border-rendering",
+          "markdown-transcript",
+          "durable-snapshot"
+        ],
+        "F8": [
+          "extension-ui",
+          "transcript-rendering"
+        ],
+        "F9": [
+          "registerBrainsInsightsEntryRenderer",
+          "appendBrainsInsightsEntry",
+          "BrainsInsightsEntryData",
+          "BRAINS_INSIGHTS_ENTRY"
+        ],
+        "F10": "factory-pattern"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/inspect-view.ts",
+      "language": "typescript",
+      "chat_id": 14223,
+      "fields": {
+        "F0": "extensions/pi-brains/inspect-view.ts",
+        "F1": "inspect-view",
+        "F2": "ts",
+        "F3": "14223",
+        "F4": "Modify this file to change how the inspect dialog is constructed, formatted, or what options are presented to users when viewing session details.",
+        "F5": "source_code",
+        "F7": [
+          "build-inspect-dialog",
+          "format-chat-status",
+          "copy-terminal-command",
+          "open-session-url",
+          "copy-chat-url",
+          "copy-start-command",
+          "format-dialog-options"
+        ],
+        "F8": [
+          "session-inspection",
+          "chat-integration",
+          "dialog-rendering",
+          "ui-components"
+        ],
+        "F9": [
+          "buildInspectDialog",
+          "formatChatAppStatus",
+          "InspectDialog",
+          "InspectOption",
+          "InspectAction",
+          "InspectDialogInput"
+        ],
+        "F10": "dialog-builder"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/me.ts",
+      "language": "typescript",
+      "chat_id": 14224,
+      "fields": {
+        "F0": "extensions/pi-brains/me.ts",
+        "F1": "me",
+        "F2": "ts",
+        "F3": "14224",
+        "F4": "Modify this file to change how the Pi agent identity is formatted, displayed, or copied for GitSense Chat integration.",
+        "F5": "source_code",
+        "F7": [
+          "format-agent-identity",
+          "handle-me-command",
+          "copy-identity-info",
+          "select-menu-action",
+          "show-agent-info",
+          "copy-clipboard"
+        ],
+        "F8": [
+          "agent-identification",
+          "clipboard-management",
+          "user-interface",
+          "session-management"
+        ],
+        "F9": [
+          "formatAgentIdentity",
+          "handleMeCommand",
+          "AgentIdentityController",
+          "AgentIdentityOptions"
+        ],
+        "F10": "cli-command",
+        "F11": "[\"identity-format-separator-is-double-colon\",\"auto-accept-enabled-states-are-on-or-off\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/model-context.ts",
+      "language": "typescript",
+      "chat_id": 14225,
+      "fields": {
+        "F0": "extensions/pi-brains/model-context.ts",
+        "F1": "model-context",
+        "F2": "ts",
+        "F3": "14225",
+        "F4": "Modify this file to change how context window usage and model metadata are extracted from the ExtensionContext API.",
+        "F5": "source_code",
+        "F7": [
+          "read-context-state",
+          "read-model-state",
+          "extract-usage-info",
+          "access-thinking-level",
+          "get-context-usage",
+          "retrieve-model-id",
+          "fetch-provider-name"
+        ],
+        "F8": [
+          "state-management",
+          "extension-state",
+          "context-reporting"
+        ],
+        "F9": [
+          "ContextState",
+          "ModelState",
+          "readContextState",
+          "readModelState"
+        ],
+        "F10": "state-reading-utilities"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/output-panel.ts",
+      "language": "typescript",
+      "chat_id": 14226,
+      "fields": {
+        "F0": "extensions/pi-brains/output-panel.ts",
+        "F1": "output-panel",
+        "F2": "ts",
+        "F3": "14226",
+        "F4": "Modify this file to change how long-form markdown output is rendered in themed TUI panels or falls back to notifications.",
+        "F5": "source_code",
+        "F7": [
+          "show-output-panel",
+          "render-markdown-tui",
+          "create-dynamic-border",
+          "handle-dismiss-input",
+          "fallback-to-notification",
+          "format-status-color",
+          "render-container-children"
+        ],
+        "F8": [
+          "user-interface",
+          "tui-rendering",
+          "output-display"
+        ],
+        "F9": [
+          "showOutputPanel",
+          "OutputPanelOptions",
+          "OutputPanelContext",
+          "Container",
+          "Markdown",
+          "DynamicBorder"
+        ],
+        "F10": "tui-panel",
+        "F11": "[\"fallback-to-notification-when-not-tui-or-no-custom-ui\",\"dismiss-on-enter-or-escape-or-q-key\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/panel.ts",
+      "language": "typescript",
+      "chat_id": 14227,
+      "fields": {
+        "F0": "extensions/pi-brains/panel.ts",
+        "F1": "panel",
+        "F2": "ts",
+        "F3": "14227",
+        "F4": "Modify this file to change the visual layout, information sections, or rendering logic of the Pi Brains side panel.",
+        "F5": "source_code",
+        "F7": [
+          "render-panel",
+          "visualize-tokens",
+          "display-file-tree",
+          "format-tokens",
+          "truncate-width",
+          "render-heading",
+          "render-divider"
+        ],
+        "F8": [
+          "ui-component",
+          "panel-rendering",
+          "context-management",
+          "terminal-rendering"
+        ],
+        "F9": [
+          "BrainsPanel",
+          "renderBrainsPanelSnapshot",
+          "PanelState",
+          "PiBrainsConfig",
+          "displayPath",
+          "renderTree",
+          "renderTokenGlyphs",
+          "formatCompactTokens",
+          "truncateToWidth"
+        ],
+        "F10": "terminal-ui-panel"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/repositories.ts",
+      "language": "typescript",
+      "chat_id": 14228,
+      "fields": {
+        "F0": "extensions/pi-brains/repositories.ts",
+        "F1": "repositories",
+        "F2": "ts",
+        "F3": "14228",
+        "F4": "Modify this file to change how Pi Brains discovers, caches, or manages git repository roots for tracked files.",
+        "F5": "source_code",
+        "F7": [
+          "resolve-repository",
+          "cache-directory",
+          "track-file",
+          "resolve-git-root",
+          "list-repositories",
+          "dispose-service",
+          "detect-root"
+        ],
+        "F8": [
+          "repository-resolution",
+          "file-tracking",
+          "git-integration",
+          "directory-caching"
+        ],
+        "F9": [
+          "RepositoryResolver",
+          "resolveFiles",
+          "getRepositories",
+          "getOutsideRepositoryCount",
+          "getFileRoots",
+          "resolveFile",
+          "dispose"
+        ],
+        "F10": "service-class",
+        "F11": "[\"git-timeout-2000ms\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/role.ts",
+      "language": "typescript",
+      "chat_id": 14229,
+      "fields": {
+        "F0": "extensions/pi-brains/role.ts",
+        "F1": "role",
+        "F2": "ts",
+        "F3": "14229",
+        "F4": "Modify this file to change how the /brains role command assigns worker roles to sessions, including the charter format, role name derivation, or mailbox address sharing.",
+        "F5": "source_code",
+        "F7": [
+          "assign-role",
+          "build-charter",
+          "copy-mailbox-address",
+          "detect-existing-conversation",
+          "derive-display-name",
+          "wait-for-turn-start",
+          "cli-role-command"
+        ],
+        "F8": [
+          "session-management",
+          "role-assignment",
+          "extension-commands"
+        ],
+        "F9": [
+          "handleRoleCommand",
+          "hasExistingConversation",
+          "deriveRoleName",
+          "buildRoleCharter",
+          "waitForTurnStart",
+          "PiBrainsController",
+          "ExtensionCommandContext"
+        ],
+        "F10": "cli-command",
+        "F11": "[\"default-role-general-purpose\",\"max-role-name-60-chars\",\"wait-timeout-5000ms\",\"poll-interval-50ms\",\"max-message-threshold-1\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/rule-catalog.ts",
+      "language": "typescript",
+      "chat_id": 14230,
+      "fields": {
+        "F0": "extensions/pi-brains/rule-catalog.ts",
+        "F1": "rule-catalog",
+        "F2": "ts",
+        "F3": "14230",
+        "F4": "Modify this file to change how pi-brains manages GitSense rule installation, removal, and status reporting for shell observability and edit recorder rules.",
+        "F5": "source_code",
+        "F7": [
+          "install-shell-rule",
+          "install-recorder",
+          "remove-rule",
+          "show-rule-status",
+          "resolve-rule-scope",
+          "parse-import-outcome",
+          "load-packaged-bundle"
+        ],
+        "F8": [
+          "rules-management",
+          "cli-extensions",
+          "agent-configuration"
+        ],
+        "F9": [
+          "handleShellRulesCommand",
+          "handleRecorderRulesCommand",
+          "installShellRule",
+          "removeShellRule",
+          "installRecorderRules",
+          "removeRecorderRules",
+          "RuleCatalogController",
+          "RecorderStatus",
+          "SHELL_RULE_ID",
+          "RECORDER_PRE_RULE_ID",
+          "RECORDER_POST_RULE_ID"
+        ],
+        "F10": "cli-command",
+        "F11": "[\"rule-id-shell-observability-v1\",\"rule-id-recorder-pre-capture\",\"rule-id-recorder-post-capture\",\"bundle-revision-tag-prefix\",\"conflict-resolution-replace\",\"recorder-scope-personal-only\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/search-view.ts",
+      "language": "typescript",
+      "chat_id": 14231,
+      "fields": {
+        "F0": "extensions/pi-brains/search-view.ts",
+        "F1": "search-view",
+        "F2": "ts",
+        "F3": "14231",
+        "F4": "Modify this file to change how the search dialog assembles options, formats status messages, or constructs the search URL for GitSense Chat.",
+        "F5": "source_code",
+        "F7": [
+          "build-search-dialog",
+          "construct-search-url",
+          "assemble-dialog-options",
+          "determine-chat-state",
+          "format-status-message",
+          "map-action-to-option",
+          "include-clipboard-command"
+        ],
+        "F8": [
+          "user-interface",
+          "chat-integration",
+          "dialog-construction",
+          "session-search"
+        ],
+        "F9": [
+          "SearchDialog",
+          "SearchOption",
+          "SearchAction",
+          "buildSearchDialog",
+          "buildSearchUrl",
+          "ChatAppStatus"
+        ],
+        "F10": "dialog-builder-pattern",
+        "F11": "[\"state-based-option-assembly\",\"status-conditional-url-construction\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/sessions-view.ts",
+      "language": "typescript",
+      "chat_id": 14232,
+      "fields": {
+        "F0": "extensions/pi-brains/sessions-view.ts",
+        "F1": "sessions-view",
+        "F2": "ts",
+        "F3": "14232",
+        "F4": "Modify this file to change how the sessions dialog presents options, constructs the sessions URL, or responds to different chat application states.",
+        "F5": "source_code",
+        "F7": [
+          "build-sessions-dialog",
+          "generate-sessions-url",
+          "compose-option-labels",
+          "evaluate-app-status",
+          "render-status-lines",
+          "dispatch-user-action",
+          "handle-chat-state"
+        ],
+        "F8": [
+          "user-interface",
+          "chat-integration",
+          "dialog-construction",
+          "session-view"
+        ],
+        "F9": [
+          "SessionsDialog",
+          "SessionsOption",
+          "SessionsAction",
+          "buildSessionsDialog",
+          "ChatAppStatus",
+          "buildChatUrl"
+        ],
+        "F10": "dialog-builder-pattern",
+        "F11": "[\"state-dependent-option-generation\",\"status-based-label-selection\",\"chat-url-parameter-injection\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/snapshots.ts",
+      "language": "typescript",
+      "chat_id": 14233,
+      "fields": {
+        "F0": "extensions/pi-brains/snapshots.ts",
+        "F1": "snapshots",
+        "F2": "ts",
+        "F3": "14233",
+        "F4": "Modify this file to change how session snapshots are created, listed, archived, or how the snapshot suggestion toggle is managed via the gsc CLI.",
+        "F5": "source_code",
+        "F7": [
+          "snapshot-create",
+          "snapshot-clear",
+          "snapshot-list",
+          "snapshot-suggest",
+          "file-archival",
+          "bytes-captured",
+          "manifest-generate"
+        ],
+        "F8": [
+          "snapshot-management",
+          "cli-interface",
+          "session-persistence"
+        ],
+        "F9": [
+          "handleSnapshotsCommand",
+          "createSnapshot",
+          "clearSnapshots",
+          "showSnapshotStatus",
+          "showSnapshotList",
+          "listSnapshots",
+          "SnapshotCommandController",
+          "SnapshotSummary",
+          "SnapshotCreateResult",
+          "SnapshotClearResult"
+        ],
+        "F10": "cli-command",
+        "F11": "[\"max-file-size-64-mib\",\"max-stage-size-256-mib\",\"credential-path-excluded\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/summary.ts",
+      "language": "typescript",
+      "chat_id": 14234,
+      "fields": {
+        "F0": "extensions/pi-brains/summary.ts",
+        "F1": "summary",
+        "F2": "ts",
+        "F3": "14234",
+        "F4": "Modify this file to change how a structured markdown summary prompt is built and sent to the Pi agent to produce a session cover message.",
+        "F5": "source_code",
+        "F7": [
+          "summary-generate",
+          "message-inject",
+          "title-derive",
+          "markdown-format",
+          "session-identify",
+          "topic-tag",
+          "decision-capture"
+        ],
+        "F8": [
+          "session-presentation",
+          "agent-instruction",
+          "session-lifecycle"
+        ],
+        "F9": [
+          "handleSummaryCommand",
+          "buildSummaryInstructions"
+        ],
+        "F10": "agent-instruction",
+        "F11": "[\"wrapped-at-80-characters\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/touched-files.ts",
+      "language": "typescript",
+      "chat_id": 14235,
+      "fields": {
+        "F0": "extensions/pi-brains/touched-files.ts",
+        "F1": "touched-files",
+        "F2": "ts",
+        "F3": "14235",
+        "F4": "Modify this file to change how the coding agent tracks, deduplicates, and replays files modified during tool operations.",
+        "F5": "source_code",
+        "F7": [
+          "track-file-modifications",
+          "normalize-file-path",
+          "record-tool-result",
+          "replay-conversation-history",
+          "shell-activity-detection",
+          "deduplicate-file-entries",
+          "structured-path-extraction"
+        ],
+        "F8": [
+          "tool-operations",
+          "file-tracking",
+          "conversation-replay",
+          "path-management"
+        ],
+        "F9": [
+          "TouchedFileTracker",
+          "ToolCallRecord",
+          "ToolResultEvent",
+          "recordResult",
+          "replay",
+          "normalizePath",
+          "expandTilde",
+          "structuredPath"
+        ],
+        "F10": "class-module",
+        "F11": "[\"File tracking limited to read, edit, and write tool names\",\"Shell activity flag triggered only by bash tool name\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "extensions/pi-brains/types.ts",
+      "language": "typescript",
+      "chat_id": 14236,
+      "fields": {
+        "F0": "extensions/pi-brains/types.ts",
+        "F1": "types",
+        "F2": "ts",
+        "F3": "14236",
+        "F4": "Use this file to change the TypeScript type definitions that govern configuration, panel state, mailbox summaries, and wait-group tracking.",
+        "F5": "source_code",
+        "F7": [
+          "define-config-schema",
+          "describe-panel-state",
+          "specify-mailbox-summary",
+          "type-wait-group-events",
+          "model-repository-state",
+          "specify-context-window"
+        ],
+        "F8": [
+          "configuration",
+          "state-management",
+          "inter-session-communication",
+          "extension-ui"
+        ],
+        "F9": [
+          "PiBrainsConfig",
+          "PanelState",
+          "ContextState",
+          "MailboxSummary",
+          "WaitGroupEvent",
+          "WaitGroupStatus",
+          "AskGroup",
+          "GscStatus",
+          "RepositoryState"
+        ],
+        "F10": "type-definition"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "docs/archive/inbox-agent-messaging-review.md",
+      "language": "markdown",
+      "chat_id": 14239,
+      "fields": {
+        "F0": "docs/archive/inbox-agent-messaging-review.md",
+        "F1": "inbox-agent-messaging-review",
+        "F2": "md",
+        "F3": "14239",
+        "F4": "Modify this file to change the design review criteria, open questions, or architectural proposals for agent-to-agent messaging loop protection in the pi-brains extension.",
+        "F5": "documentation",
+        "F7": [
+          "loop-protection-review",
+          "envelope-format-evaluation",
+          "agent-messaging-protocol",
+          "gsc-add-flags-design",
+          "thread-provenance-audit",
+          "human-agent-flow-semantics",
+          "review-feedback-capture"
+        ],
+        "F8": [
+          "agent-communication",
+          "design-review",
+          "pi-extension",
+          "messaging-architecture"
+        ],
+        "F9": [
+          "InboxStore",
+          "startInboxWatcher",
+          "MessagePane",
+          "addInboxMessage",
+          "pi-inbox-add"
+        ],
+        "F10": "design-review-document",
+        "F11": "[\"delivery-lease-5min\",\"max-loops-cap-10\",\"default-max-loops-2\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "docs/inbox-agent-messaging-v1.md",
+      "language": "markdown",
+      "chat_id": 14240,
+      "fields": {
+        "F0": "docs/inbox-agent-messaging-v1.md",
+        "F1": "inbox-agent-messaging-v1",
+        "F2": "md",
+        "F3": "14240",
+        "F4": "Modify this file to change the v1.2.1 agent-to-agent messaging specification, including schema v2 envelope format, wait-group semantics, hop bounds, delivery model, or rolling compatibility plan.",
+        "F5": "documentation",
+        "F7": [
+          "schema-v2-envelope",
+          "thread-hop-bounds",
+          "wait-group-fanout",
+          "delivery-lease-management",
+          "idempotent-reply-creation",
+          "origin-idempotency-key",
+          "event-cursor-dedup"
+        ],
+        "F8": [
+          "agent-communication",
+          "messaging-architecture",
+          "pi-extension",
+          "design-specification"
+        ],
+        "F9": [
+          "InboxStore",
+          "send",
+          "reply",
+          "fetch",
+          "complete",
+          "keepalive",
+          "wait create",
+          "summary",
+          "events",
+          "outbox attempt"
+        ],
+        "F10": "design-specification-document",
+        "F11": "[\"lease-5min-default\",\"max-hops-default-2\",\"hard-cap-10\",\"schema-version-2\",\"wait-group-completion-requires-attached-equals-expected\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "docs/inbox-chat-app-handoff.md",
+      "language": "markdown",
+      "chat_id": 14241,
+      "fields": {
+        "F0": "docs/inbox-chat-app-handoff.md",
+        "F1": "inbox-chat-app-handoff",
+        "F2": "md",
+        "F3": "14241",
+        "F4": "Use this file to change the agent-to-agent messaging UI contracts, the inbox-code validation flow, mailbox batch data structures, or the implementation status for the gsc-cli and pi-brains integration.",
+        "F5": "documentation",
+        "F7": [
+          "inbox-code-generate",
+          "session-mailbox-batch",
+          "envelope-hop-routing",
+          "wait-group-status",
+          "code-status-validate",
+          "dual-read-compatibility",
+          "mailbox-address-copy"
+        ],
+        "F8": [
+          "agent-messaging",
+          "session-management",
+          "ui-specification",
+          "inbox-lifecycle"
+        ],
+        "F9": [
+          "getPiSessionMailboxBatch",
+          "InboxChip",
+          "inbox_code",
+          "summary.wait_groups",
+          "envelope"
+        ],
+        "F10": "specification-document",
+        "F11": "[\"default-code-ttl-90-days\",\"heartbeat-interval-10s\",\"idle-prune-threshold-30d\",\"snapshot-size-limit-64mb\",\"snapshot-stage-cap-256mb\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "assets/demo/brains-inspect.srt",
+      "language": "plaintext",
+      "chat_id": 14244,
+      "fields": {
+        "F0": "assets/demo/brains-inspect.srt",
+        "F1": "brains-inspect",
+        "F2": "srt",
+        "F3": "14244",
+        "F4": "Modify this file to change the subtitle caption text displayed during the /brains inspect feature demo segment.",
+        "F5": "other",
+        "F7": [
+          "inspect-tool-calls",
+          "actionable-insights",
+          "demo-caption",
+          "srt-subtitle",
+          "feature-explanation",
+          "/brains-inspect",
+          "tool-call-summary"
+        ],
+        "F8": [
+          "demo-content",
+          "feature-demonstration",
+          "video-subtitles"
+        ],
+        "F9": [
+          "/brains inspect",
+          "tool calls",
+          "actionable insights"
+        ],
+        "F10": "subtitle-file"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "assets/demo/brains-rules-on.srt",
+      "language": "plaintext",
+      "chat_id": 14245,
+      "fields": {
+        "F0": "assets/demo/brains-rules-on.srt",
+        "F1": "brains-rules-on",
+        "F2": "srt",
+        "F3": "14245",
+        "F4": "Modify this file to change the subtitle caption text displayed during the /brains rules-on feature demo segment.",
+        "F5": "other",
+        "F7": [
+          "enforce-rules",
+          "protect-file-edits",
+          "demo-caption",
+          "srt-subtitle",
+          "rules-enforcement",
+          "/brains-rules-on",
+          "guard-violation-demo"
+        ],
+        "F8": [
+          "demo-content",
+          "feature-demonstration",
+          "video-subtitles"
+        ],
+        "F9": [
+          "/brains rules-on",
+          "protected file",
+          "rule enforcement"
+        ],
+        "F10": "subtitle-file"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "assets/demo/brains-sessions.srt",
+      "language": "plaintext",
+      "chat_id": 14246,
+      "fields": {
+        "F0": "assets/demo/brains-sessions.srt",
+        "F1": "brains-sessions",
+        "F2": "srt",
+        "F3": "14246",
+        "F4": "Modify this file to change the subtitle caption text displayed during the brains sessions demo video.",
+        "F5": "subtitle",
+        "F7": [
+          "subtitle-caption",
+          "monitor-agents",
+          "find-sessions",
+          "activity-sort",
+          "command-instruction",
+          "demo-overlay",
+          "timed-text"
+        ],
+        "F8": [
+          "demo-content",
+          "user-guidance",
+          "video-media"
+        ],
+        "F9": [
+          "/brains sessions"
+        ],
+        "F10": "subtitle-file"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "assets/demo/connect-agents-placeholder.svg",
+      "language": "plaintext",
+      "chat_id": 14247,
+      "fields": {
+        "F0": "assets/demo/connect-agents-placeholder.svg",
+        "F1": "connect-agents-placeholder",
+        "F2": "svg",
+        "F3": "14247",
+        "F4": "Modify this file to change the visual diagram showing how a main agent delegates work to independent specialist agents.",
+        "F5": "image",
+        "F7": [
+          "placeholder-thumbnail",
+          "agent-diagram",
+          "workspace-separation",
+          "specialist-connection",
+          "token-visualization",
+          "independent-context",
+          "delegation-flow"
+        ],
+        "F8": [
+          "demo-content",
+          "visual-asset",
+          "architecture-diagram"
+        ],
+        "F9": [
+          "Main agent",
+          "Specialist A",
+          "Specialist B",
+          "workspace-a/",
+          "workspace-b/"
+        ],
+        "F10": "image-placeholder"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "assets/demo/knowledge-ask-placeholder.svg",
+      "language": "plaintext",
+      "chat_id": 14248,
+      "fields": {
+        "F0": "assets/demo/knowledge-ask-placeholder.svg",
+        "F1": "knowledge-ask-placeholder",
+        "F2": "svg",
+        "F3": "14248",
+        "F4": "Modify this file to change the visual placeholder thumbnail for the 'Ask' step in the knowledge agent demo workflow.",
+        "F5": "documentation",
+        "F7": [
+          "video-placeholder",
+          "agent-question",
+          "ask-input",
+          "demo-thumbnail",
+          "ui-mockup",
+          "search-prompt",
+          "session-context"
+        ],
+        "F8": [
+          "demo-assets",
+          "video-content",
+          "ui-components",
+          "knowledge-base"
+        ],
+        "F9": [
+          "title",
+          "description",
+          "background",
+          "accent",
+          "question-input",
+          "video-placeholder"
+        ],
+        "F10": "placeholder-image"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "assets/demo/knowledge-share-placeholder.svg",
+      "language": "plaintext",
+      "chat_id": 14249,
+      "fields": {
+        "F0": "assets/demo/knowledge-share-placeholder.svg",
+        "F1": "knowledge-share-placeholder",
+        "F2": "svg",
+        "F3": "14249",
+        "F4": "Modify this file to change the visual placeholder thumbnail for the 'Share' step in the knowledge agent demo workflow.",
+        "F5": "documentation",
+        "F7": [
+          "share-finding",
+          "session-transfer",
+          "agent-output",
+          "demo-thumbnail",
+          "workflow-visual",
+          "output-routing",
+          "main-context"
+        ],
+        "F8": [
+          "demo-assets",
+          "video-content",
+          "session-management",
+          "knowledge-base"
+        ],
+        "F9": [
+          "title",
+          "description",
+          "background",
+          "accent",
+          "knowledge-agent",
+          "main-session",
+          "flow-arrow"
+        ],
+        "F10": "placeholder-image"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "assets/demo/knowledge-track-placeholder.svg",
+      "language": "plaintext",
+      "chat_id": 14250,
+      "fields": {
+        "F0": "assets/demo/knowledge-track-placeholder.svg",
+        "F1": "knowledge-track-placeholder",
+        "F2": "svg",
+        "F3": "14250",
+        "F4": "Use this file to change the placeholder thumbnail shown in the track knowledge agents demo video.",
+        "F5": "other",
+        "F7": [
+          "video-placeholder",
+          "svg-thumbnail",
+          "track-panel",
+          "session-select",
+          "demo-asset",
+          "thumbnail-render",
+          "knowledge-track"
+        ],
+        "F8": [
+          "demo-assets",
+          "ui-components",
+          "media"
+        ],
+        "F9": [
+          "track-session-panel",
+          "video-placeholder",
+          "knowledge-track",
+          "session-checkmarks"
+        ],
+        "F10": "svg-image"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": ".gitsense/topics/records.jsonl",
+      "language": "plaintext",
+      "chat_id": 14253,
+      "fields": {
+        "F0": ".gitsense/topics/records.jsonl",
+        "F1": "records",
+        "F2": "jsonl",
+        "F3": "14253",
+        "F4": "Use this file to change the stored topic records that define available insight profiles and their descriptions.",
+        "F5": "configuration",
+        "F6": "[\"2026-07-04_created\",\"2026-07-04_updated\"]",
+        "F7": [
+          "store-topic-record",
+          "set-slug-description",
+          "manage-profile",
+          "append-jsonl",
+          "define-insight",
+          "track-topics",
+          "catalog-profiles"
+        ],
+        "F8": [
+          "topic-management",
+          "insight-profiles",
+          "data-storage"
+        ],
+        "F9": [
+          "slug",
+          "description",
+          "created_at",
+          "updated_at",
+          "pi-brains-profiles"
+        ],
+        "F10": "jsonl-data"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": ".gitsense/.gitignore",
+      "language": "plaintext",
+      "chat_id": 14254,
+      "fields": {
+        "F0": ".gitsense/.gitignore",
+        "F1": ".gitignore",
+        "F2": "gitignore",
+        "F3": "14254",
+        "F4": "Modify this file to change which GitSense internal artifacts are excluded from version control.",
+        "F5": "configuration",
+        "F6": "[\"2026-07-06_generated\"]",
+        "F7": [
+          "exclude-database-files",
+          "ignore-wal-logs",
+          "protect-import-state",
+          "hide-manifest-registry",
+          "exclude-config-profiles",
+          "ignore-lesson-drafts",
+          "remove-debug-output"
+        ],
+        "F8": [
+          "version-control",
+          "gitignore-configuration",
+          "project-hygiene"
+        ],
+        "F9": [
+          "*.db",
+          "*.db-wal",
+          "import-git.json",
+          "manifest.json",
+          "config.json",
+          "profiles/",
+          "lessons/",
+          "debug/"
+        ],
+        "F10": "gitignore-config"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": ".gitignore",
+      "language": "plaintext",
+      "chat_id": 14255,
+      "fields": {
+        "F0": ".gitignore",
+        "F1": ".gitignore",
+        "F2": "gitignore",
+        "F3": "14255",
+        "F4": "Modify this file to change which standard Node.js development artifacts are excluded from version control.",
+        "F5": "configuration",
+        "F7": [
+          "exclude-node-dependencies",
+          "ignore-coverage-reports",
+          "hide-application-logs",
+          "remove-os-artifacts"
+        ],
+        "F8": [
+          "version-control",
+          "gitignore-configuration",
+          "nodejs-development"
+        ],
+        "F9": [
+          "node_modules/",
+          "coverage/",
+          "*.log",
+          ".DS_Store"
+        ],
+        "F10": "gitignore-config"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "LICENSE",
+      "language": "plaintext",
+      "chat_id": 14256,
+      "fields": {
+        "F0": "LICENSE",
+        "F1": "LICENSE",
+        "F2": "",
+        "F3": "14256",
+        "F4": "Modify this file to change the legal terms under which the pi-brains project is distributed.",
+        "F5": "license",
+        "F7": [
+          "apache-license-grant",
+          "copyright-license",
+          "patent-license",
+          "warranty-disclaimer",
+          "redistribution-terms",
+          "derivative-works",
+          "attribution-requirement"
+        ],
+        "F8": [
+          "legal-compliance",
+          "open-source-license",
+          "intellectual-property",
+          "distribution-terms"
+        ],
+        "F9": [
+          "Apache License 2.0",
+          "Apache Software Foundation"
+        ],
+        "F10": "license-file"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "NOTICE",
+      "language": "plaintext",
+      "chat_id": 14257,
+      "fields": {
+        "F0": "NOTICE",
+        "F1": "NOTICE",
+        "F2": "",
+        "F3": "14257",
+        "F4": "Modify this file to change the copyright holder attribution for the pi-brains project.",
+        "F5": "documentation",
+        "F7": [
+          "copyright-attribution",
+          "legal-notice",
+          "project-branding",
+          "license-compliance",
+          "author-identification"
+        ],
+        "F8": [
+          "legal-compliance",
+          "open-source-license",
+          "intellectual-property"
+        ],
+        "F9": [
+          "Terrence Chen",
+          "GitSense"
+        ],
+        "F10": "attribution-file"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "package-lock.json",
+      "language": "json",
+      "chat_id": 14258,
+      "fields": {
+        "F0": "package-lock.json",
+        "F1": "package-lock",
+        "F2": "json",
+        "F3": "14258",
+        "F4": "Modify this file only by running npm install to update locked dependency versions, integrity hashes, and the resolved dependency tree for reproducible builds.",
+        "F5": "configuration",
+        "F7": [
+          "dependency-locking",
+          "version-pinning",
+          "npm-manifest",
+          "package-resolution",
+          "integrity-verification",
+          "platform-binaries",
+          "peer-dependency"
+        ],
+        "F8": [
+          "dependency-management",
+          "build-system",
+          "node-runtime"
+        ],
+        "F9": [
+          "@earendil-works/pi-coding-agent",
+          "@earendil-works/pi-tui",
+          "@anthropic-ai/sdk",
+          "vitest",
+          "typescript"
+        ],
+        "F10": "npm-lockfile",
+        "F11": "[\"lockfileVersion: 3\",\"node engine: >=22.19.0\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "package.json",
+      "language": "json",
+      "chat_id": 14259,
+      "fields": {
+        "F0": "package.json",
+        "F1": "package",
+        "F2": "json",
+        "F3": "14259",
+        "F4": "Modify this file to change package metadata, peer dependencies, or build scripts for the extension targeting the Pi coding agent ecosystem.",
+        "F5": "configuration",
+        "F7": [
+          "package-manifest",
+          "dependency-config",
+          "extension-registration",
+          "build-scripts",
+          "engine-requirements",
+          "peer-dependencies",
+          "publish-config"
+        ],
+        "F8": [
+          "project-configuration",
+          "package-management",
+          "build-system"
+        ],
+        "F9": [
+          "@gitsense/pi-brains",
+          "pi.extensions",
+          "peerDependencies",
+          "scripts"
+        ],
+        "F10": "config-file",
+        "F11": "[\"node >= 22.19.0\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "README.md",
+      "language": "markdown",
+      "chat_id": 14260,
+      "fields": {
+        "F0": "README.md",
+        "F1": "README",
+        "F2": "md",
+        "F3": "14260",
+        "F4": "Use this file to change the primary documentation entry point for pi-brains, covering installation instructions, command reference, agent delegation workflows, rule configuration, session snapshots, and liveness monitoring.",
+        "F5": "readme",
+        "F7": [
+          "session-delegation-workflow",
+          "brain-manifest-import",
+          "inbox-auto-accept",
+          "snapshot-create-preserve",
+          "rule-configuration-shell",
+          "heartbeat-liveness-track",
+          "knowledge-persistence-build"
+        ],
+        "F8": [
+          "agent-knowledge",
+          "configuration",
+          "extension-documentation",
+          "session-management"
+        ],
+        "F9": [
+          "/brains",
+          "pi install",
+          "InboxChip",
+          "getAliveHeartbeatSessionIds",
+          "pi-heartbeats.sqlite3",
+          "gsc bash"
+        ],
+        "F10": "readme-documentation",
+        "F11": "[\"heartbeat-interval-10s\",\"idle-prune-threshold-30d\",\"snapshot-size-limit-64mb\",\"snapshot-stage-cap-256mb\",\"inbox-code-ttl-90-days\"]"
+      }
+    },
+    {
+      "repo_ref": "R0",
+      "branch_ref": "B0",
+      "file_path": "tsconfig.json",
+      "language": "json",
+      "chat_id": 14261,
+      "fields": {
+        "F0": "tsconfig.json",
+        "F1": "tsconfig",
+        "F2": "json",
+        "F3": "14261",
+        "F4": "Modify this file to change TypeScript compilation settings including strictness, module format, or included source paths.",
+        "F5": "configuration",
+        "F7": [
+          "compiler-options",
+          "type-checking",
+          "module-resolution",
+          "esm-config",
+          "strict-mode",
+          "noEmit",
+          "file-include-patterns"
+        ],
+        "F8": [
+          "typescript-configuration",
+          "build-system"
+        ],
+        "F9": [
+          "compilerOptions",
+          "ES2023",
+          "NodeNext",
+          "vitest/globals"
+        ],
+        "F10": "config-file",
+        "F11": "[\"strict mode enabled\",\"noEmit: true\"]"
+      }
+    }
+  ]
+}
