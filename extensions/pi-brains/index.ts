@@ -22,6 +22,7 @@ import { appendBrainsInsightsEntry, registerBrainsInsightsEntryRenderer } from "
 import { showOutputPanel } from "./output-panel.ts";
 import { buildSearchDialog } from "./search-view.ts";
 import { buildSessionsDialog } from "./sessions-view.ts";
+import { activatePiBuddyAtStartup } from "./buddy.ts";
 
 export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   const config = await loadConfig();
@@ -35,6 +36,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
   let sessionHeartbeat: SessionHeartbeatHandle | null = null;
   let pendingConfigSave: Promise<void> = Promise.resolve();
   let pendingInboxStateSave: Promise<void> = Promise.resolve();
+  let buddyBootstrapConsumed = false;
   const persistConfig = (): Promise<void> => {
     // Keep later writes usable if an earlier filesystem write failed.
     pendingConfigSave = pendingConfigSave.catch(() => {}).then(() => saveConfig(config));
@@ -70,6 +72,14 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     brainsStatusPending = false;
     expectBrainsStatus = false;
     controller.start(ctx);
+    if (!buddyBootstrapConsumed && process.env.GSC_PI_BUDDY_BOOTSTRAP?.trim()) {
+      buddyBootstrapConsumed = true;
+      try {
+        activatePiBuddyAtStartup(pi, ctx);
+      } catch (error) {
+        ctx.ui.notify(`Pi Buddy activation failed: ${error instanceof Error ? error.message : String(error)}`, "error");
+      }
+    }
     const sessionId = controller.getSessionId();
     inboxWatcher?.stop();
     const inboxState = sessionId
