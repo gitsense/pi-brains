@@ -116,7 +116,8 @@ describe("Pi Buddy v1 contract", () => {
     expect(charter).toContain("fetch or claim partner-directed agent messages");
     expect(charter).toContain("reply to those messages");
     expect(charter).toContain("complete their deliveries");
-    expect(charter).toContain("GSC_PI_BUDDY_CONTROL_V1");
+    expect(charter).toContain(`gsc pi sessions buddy checkpoint ${piSessionId}`);
+    expect(charter).not.toContain("codex queue --thread");
     expect(charter).toContain(`Pi Buddy session: ${piSessionId}`);
     expect(charter).toContain("Do not request checkpoints automatically");
     expect(charter).toContain("Never replace, append, remove, unlink, or rebind");
@@ -139,6 +140,7 @@ describe("Pi Buddy v1 contract", () => {
     const charter = buildPiBuddyCharter(claude);
     expect(charter).toContain("headless Claude sidecar");
     expect(charter).toContain(`gsc pi sessions buddy wake ${piSessionId}`);
+    expect(charter).toContain(`gsc pi sessions buddy checkpoint ${piSessionId}`);
     expect(charter).toContain("must not modify repository files");
     expect(charter).toContain("Live-TUI coordination requires");
     expect(charter).toContain("a different transport");

@@ -238,6 +238,8 @@ Ground rules:
   a different transport.
 - Do not create checkpoints automatically. A checkpoint is created only when
   the human explicitly requests one, or asks you to request one from Claude.
+- When the human asks you to request one, use the managed control relay:
+  gsc pi sessions buddy checkpoint ${binding.piSessionId}
 - Never replace, append, rebind, or remove the gitsense.pi-buddy entry.
 
 Acknowledge this charter by replying with exactly: ok`;
@@ -298,13 +300,9 @@ Routine inbox mail must use the managed Buddy wake command. Do not invent an
 answer or perform Codex work yourself.
 
 If the human directly asks you to request a Codex checkpoint and no inbox
-message carries that request, send only this narrowly scoped control notice:
+message carries that request, use the managed control relay:
 
-  codex queue --thread ${binding.partnerNativeSessionId} --message "[GSC_PI_BUDDY_CONTROL_V1]
-  action: request-checkpoint
-  requested_by: human
-  pi_session_id: ${binding.piSessionId}
-  Follow the explicit checkpoint policy."
+  gsc pi sessions buddy checkpoint ${binding.piSessionId}
 
 Do not use this control path to forward peer-controlled inbox bodies.
 

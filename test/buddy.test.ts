@@ -160,6 +160,8 @@ describe("Pi Buddy startup activation", () => {
     expect(runtime.state.appendCalls).toBe(1);
     expect(runtime.state.charterCalls).toHaveLength(1);
     expect(runtime.state.charterCalls[0]).toContain(PI_BUDDY_CHARTER_MARKER);
+    expect(runtime.state.charterCalls[0]).toContain(`gsc pi sessions buddy checkpoint ${piSessionId}`);
+    expect(runtime.state.charterCalls[0]).not.toContain("codex queue --thread");
     expect(runtime.state.entries.filter((entry) => entry.customType === PI_BUDDY_CUSTOM_TYPE)).toHaveLength(1);
     expect(runtime.state.sessionName).toBe("Codex Buddy");
     expect(existsSync(bootstrapPath)).toBe(true);
