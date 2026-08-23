@@ -1,82 +1,124 @@
 import { describe, expect, it } from "vitest";
-import { buildCheckpointInstructions } from "../extensions/pi-brains/checkpoint.ts";
+import {
+  buildCheckpointGuideArgs,
+  buildCheckpointVerifyArgs,
+  loadCheckpointGuide,
+  verifyCheckpoint,
+  type CheckpointCommandRunner,
+  type CheckpointIdentity,
+} from "../extensions/pi-brains/checkpoint.ts";
 
-describe("checkpoint instructions", () => {
-  it("supplies Pi provenance and delegates repository metadata to gsc", () => {
-    const instructions = buildCheckpointInstructions(
-      "session-123",
-      "leaf-456",
-      "chk-789",
-      "/tmp/repo with 'quote'",
-      {
-        files: ["/tmp/repo with 'quote'/components/pi/cards.ts", "/tmp/outside.ts"],
-        tools: ["read", "edit"],
-        rules: ["rule-ui"],
-        baselineHead: null,
-        sessionStartBranch: null,
+const identity: CheckpointIdentity = {
+  checkpointId: "chk-controller-1",
+  sessionId: "pi-session-1",
+  agent: "pi",
+  nativeSessionId: "pi-session-1",
+  entryId: "entry-1",
+  anchorLeafId: "leaf-1",
+  repoPath: "/repo with spaces",
+};
+
+function guidePayload(overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({
+    schema_version: 1,
+    identity: {
+      checkpoint_id: identity.checkpointId,
+      session_id: identity.sessionId,
+      agent: identity.agent,
+      native_session_id: identity.nativeSessionId,
+      entry_id: identity.entryId,
+      anchor_leaf_id: identity.anchorLeafId,
+    },
+    instructions: "Canonical checkpoint instructions",
+    ...overrides,
+  });
+}
+
+function verificationPayload(fileChanges: unknown = []): string {
+  return JSON.stringify({
+    schema_version: 1,
+    status: "verified",
+    checkpoint_id: identity.checkpointId,
+    file_changes_audited: true,
+    file_change_count: Array.isArray(fileChanges) ? fileChanges.length : 0,
+    checkpoint: {
+      checkpointId: identity.checkpointId,
+      sessionId: identity.sessionId,
+      entryId: identity.entryId,
+      source: {
+        agent: identity.agent,
+        nativeSessionId: identity.nativeSessionId,
+        anchorLeafId: identity.anchorLeafId,
       },
-    );
+      file_changes: fileChanges,
+    },
+  });
+}
 
-    expect(instructions).toContain(
-      '- source: {"agent": "pi", "nativeSessionId": "session-123", "anchorLeafId": "leaf-456"}',
-    );
-    expect(instructions).not.toContain('- workspace_repository:');
-    expect(instructions).toContain("gsc append command derives and overwrites repository metadata");
-    expect(instructions).toContain('- files: ["components/pi/cards.ts"]');
-    expect(instructions).not.toContain("/tmp/outside.ts");
-    expect(instructions).toContain('- tools: ["read","edit"]');
-    expect(instructions).toContain('- rules: ["rule-ui"]');
-    expect(instructions).toContain("Optimize the checkpoint for future discovery");
-    expect(instructions).toContain("Aim for 1200 characters or fewer; 2000 characters is the hard maximum");
-    expect(instructions).toContain("Move enumerated facts and history into evidence, decisions, risks, and open_questions");
-    expect(instructions).toContain(".current_understanding | length");
-    expect(instructions).toContain("--repo '/tmp/repo with '\\''quote'\\''' --target personal");
+describe("canonical checkpoint guide", () => {
+  it("passes the controller-issued ID and complete Pi identity to gsc", () => {
+    expect(buildCheckpointGuideArgs(identity)).toEqual([
+      "sessions", "checkpoints", "guide",
+      "--checkpoint-id", "chk-controller-1",
+      "--session", "pi-session-1",
+      "--agent", "pi",
+      "--native-session", "pi-session-1",
+      "--entry-id", "entry-1",
+      "--anchor-leaf", "leaf-1",
+      "--repo", "/repo with spaces",
+      "--format", "json",
+    ]);
   });
 
-  it("requires a full file-change audit including bash-driven changes", () => {
-    const instructions = buildCheckpointInstructions("session", "leaf", "checkpoint", "/repo", {
-      files: ["/repo/src/a.ts"],
-      tools: ["edit"],
-      rules: [],
-      baselineHead: "abc123",
-      sessionStartBranch: "main",
+  it("loads the shared guide instead of building embedded instructions", async () => {
+    let invocation: { command: string; args: string[]; cwd: string } | null = null;
+    const runner: CheckpointCommandRunner = async (command, args, cwd) => {
+      invocation = { command, args, cwd };
+      return { ok: true, stdout: guidePayload(), stderr: "" };
+    };
+    await expect(loadCheckpointGuide(identity, "/repo with spaces", runner))
+      .resolves.toBe("Canonical checkpoint instructions");
+    expect(invocation).toEqual({ command: "gsc", args: buildCheckpointGuideArgs(identity), cwd: "/repo with spaces" });
+  });
+
+  it("rejects a guide that replaces the controller identity", async () => {
+    const runner: CheckpointCommandRunner = async () => ({
+      ok: true,
+      stdout: guidePayload({ identity: { checkpoint_id: "chk-other" } }),
+      stderr: "",
     });
+    await expect(loadCheckpointGuide(identity, "/repo", runner)).rejects.toThrow("resolved identity mismatch");
+  });
+});
 
-    expect(instructions).toContain("STEP 1: Audit ALL file changes");
-    expect(instructions).toContain("git status --porcelain --untracked-files=all");
-    expect(instructions).toContain("git diff --name-only abc123");
-    expect(instructions).toContain("switched branches this session");
-    expect(instructions).toContain("never record a file just because git lists it");
-    expect(instructions).toContain("adjudicate every candidate against the conversation");
-    expect(instructions).toContain("file_changes");
-    expect(instructions).toContain('"bash" (changed via a shell command)');
-    expect(instructions).toContain('"repository"');
-    expect(instructions).toContain("repositories legend");
-    expect(instructions).toContain('root + "/" + path');
-    expect(instructions).toContain('For "moved", record the destination path');
-    expect(instructions).not.toContain("Bash commands observed");
-    expect(instructions).not.toContain("perl -i -pe");
-    expect(instructions).not.toContain("Preserve them exactly; do not infer replacements");
+describe("persisted checkpoint verification", () => {
+  it("uses the canonical verifier and accepts an explicit empty file audit", async () => {
+    expect(buildCheckpointVerifyArgs(identity)).toEqual([
+      "sessions", "checkpoints", "verify", "chk-controller-1",
+      "--session", "pi-session-1",
+      "--agent", "pi",
+      "--native-session", "pi-session-1",
+      "--entry-id", "entry-1",
+      "--anchor-leaf", "leaf-1",
+      "--format", "json",
+    ]);
+    const runner: CheckpointCommandRunner = async () => ({ ok: true, stdout: verificationPayload([]), stderr: "" });
+    await expect(verifyCheckpoint(identity, "/repo", runner)).resolves.toBeUndefined();
   });
 
-  it("falls back to git status when no baseline is available", () => {
-    const instructions = buildCheckpointInstructions("session", "leaf", "checkpoint", "/repo", {
-      files: [],
-      tools: [],
-      rules: [],
-      baselineHead: null,
-      sessionStartBranch: null,
-    });
-
-    expect(instructions).toContain("git status --porcelain --untracked-files=all");
-    expect(instructions).not.toContain("git diff --name-only <");
-    expect(instructions).not.toContain("(unknown)");
+  it("fails when persisted file_changes is omitted", async () => {
+    const payload = JSON.parse(verificationPayload());
+    delete payload.checkpoint.file_changes;
+    const runner: CheckpointCommandRunner = async () => ({ ok: true, stdout: JSON.stringify(payload), stderr: "" });
+    await expect(verifyCheckpoint(identity, "/repo", runner)).rejects.toThrow("file audit mismatch");
   });
 
-  it("uses contiguous workflow step numbers", () => {
-    const instructions = buildCheckpointInstructions("session", "leaf", "checkpoint", "/repo");
-    const steps = [...instructions.matchAll(/^STEP (\d+):/gm)].map((match) => Number(match[1]));
-
-    expect(steps).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  it("preserves bash, secondary-repository, and tmp changes in the verified payload", async () => {
+    const changes = [
+      { path: "generated.ts", repository: "pi-brains", method: "bash", change: "created" },
+      { path: "checkpoint.txt", repository: "tmp", method: "write", change: "created" },
+    ];
+    const runner: CheckpointCommandRunner = async () => ({ ok: true, stdout: verificationPayload(changes), stderr: "" });
+    await expect(verifyCheckpoint(identity, "/repo", runner)).resolves.toBeUndefined();
   });
 });
