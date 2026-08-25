@@ -1,7 +1,11 @@
+import { SessionManager } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import {
+  buildCheckpointBranchMarker,
   buildCheckpointGuideArgs,
+  buildCheckpointReturnMarker,
   buildCheckpointVerifyArgs,
+  findPendingCheckpointReturnAnchor,
   loadCheckpointGuide,
   verifyCheckpoint,
   type CheckpointCommandRunner,
@@ -54,6 +58,103 @@ function verificationPayload(fileChanges: unknown = []): string {
     },
   });
 }
+
+describe("checkpoint child branch", () => {
+  it("stores checkpoint work below a model-hidden custom entry", () => {
+    const session = SessionManager.inMemory("/repo");
+    const originalLeafId = session.appendMessage({
+      role: "user",
+      content: "Main conversation",
+      timestamp: Date.now(),
+    });
+
+    session.appendCustomEntry(
+      "guide-checkpoint-branch",
+      buildCheckpointBranchMarker(identity, originalLeafId),
+    );
+    const branchEntryId = session.getLeafId();
+    expect(branchEntryId).not.toBe(originalLeafId);
+
+    const instructionEntryId = session.appendMessage({
+      role: "user",
+      content: "Checkpoint instructions",
+      timestamp: Date.now(),
+    });
+    expect(session.getEntry(instructionEntryId)?.parentId).toBe(branchEntryId);
+    expect(session.buildSessionContext().messages.map((message) => message.role)).toEqual(["user", "user"]);
+
+    expect(findPendingCheckpointReturnAnchor(session.getEntries(), instructionEntryId)).toEqual({
+      checkpointId: identity.checkpointId,
+      originalLeafId,
+      branchEntryId,
+    });
+  });
+
+  it("recovers the prior custom-message marker format after reload", () => {
+    const session = SessionManager.inMemory("/repo");
+    const originalLeafId = session.appendMessage({
+      role: "user",
+      content: "Main conversation",
+      timestamp: Date.now(),
+    });
+    session.appendCustomMessageEntry(
+      "guide-checkpoint-branch",
+      "legacy marker",
+      false,
+      {
+        checkpointId: identity.checkpointId,
+        originalLeafId,
+        scratch: true,
+      },
+    );
+    const branchEntryId = session.getLeafId();
+    if (!branchEntryId) throw new Error("legacy branch marker was not appended");
+    const checkpointLeafId = session.appendMessage({
+      role: "user",
+      content: "Checkpoint instructions",
+      timestamp: Date.now(),
+    });
+
+    expect(findPendingCheckpointReturnAnchor(session.getEntries(), checkpointLeafId)).toEqual({
+      checkpointId: identity.checkpointId,
+      originalLeafId,
+      branchEntryId,
+    });
+  });
+
+  it("reconstructs unresolved return state and ignores a returned branch", () => {
+    const session = SessionManager.inMemory("/repo");
+    const originalLeafId = session.appendMessage({
+      role: "user",
+      content: "Main conversation",
+      timestamp: Date.now(),
+    });
+    session.appendCustomEntry(
+      "guide-checkpoint-branch",
+      buildCheckpointBranchMarker(identity, originalLeafId),
+    );
+    const branchEntryId = session.getLeafId();
+    if (!branchEntryId) throw new Error("branch marker was not appended");
+    const checkpointLeafId = session.appendMessage({
+      role: "user",
+      content: "Checkpoint instructions",
+      timestamp: Date.now(),
+    });
+    const anchor = findPendingCheckpointReturnAnchor(session.getEntries(), checkpointLeafId);
+    expect(anchor).toEqual({ checkpointId: identity.checkpointId, originalLeafId, branchEntryId });
+    if (!anchor) throw new Error("return anchor was not reconstructed");
+
+    session.branch(originalLeafId);
+    const returnEntryId = session.appendCustomEntry(
+      "guide-checkpoint-returned",
+      buildCheckpointReturnMarker(anchor),
+    );
+    expect(session.getEntry(returnEntryId)?.parentId).toBe(originalLeafId);
+
+    session.branch(checkpointLeafId);
+    expect(findPendingCheckpointReturnAnchor(session.getEntries(), checkpointLeafId)).toBeNull();
+  });
+});
 
 describe("canonical checkpoint guide", () => {
   it("passes the controller-issued ID and complete Pi identity to gsc", () => {

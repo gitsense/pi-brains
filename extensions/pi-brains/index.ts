@@ -337,7 +337,7 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
 
       // /brains checkpoint - create checkpoint
       if (command === "checkpoint") {
-        handleCheckpointCommand(value, pi, controller, ctx as unknown as ExtensionContext);
+        await handleCheckpointCommand(value, pi, controller, ctx as unknown as ExtensionContext);
         return;
       }
 
