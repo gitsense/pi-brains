@@ -1,4 +1,4 @@
-import { SessionManager } from "@earendil-works/pi-coding-agent";
+import { SessionManager, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import {
   buildCheckpointBranchMarker,
@@ -6,6 +6,7 @@ import {
   buildCheckpointReturnMarker,
   buildCheckpointVerifyArgs,
   findPendingCheckpointReturnAnchor,
+  initCheckpointHandlers,
   loadCheckpointGuide,
   verifyCheckpoint,
   type CheckpointCommandRunner,
@@ -60,6 +61,21 @@ function verificationPayload(fileChanges: unknown = []): string {
 }
 
 describe("checkpoint child branch", () => {
+  it("waits for agent_settled before verifying and navigating", () => {
+    const registeredEvents: string[] = [];
+    const pi = {
+      on(event: string): void {
+        registeredEvents.push(event);
+      },
+    } as unknown as ExtensionAPI;
+
+    initCheckpointHandlers(pi);
+
+    expect(registeredEvents).toContain("session_start");
+    expect(registeredEvents).toContain("agent_settled");
+    expect(registeredEvents).not.toContain("agent_end");
+  });
+
   it("stores checkpoint work below a model-hidden custom entry", () => {
     const session = SessionManager.inMemory("/repo");
     const originalLeafId = session.appendMessage({

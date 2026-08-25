@@ -55,13 +55,12 @@ export function initCheckpointHandlers(pi: ExtensionAPI): void {
     );
   });
 
-  // Listen for agent_end to detect when checkpoint is done
-  pi.on("agent_end", async (_event, ctx) => {
+  // Wait until the entire agent run has settled. Unlike agent_end, this fires
+  // after retries, compaction, and queued continuations have finished and Pi
+  // has left its active-run state, so tree navigation is safe.
+  pi.on("agent_settled", async (_event, _ctx) => {
     if (inCheckpointBranch && checkpointOriginalLeafId && checkpointCtx && checkpointController && checkpointPendingId && checkpointCwd && checkpointPendingIdentity) {
-      debugLog("Agent ended in checkpoint branch, verifying checkpoint");
-      
-      // Wait for agent to fully finish and UI to settle
-      await new Promise(resolve => setTimeout(resolve, 500));
+      debugLog("Agent settled in checkpoint branch, verifying checkpoint");
       
       // Hide the working indicator
       checkpointCtx.ui.setWorkingVisible(false);
