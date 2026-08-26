@@ -282,9 +282,6 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains snapshots` | Show snapshot status for the current session |
 | `/brains snapshots list` | List each stage's directory, manifest, Git object database, and commit |
 | `/brains snapshots create` | Capture the exact recognized file contents at the current session leaf |
-| `/brains snapshots suggest on` | Let the agent suggest snapshots at meaningful review boundaries for this session |
-| `/brains snapshots suggest off` | Disable snapshot suggestions for this session |
-| `/brains snapshots suggest status` | Show snapshot suggestion and pending-reminder status |
 | `/brains snapshots clear` | Move the current session's snapshots to a recoverable archive |
 | `/brains forget` | Prune entries after the current `/tree` position (with backup) |
 | `/brains summary` | Generate a session summary as the final message |
@@ -316,12 +313,6 @@ create` before a broad change or after a verified milestone. If the recognized
 file tree has not changed, GitSense reuses the latest stage instead of creating
 a duplicate. Run `/brains snapshots list` to see the filesystem location of
 every stage and manifest, plus the shared Git object database and commit IDs.
-
-`/brains snapshots suggest on` adds compact guidance to this session's system
-prompt so the agent can recommend useful review boundaries. Suggestions are
-advisory: Pi Brains removes the internal marker, shows one notification, and
-waits for you to run the create command. The setting is durable and scoped to
-the current session.
 
 Snapshots may include recognized files outside the working repository. Common
 credential paths and `.env`/private-key files are excluded. The defaults also

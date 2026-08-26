@@ -159,18 +159,6 @@ export default async function piBrains(pi: ExtensionAPI): Promise<void> {
     controller.refreshSessionState(ctx);
   });
 
-  pi.on("message_end", async (event, ctx) => {
-    controller.refreshSessionState(ctx);
-    const processed = controller.processAssistantMessageForSnapshotMarker(
-      event.message as unknown as Record<string, unknown>,
-    );
-    if (!processed) return undefined;
-    if (processed.newlySuggested) {
-      ctx.ui.notify("Agent suggests a session snapshot. Run /brains snapshots create.", "info");
-    }
-    return { message: processed.message as unknown as typeof event.message };
-  });
-
   pi.on("session_compact", (_event, ctx) => {
     controller.refreshSessionState(ctx);
   });
@@ -1161,7 +1149,6 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 - \/brains snapshots — Show snapshot status for this session
 - \/brains snapshots list — List stage, manifest, and Git object locations
 - \/brains snapshots create — Capture recognized files at the current session leaf
-- \/brains snapshots suggest on|off|status — Configure milestone suggestions for this session
 - \/brains snapshots clear — Move this session's snapshots to a recoverable archive
 - \/brains forget — Prune entries after the current /tree position (with backup)
 - \/brains summary — Generate a session summary as the final message

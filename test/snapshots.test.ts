@@ -6,10 +6,6 @@ function createController(overrides: Partial<SnapshotCommandController> = {}) {
   const controller: SnapshotCommandController = {
     getSessionId: () => "session-1",
     runGscCommand: vi.fn(async () => ({ code: 0, stdout: "[]", stderr: "" })),
-    isSnapshotSuggestionsEnabled: () => false,
-    setSnapshotSuggestionsEnabled: vi.fn(() => true),
-    isSnapshotSuggestionPending: () => false,
-    clearSnapshotSuggestion: vi.fn(),
     ...overrides,
   };
   return controller;
@@ -28,14 +24,17 @@ function createContext(confirm = vi.fn(async () => true)) {
 }
 
 describe("snapshot commands", () => {
-  it("enables suggestions for only the current session", async () => {
+  it("rejects the removed agent suggestion command", async () => {
     const controller = createController();
     const { ctx, notify } = createContext();
 
     await handleSnapshotsCommand("suggest on", controller, ctx);
 
-    expect(controller.setSnapshotSuggestionsEnabled).toHaveBeenCalledWith(true);
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("enabled for this session"), "warning");
+    expect(controller.runGscCommand).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith(
+      "Unknown snapshots command. Use /brains snapshots, list, create, or clear.",
+      "warning",
+    );
   });
 
   it("creates a snapshot at the trusted current leaf", async () => {
@@ -65,7 +64,6 @@ describe("snapshot commands", () => {
       "--leaf", "leaf-1",
       "--format", "json",
     );
-    expect(controller.clearSnapshotSuggestion).toHaveBeenCalled();
     expect(notify).toHaveBeenCalledWith(expect.stringContaining("Snapshot #2 created: 3 files"), "info");
   });
 

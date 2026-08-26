@@ -32,10 +32,6 @@ interface SnapshotClearResult {
 export interface SnapshotCommandController {
   getSessionId(): string | null;
   runGscCommand(...args: string[]): Promise<{ code: number; stdout: string; stderr: string } | null>;
-  isSnapshotSuggestionsEnabled(): boolean;
-  setSnapshotSuggestionsEnabled(enabled: boolean): boolean;
-  isSnapshotSuggestionPending(): boolean;
-  clearSnapshotSuggestion(): void;
 }
 
 export async function handleSnapshotsCommand(
@@ -51,10 +47,6 @@ export async function handleSnapshotsCommand(
     return;
   }
 
-  if (command === "suggest") {
-    await handleSuggest(args[1] ?? "status", controller, ctx);
-    return;
-  }
   if (command === "create") {
     await createSnapshot(sessionId, controller, ctx);
     return;
@@ -72,34 +64,7 @@ export async function handleSnapshotsCommand(
     return;
   }
 
-  ctx.ui.notify("Unknown snapshots command. Use /brains snapshots, list, create, suggest on|off|status, or clear.", "warning");
-}
-
-async function handleSuggest(
-  mode: string,
-  controller: SnapshotCommandController,
-  ctx: ExtensionCommandContext,
-): Promise<void> {
-  if (mode === "on") {
-    controller.setSnapshotSuggestionsEnabled(true);
-    ctx.ui.notify(
-      "Snapshot suggestions enabled for this session. Snapshots may include files read outside the repository; common credential paths and files over 64 MiB are excluded.",
-      "warning",
-    );
-    return;
-  }
-  if (mode === "off") {
-    controller.setSnapshotSuggestionsEnabled(false);
-    ctx.ui.notify("Snapshot suggestions disabled for this session.", "info");
-    return;
-  }
-  if (mode === "status") {
-    const status = controller.isSnapshotSuggestionsEnabled() ? "ON" : "OFF";
-    const pending = controller.isSnapshotSuggestionPending() ? "; agent suggestion pending" : "";
-    ctx.ui.notify(`Snapshot suggestions: ${status}${pending}.`, "info");
-    return;
-  }
-  ctx.ui.notify("Usage: /brains snapshots suggest on|off|status", "warning");
+  ctx.ui.notify("Unknown snapshots command. Use /brains snapshots, list, create, or clear.", "warning");
 }
 
 async function createSnapshot(
@@ -127,7 +92,6 @@ async function createSnapshot(
     ctx.ui.notify("Snapshot failed: gsc returned invalid JSON.", "error");
     return;
   }
-  controller.clearSnapshotSuggestion();
   if (snapshot.unchanged || snapshot.status === "unchanged") {
     ctx.ui.notify(`No new snapshot: the file tree matches stage #${snapshot.sequence}.`, "info");
     return;
@@ -176,7 +140,6 @@ async function clearSnapshots(
     ctx.ui.notify("Snapshot clear failed: gsc returned invalid JSON.", "error");
     return;
   }
-  controller.clearSnapshotSuggestion();
   if (cleared.status === "empty") {
     ctx.ui.notify("No snapshots found for this session.", "info");
     return;
@@ -191,8 +154,6 @@ async function showSnapshotStatus(
 ): Promise<void> {
   const snapshots = await listSnapshots(sessionId, controller, ctx);
   if (!snapshots) return;
-  const suggestions = controller.isSnapshotSuggestionsEnabled() ? "ON" : "OFF";
-  const pending = controller.isSnapshotSuggestionPending() ? "yes" : "no";
   const latest = snapshots.at(-1);
   const latestLines = latest
     ? [
@@ -204,8 +165,6 @@ async function showSnapshotStatus(
     : ["Latest stage: none"];
   const markdown = [
     `Session: ${sessionId}`,
-    `Suggestions: ${suggestions}`,
-    `Agent suggestion pending: ${pending}`,
     `Snapshots: ${snapshots.length}`,
     "",
     ...latestLines,
@@ -215,7 +174,6 @@ async function showSnapshotStatus(
     "Commands:",
     "- `/brains snapshots list`",
     "- `/brains snapshots create`",
-    "- `/brains snapshots suggest on|off|status`",
     "- `/brains snapshots clear`",
   ].join("\n");
   await showOutputPanel(ctx, "Session Snapshots", markdown);

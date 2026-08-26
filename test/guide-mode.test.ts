@@ -8,7 +8,6 @@ import type { BeforeAgentStartEvent, ExtensionContext } from "@earendil-works/pi
 import type { PiBrainsConfig } from "../extensions/pi-brains/types.ts";
 
 const PI_WORKSTATE_MARKER = "[PI_WORKSTATE_REQUEST]";
-const PI_SNAPSHOT_SUGGEST_MARKER = "[PI_SNAPSHOT_SUGGEST]";
 
 // Helper to create a minimal mock ExtensionAPI
 function createMockPi(): any {
@@ -126,54 +125,12 @@ describe("guide mode", () => {
       expect(result?.systemPrompt).not.toContain(PI_WORKSTATE_MARKER);
     });
 
-    it("injects snapshot guidance only for sessions that opted in", async () => {
-      config.snapshotSuggestionSessionIds = ["session-1"];
-      config.rulesEnabled = false;
-
-      const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), createContext());
-
-      expect(result?.systemPrompt).toContain("Session snapshot suggestions are enabled.");
-      expect(result?.systemPrompt).toContain(PI_SNAPSHOT_SUGGEST_MARKER);
-    });
-
-    it("does not inject snapshot guidance into other sessions", async () => {
-      config.snapshotSuggestionSessionIds = ["session-2"];
+    it("does not inject legacy snapshot suggestion guidance", async () => {
       config.rulesEnabled = false;
 
       const result = await controller.handleBeforeAgentStart(createBeforeAgentStartEvent(), createContext());
 
       expect(result?.systemPrompt).not.toContain("Session snapshot suggestions are enabled.");
-      expect(result?.systemPrompt).not.toContain(PI_SNAPSHOT_SUGGEST_MARKER);
-    });
-  });
-
-  describe("snapshot suggestion marker", () => {
-    it("removes the marker and suppresses repeated notifications until cleared", () => {
-      config.snapshotSuggestionSessionIds = ["session-1"];
-      controller.start(createContext());
-      const message = { role: "assistant", content: `Milestone verified.\n\n${PI_SNAPSHOT_SUGGEST_MARKER}` };
-
-      const first = controller.processAssistantMessageForSnapshotMarker(message);
-      const repeated = controller.processAssistantMessageForSnapshotMarker(message);
-
-      expect(first).toEqual({
-        message: { role: "assistant", content: "Milestone verified." },
-        newlySuggested: true,
-      });
-      expect(repeated?.newlySuggested).toBe(false);
-      expect(controller.isSnapshotSuggestionPending()).toBe(true);
-
-      controller.clearSnapshotSuggestion();
-      expect(controller.processAssistantMessageForSnapshotMarker(message)?.newlySuggested).toBe(true);
-    });
-
-    it("ignores markers when suggestions are disabled", () => {
-      controller.start(createContext());
-
-      expect(controller.processAssistantMessageForSnapshotMarker({
-        role: "assistant",
-        content: PI_SNAPSHOT_SUGGEST_MARKER,
-      })).toBeUndefined();
     });
   });
 
