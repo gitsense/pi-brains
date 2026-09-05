@@ -14,7 +14,6 @@
 import type { ExtensionAPI, ExtensionCommandContext, SessionEntry } from "@earendil-works/pi-coding-agent";
 import { spawn } from "node:child_process";
 import type { PiBrainsController } from "./controller.ts";
-import { debugLog, getLogFilePath } from "./debug-log.ts";
 
 const CHECKPOINT_BRANCH_ENTRY_TYPE = "guide-checkpoint-branch";
 const CHECKPOINT_RETURN_ENTRY_TYPE = "guide-checkpoint-returned";
@@ -60,7 +59,6 @@ export function initCheckpointHandlers(pi: ExtensionAPI): void {
   // has left its active-run state, so tree navigation is safe.
   pi.on("agent_settled", async (_event, _ctx) => {
     if (inCheckpointBranch && checkpointOriginalLeafId && checkpointCtx && checkpointController && checkpointPendingId && checkpointCwd && checkpointPendingIdentity) {
-      debugLog("Agent settled in checkpoint branch, verifying checkpoint");
       
       // Hide the working indicator
       checkpointCtx.ui.setWorkingVisible(false);
@@ -92,7 +90,6 @@ export function initCheckpointHandlers(pi: ExtensionAPI): void {
       );
       
       if (choice === "Return to main branch" && returnAnchor) {
-        debugLog("User chose to return to main branch", { leafId: returnAnchor.originalLeafId });
         
         try {
           const result = await checkpointCtx.navigateTree(returnAnchor.originalLeafId, { summarize: false });
@@ -101,16 +98,13 @@ export function initCheckpointHandlers(pi: ExtensionAPI): void {
           }
           pi.appendEntry(CHECKPOINT_RETURN_ENTRY_TYPE, buildCheckpointReturnMarker(returnAnchor));
           checkpointReturnAnchor = null;
-          debugLog("Navigated to main branch");
           checkpointCtx.ui.notify("Returned to main branch", "info");
         } catch (error) {
           // Preserve the anchor so the explicit exit command can retry.
           checkpointReturnAnchor = returnAnchor;
-          debugLog("Error navigating back", { error: error instanceof Error ? error.message : String(error) });
           checkpointCtx.ui.notify("Could not return to main branch. Run '/brains checkpoint exit' to retry.", "warning");
         }
       } else {
-        debugLog("User chose to stay on checkpoint branch", { leafId: returnAnchor?.originalLeafId });
         checkpointCtx.ui.notify("Stay on checkpoint branch. Run '/brains checkpoint exit' to return later.", "info");
       }
       
@@ -251,7 +245,6 @@ function readCheckpointEntryData(data: unknown): Record<string, unknown> | null 
 export async function handleCheckpoint(options: CheckpointOptions): Promise<CheckpointResult> {
   const { pi, ctx, controller, sessionId, sessionFile, leafId, cwd } = options;
   
-  debugLog("handleCheckpoint started", { sessionId, sessionFile: sessionFile?.slice(-50), leafId, cwd });
   
   if (inCheckpointBranch) {
     return { success: false, error: "A checkpoint is already being generated" };
@@ -270,24 +263,18 @@ export async function handleCheckpoint(options: CheckpointOptions): Promise<Chec
   }
 
   // Confirm before creating request state or resetting any counters.
-  debugLog("Showing confirmation UI");
-  const logPath = getLogFilePath();
   const confirmed = await ctx.ui.confirm(
     "Create Checkpoint",
-    `Create checkpoint for session ${sessionId.slice(0, 12)}...?\n\nDebug log: ${logPath}`
+    `Create checkpoint for session ${sessionId.slice(0, 12)}...?`
   );
   
   if (!confirmed) {
-    debugLog("User cancelled");
     return { success: false, error: "cancelled" };
   }
   
-  debugLog("User confirmed");
   
-  debugLog("Requesting checkpoint ID from controller");
   const checkpointResult = controller.requestGuideCheckpoint("manual");
   const checkpointId = checkpointResult.checkpointId;
-  debugLog("Got checkpoint ID", { checkpointId });
 
   const identity: CheckpointIdentity = {
     checkpointId,
@@ -308,7 +295,6 @@ export async function handleCheckpoint(options: CheckpointOptions): Promise<Chec
   }
   
   // Step 2: Create scratch branch and send instructions
-  debugLog("Creating scratch branch");
   return await createCheckpointBranch(
     pi,
     ctx,
@@ -358,7 +344,6 @@ async function createCheckpointBranch(
     // The current leaf is the main-branch anchor. Appending a hidden marker
     // under it creates an explicit child branch without changing the main
     // conversation's history or creating a separate Pi session file.
-    debugLog("Creating checkpoint child branch", { leafId, originalLeafId });
     
     // 2. Set state for tracking checkpoint branch
     inCheckpointBranch = true;
@@ -382,12 +367,8 @@ async function createCheckpointBranch(
       originalLeafId,
       branchEntryId,
     };
-    debugLog("Checkpoint branch marker appended", { branchEntryId });
-    debugLog("Sending checkpoint instructions");
     pi.sendUserMessage(instructions);
-    debugLog("Checkpoint instructions sent");
     
-    debugLog("Checkpoint child branch created");
     return { success: true, checkpointId: identity.checkpointId };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -400,7 +381,6 @@ async function createCheckpointBranch(
     checkpointPendingId = null;
     checkpointCwd = null;
     checkpointPendingIdentity = null;
-    debugLog("Error creating checkpoint branch", { error: errorMessage });
     return { 
       success: false, 
       checkpointId: identity.checkpointId,
@@ -415,7 +395,6 @@ async function createCheckpointBranch(
 export async function handleCheckpointExit(options: CheckpointOptions): Promise<CheckpointResult> {
   const { pi, ctx } = options;
   
-  debugLog("handleCheckpointExit started");
 
   // File order cannot identify the main branch after a tree fork. Use the
   // persisted anchor captured before the checkpoint child branch was created.
@@ -424,11 +403,9 @@ export async function handleCheckpointExit(options: CheckpointOptions): Promise<
     ctx.sessionManager.getLeafId(),
   );
   if (!returnAnchor) {
-    debugLog("No checkpoint branch return anchor");
     return { success: false, error: "No checkpoint branch is waiting to be exited" };
   }
 
-  debugLog("Navigating to main branch", { leafId: returnAnchor.originalLeafId });
   
   try {
     if (ctx.sessionManager.getLeafId() !== returnAnchor.originalLeafId) {
@@ -442,12 +419,10 @@ export async function handleCheckpointExit(options: CheckpointOptions): Promise<
     }
     pi.appendEntry(CHECKPOINT_RETURN_ENTRY_TYPE, buildCheckpointReturnMarker(returnAnchor));
     checkpointReturnAnchor = null;
-    debugLog("Navigated to main branch");
     ctx.ui.notify("Returned to main branch", "info");
     return { success: true };
   } catch (error) {
     checkpointReturnAnchor = returnAnchor;
-    debugLog("Error navigating to main branch", { error: error instanceof Error ? error.message : String(error) });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

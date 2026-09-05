@@ -723,7 +723,6 @@ async function handleCheckpointCommand(value: string | undefined, pi: ExtensionA
   }
 
   // /brains checkpoint - create checkpoint now
-  debugLog("Starting checkpoint command");
   
   // Update leaf ID from current session state before checkpoint
   const currentLeafId = ctx.sessionManager.getLeafId();
@@ -735,17 +734,14 @@ async function handleCheckpointCommand(value: string | undefined, pi: ExtensionA
   const leafId = ctx.sessionManager.getLeafId();
   const cwd = ctx.cwd;
   
-  debugLog("Session info", { sessionId, sessionFile: sessionFile?.slice(-50), leafId, cwd });
   
   // Validate session
   if (!sessionId) {
-    debugLog("No session ID, aborting");
     ctx.ui.notify("No active session. Start a conversation first.", "error");
     return;
   }
   
   // Hand off to checkpoint handler
-  debugLog("Calling handleCheckpoint");
   
   const result = await handleCheckpoint({
     pi,
@@ -757,17 +753,11 @@ async function handleCheckpointCommand(value: string | undefined, pi: ExtensionA
     cwd,
   });
   
-  debugLog("handleCheckpoint result", result);
-  
   // Handle result
   if (result.success) {
-    debugLog("Checkpoint generation started", { checkpointId: result.checkpointId });
     ctx.ui.notify(`Checkpoint generation started: ${result.checkpointId}`, "info");
   } else if (result.error !== "cancelled") {
-    debugLog("Failed", { error: result.error });
     ctx.ui.notify(`✗ Checkpoint failed: ${result.error}`, "error");
-  } else {
-    debugLog("Cancelled by user");
   }
 }
 
