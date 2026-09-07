@@ -21,13 +21,18 @@ function message(status: "pending" | "delivering" | "accepted" | "ignored", text
   });
 }
 
-function createContext(selections: string[]) {
+function createContext(selections: string[], entries: unknown[] = []) {
   const notify = vi.fn();
   const select = vi.fn(async (_title: string, options: string[]) => {
     const selection = selections.shift();
     return selection === "FIRST" ? options[0] : selection ?? "Close";
   });
-  const ctx = { mode: "tui", isIdle: () => true, ui: { notify, select } } as unknown as ExtensionCommandContext;
+  const ctx = {
+    mode: "tui",
+    isIdle: () => true,
+    sessionManager: { getEntries: () => entries },
+    ui: { notify, select },
+  } as unknown as ExtensionCommandContext;
   return { ctx, notify, select };
 }
 
@@ -547,6 +552,50 @@ describe("agent-to-agent messaging (phase 2)", () => {
       const notifyCount = notify.mock.calls.length;
       await vi.advanceTimersByTimeAsync(10);
       expect(notify.mock.calls.length).toBe(notifyCount);
+      watcher.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("repairs a lost wait-group cursor from session history without replaying the event", async () => {
+    vi.useFakeTimers();
+    try {
+      const event = { event_id: "evt-1", event_seq: 1, type: "complete", at: "2026-08-05T12:30:00Z", details: '{"expected":1,"received":1}' };
+      const runGscCommand = vi.fn(async (...args: string[]) => {
+        if (args.includes("summary")) return { code: 0, stdout: summaryWithGroup(), stderr: "" };
+        if (args.includes("wait") && args.includes("status")) {
+          return { code: 0, stdout: waitStatus([event]), stderr: "" };
+        }
+        return { code: 1, stdout: "", stderr: "unexpected command" };
+      });
+      const { controller, sendUserMessage } = createController(runGscCommand);
+      const entries = [{
+        type: "message",
+        id: "entry-1",
+        parentId: null,
+        timestamp: "2026-08-05T12:30:01Z",
+        message: {
+          role: "user",
+          content: [{
+            type: "text",
+            text: `[pi-brains] wait group ${GROUP_ID.slice(0, 8)} (event evt-1): already delivered`,
+          }],
+          timestamp: Date.parse("2026-08-05T12:30:01Z"),
+        },
+      }];
+      const { ctx, notify } = createContext([], entries);
+      const onCursors = vi.fn();
+      const watcher = startInboxWatcher(controller, ctx as unknown as ExtensionContext, {
+        waitGroupPollIntervalMs: 10,
+        onWaitGroupCursorsChange: onCursors,
+      });
+
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(sendUserMessage).not.toHaveBeenCalled();
+      expect(notify).not.toHaveBeenCalledWith(expect.stringContaining("event evt-1"), "info");
+      expect(onCursors).toHaveBeenCalledWith({ [GROUP_ID]: 1 });
       watcher.stop();
     } finally {
       vi.useRealTimers();

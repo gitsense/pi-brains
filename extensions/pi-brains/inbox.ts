@@ -689,6 +689,19 @@ async function handleAgentMail(
  * remains the source of truth. The stable event_id is included so a redelivery
  * after a crash is recognizable.
  */
+function sessionContainsWaitGroupNotice(ctx: ExtensionContext, eventId: string): boolean {
+  const prefix = "[pi-brains] wait group ";
+  const needle = `(event ${eventId})`;
+  return ctx.sessionManager.getEntries().some((entry) => {
+    if (entry.type !== "message" || entry.message.role !== "user") return false;
+    const content = entry.message.content;
+    const text = typeof content === "string"
+      ? content
+      : content.filter(part => part.type === "text").map(part => part.text).join("\n");
+    return text.startsWith(prefix) && text.includes(needle);
+  });
+}
+
 function buildWaitGroupNotice(sessionId: string, groupId: string, event: WaitGroupEvent): string {
   const prefix = `[pi-brains] wait group ${shortId(groupId)} (event ${event.event_id}):`;
   switch (event.type) {
@@ -844,11 +857,16 @@ export function startInboxWatcher(
         const cursor = cursors[group.id] ?? 0;
         const unseen = status.events.filter(event => event.event_seq > cursor);
         for (const event of unseen) {
-          const notice = buildWaitGroupNotice(sessionId, group.id, event);
-          ctx.ui.notify(notice, "info");
-          // §8.1: inject the aggregate wake-up so the sender agent is woken
-          // (ctx.ui.notify is human-visible only). At-least-once by contract.
-          controller.sendUserMessage(notice, ctx.isIdle() ? undefined : { deliverAs: "followUp" });
+          // Recover from a lost or stale external cursor by consulting Pi's
+          // append-only session history. This includes entries on abandoned
+          // branches and avoids replaying an event that was delivered earlier.
+          if (!sessionContainsWaitGroupNotice(ctx, event.event_id)) {
+            const notice = buildWaitGroupNotice(sessionId, group.id, event);
+            ctx.ui.notify(notice, "info");
+            // §8.1: inject the aggregate wake-up so the sender agent is woken
+            // (ctx.ui.notify is human-visible only). At-least-once by contract.
+            controller.sendUserMessage(notice, ctx.isIdle() ? undefined : { deliverAs: "followUp" });
+          }
           cursors[group.id] = Math.max(cursors[group.id] ?? 0, event.event_seq);
         }
         if (unseen.length > 0) await persistCursors();
