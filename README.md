@@ -3,21 +3,21 @@
 </p>
 
 <h3 align="center">
-  Give Pi knowledge and turn any session into a worker.
+  Give Pi the ability to remember and work with other agents.
 </h3>
 
 <p align="center">
   <a href="#install">Install</a> &nbsp;·&nbsp;
-  <a href="#see-it-in-action">See it in action</a> &nbsp;·&nbsp;
-  <a href="#delegate-work-to-any-pi-session">Delegate to any session</a> &nbsp;·&nbsp;
-  <a href="#teach-pi-how-to-work">Teach Pi</a> &nbsp;·&nbsp;
-  <a href="#configure-rules">Configure rules</a> &nbsp;·&nbsp;
+  <a href="#talk-to-any-agent">Talk to any agent</a> &nbsp;·&nbsp;
+  <a href="#scale-with-gitsense-chat">Scale with GitSense Chat</a> &nbsp;·&nbsp;
+  <a href="#teach-pi-what-to-remember-and-how-to-behave">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
-**pi-brains** gives [Pi](https://github.com/earendil-works/pi) persistent, queryable guidance it can use while it works. It also lets Pi delegate tasks to other agents and bring their responses back into the current session.
-
-Tell Pi what your domain knows, what rules to follow, what mistakes to avoid, or what context to pull in. pi-brains saves that guidance as durable GitSense records, then helps Pi query, apply, and verify it at the right moment.
+**pi-brains** gives [Pi](https://github.com/earendil-works/pi) durable knowledge
+and rules it can apply while it works. It also gives every Pi session an inbox,
+allowing agents to ask questions, share context, and delegate work across
+conversations.
 
 ## Install
 
@@ -33,97 +33,67 @@ Start Pi in a workspace and run:
 
 If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
 
-## See it in action
+## Talk to any agent
 
-Three quick demos. Click a preview to download the video, then open it from
-your browser's Downloads button in the top-right corner.
-
-<table width="100%">
-  <tr>
-    <td width="33%" valign="top">
-      <p align="center"><strong><code>/brains rules on</code></strong></p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-rules-on.mp4">
-          <img src="assets/demo/brains-rules-on.png" alt="Watch the /brains rules on demo video" width="300">
-        </a>
-      </p>
-      <p>Apply project guidance before Pi acts.</p>
-    </td>
-    <td width="33%" valign="top">
-      <p align="center"><strong><code>/brains inspect</code></strong></p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-inspect.mp4">
-          <img src="assets/demo/brains-inspect.png" alt="Watch the /brains inspect demo video" width="300">
-        </a>
-      </p>
-      <p>Turn a wall of tool calls into actionable insights.</p>
-    </td>
-    <td width="33%" valign="top">
-      <p align="center"><strong><code>/brains sessions</code></strong></p>
-      <p align="center">
-        <a href="https://raw.githubusercontent.com/gitsense/pi-brains/staging/assets/demo/brains-sessions.mp4">
-          <img src="assets/demo/brains-sessions.png" alt="Watch the /brains sessions demo video" width="300">
-        </a>
-      </p>
-      <p>Find, organize, and coordinate your Pi sessions.</p>
-    </td>
-  </tr>
-</table>
-
-## Delegate work to any Pi session
-
-Any existing Pi session can become a knowledge source or a worker. Ask what it
-knows, or give it a task using the context it has already built. It feels like
-delegating to a subagent, except the worker does not have to be created for the
-current task.
-
-In the session you want to use as the worker, run:
-
-```text
-/brains inbox info
-```
-
-Choose **Copy mailbox address**. Then tell another Pi session:
-
-```text
-Send a message to 019fc3cc-f702-799d-a7ae-89f0b310e458 and have it review the README changes.
-```
-
-Pi routes the task to that session. The agent works with the context it has
-already built, then sends its response back to the current session. There is no
-need to switch chats or manually move the response.
+Ask a Pi session a question, send it useful context, or delegate work from
+Claude, Codex, OpenCode, or another agent. The response returns to the agent
+you are already using, without switching sessions or copying context.
 
 <p align="center">
-  <img src="assets/demo/connect-agents-placeholder.svg" alt="Placeholder for a terminal demo showing one Pi session copying its mailbox address and another delegating a README review" width="100%">
+  <img src="assets/demo/talk-to-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude, Codex, and OpenCode asking and informing a Pi session" width="100%">
 </p>
 
-### Work in Pi. Organize in GitSense Chat.
+Run `/brains me` in the Pi session to copy its address. Its inbox can receive
+questions, context, and delegated tasks from other agents. Enable
+`/brains inbox auto on` when you want new messages delivered automatically.
 
-Agent delegation works directly in the Pi TUI. GitSense Chat is an optional
-visual workspace for finding sessions, organizing them into groups, and
-monitoring their work.
+## Scale with GitSense Chat
+
+Pi Brains helps agents remember and work together. GitSense Chat gives you one
+place to organize, monitor, and coordinate them at scale.
 
 <table width="100%">
   <tr>
     <td width="50%" valign="top">
-      <p align="center"><strong><code>/brains sessions</code></strong></p>
-      <p>Create a group and each session becomes a live card showing its latest
-      message, last activity, and whether the agent is working. Send messages
-      between agents and track their work from one place.</p>
+      <p align="center"><strong>Organize your sessions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
     </td>
     <td width="50%" valign="top">
-      <p align="center"><strong><code>/brains inspect</code></strong></p>
-      <p>Start with the current session, then add other agents from
-      <strong>All Sessions</strong>.</p>
+      <p align="center"><strong>Give agents a lead</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Monitor work at a glance</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Build knowledge teams</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Bring results together</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Turn reports into actions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
     </td>
   </tr>
 </table>
 
-Both commands open the same collaboration view, where you can follow each
-agent's status, messages, and tool calls and send follow-up instructions. Each
-agent keeps its own session history and focused context.
+GitSense Chat can use Pi Brains heartbeats to show which sessions are running,
+stopped, or ready to receive work. This makes it possible to monitor dozens of
+sessions without opening every terminal.
 
-## Teach Pi how to work
+<p align="center">
+  <strong><a href="https://github.com/gitsense/chat">See what GitSense Chat makes possible →</a></strong>
+</p>
+
+## Teach Pi what to remember and how to behave
 
 1. **You teach** - Tell Pi what your domain knows, what rules to follow, what mistakes to avoid, or what context to pull in.
 2. **It remembers** - pi-brains saves that guidance as focused GitSense records at the personal, repo, file, or topic level.
@@ -253,7 +223,23 @@ can become a focused plan:
 
 Grep finds text. Vector search finds similar passages. Brains give Pi structured, queryable knowledge it can use to decide where to spend context.
 
-## Commands
+## Essential commands
+
+| Command | Description |
+| --- | --- |
+| `/brains` | Initialize Pi Brains |
+| `/brains rules` | Teach Pi what to remember and how to behave |
+| `/brains me` | Show and copy the current agent's address |
+| `/brains inbox` | Review messages from people and other agents |
+| `/brains inbox auto on` | Deliver new messages to this session automatically |
+| `/brains checkpoint` | Create a review point before continuing |
+
+Run `/brains help` inside Pi to discover additional commands.
+
+<details>
+<summary>Additional command reference and snapshot details</summary>
+
+### Full command reference
 
 | Command | Description |
 | --- | --- |
@@ -319,6 +305,8 @@ credential paths and `.env`/private-key files are excluded. The defaults also
 exclude files over 64 MiB and cap each stage at 256 MiB. `clear` asks for
 confirmation and moves data under `GSC_HOME/data/pi/snapshot-trash` rather than
 deleting it immediately.
+
+</details>
 
 ## Session liveness
 
