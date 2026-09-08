@@ -22,6 +22,8 @@ export interface PiBrainsConfig {
   rulesEnabled: boolean;
   debug: boolean;
   guideEnabled: boolean;
+  /** Session UUIDs whose deterministic user-facing snapshot insights are enabled. */
+  snapshotInsightSessionIds: string[];
   inboxAutoAccept: boolean;
   waitGroupCursors: Record<string, number>;
   askGroups: AskGroup[];

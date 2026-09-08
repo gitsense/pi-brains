@@ -1137,6 +1137,8 @@ async function showHelp(ctx: ExtensionCommandContext): Promise<void> {
 - \/brains checkpoint — Create a review checkpoint
 - \/brains checkpoint exit — Return to the main branch
 - \/brains snapshots — Show snapshot status for this session
+- \/brains snapshots insights on|off|status — Configure deterministic user-facing insights
+- \/brains snapshots review — Review snapshot and mutation facts without creating a snapshot
 - \/brains snapshots list — List stage, manifest, and Git object locations
 - \/brains snapshots create — Capture recognized files at the current session leaf
 - \/brains snapshots clear — Move this session's snapshots to a recoverable archive

@@ -6,6 +6,19 @@ function createController(overrides: Partial<SnapshotCommandController> = {}) {
   const controller: SnapshotCommandController = {
     getSessionId: () => "session-1",
     runGscCommand: vi.fn(async () => ({ code: 0, stdout: "[]", stderr: "" })),
+    isSnapshotInsightsEnabled: () => false,
+    setSnapshotInsightsEnabled: vi.fn(() => true),
+    resetSnapshotInsightBoundary: vi.fn(),
+    getSnapshotInsightFacts: vi.fn(async () => ({
+      enabled: false,
+      snapshotCount: 0,
+      latestSnapshot: null,
+      snapshotLoadError: false,
+      recognizedFiles: [],
+      directMutationFiles: [],
+      shellActivity: false,
+      boundaryOnActiveBranch: true,
+    })),
     ...overrides,
   };
   return controller;
@@ -32,9 +45,51 @@ describe("snapshot commands", () => {
 
     expect(controller.runGscCommand).not.toHaveBeenCalled();
     expect(notify).toHaveBeenCalledWith(
-      "Unknown snapshots command. Use /brains snapshots, list, create, or clear.",
+      "Unknown snapshots command. Use /brains snapshots, insights on|off|status, review, list, create, or clear.",
       "warning",
     );
+  });
+
+  it("enables session-scoped insights and immediately shows facts", async () => {
+    const controller = createController({
+      getSnapshotInsightFacts: vi.fn(async () => ({
+        enabled: true,
+        snapshotCount: 1,
+        latestSnapshot: {
+          snapshot_id: "snap-1",
+          sequence: 1,
+          created_at: "2026-08-26T00:00:00Z",
+          leaf_id: "leaf-0",
+          file_count: 2,
+          bytes_captured: 100,
+          incomplete: false,
+        },
+        snapshotLoadError: false,
+        recognizedFiles: ["/repo/src/a.ts", "/repo/src/b.ts"],
+        directMutationFiles: ["/repo/src/a.ts"],
+        shellActivity: true,
+        boundaryOnActiveBranch: true,
+      })),
+    });
+    const { ctx, notify } = createContext();
+
+    await handleSnapshotsCommand("insights on", controller, ctx);
+
+    expect(controller.setSnapshotInsightsEnabled).toHaveBeenCalledWith(true);
+    expect(notify).toHaveBeenCalledWith("Snapshot insights enabled for this session.", "info");
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("true pre-change baseline"), "warning");
+    expect(notify.mock.calls.some(call => String(call[0]).includes("Snapshot Review"))).toBe(true);
+  });
+
+  it("disables insights without creating a snapshot", async () => {
+    const controller = createController();
+    const { ctx, notify } = createContext();
+
+    await handleSnapshotsCommand("insights off", controller, ctx);
+
+    expect(controller.setSnapshotInsightsEnabled).toHaveBeenCalledWith(false);
+    expect(controller.runGscCommand).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith("Snapshot insights disabled for this session.", "info");
   });
 
   it("creates a snapshot at the trusted current leaf", async () => {
@@ -64,6 +119,7 @@ describe("snapshot commands", () => {
       "--leaf", "leaf-1",
       "--format", "json",
     );
+    expect(controller.resetSnapshotInsightBoundary).toHaveBeenCalledWith("leaf-1", "snapshot-1");
     expect(notify).toHaveBeenCalledWith(expect.stringContaining("Snapshot #2 created: 3 files"), "info");
   });
 
@@ -149,6 +205,7 @@ describe("snapshot commands", () => {
       "--format", "json",
       "--force",
     );
+    expect(controller.resetSnapshotInsightBoundary).toHaveBeenCalledWith(null, null);
     expect(notify).toHaveBeenCalledWith(expect.stringContaining("Recoverable at /gsc/snapshot-trash"), "info");
   });
 

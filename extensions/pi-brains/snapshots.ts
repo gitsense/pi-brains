@@ -1,4 +1,5 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
+import type { SnapshotInsightFacts } from "./snapshot-insights.ts";
 import { showOutputPanel } from "./output-panel.ts";
 
 interface SnapshotSummary {
@@ -32,6 +33,10 @@ interface SnapshotClearResult {
 export interface SnapshotCommandController {
   getSessionId(): string | null;
   runGscCommand(...args: string[]): Promise<{ code: number; stdout: string; stderr: string } | null>;
+  isSnapshotInsightsEnabled(): boolean;
+  setSnapshotInsightsEnabled(enabled: boolean): boolean;
+  resetSnapshotInsightBoundary(leafId: string | null, snapshotId: string | null): void;
+  getSnapshotInsightFacts(ctx: ExtensionCommandContext): Promise<SnapshotInsightFacts>;
 }
 
 export async function handleSnapshotsCommand(
@@ -47,6 +52,14 @@ export async function handleSnapshotsCommand(
     return;
   }
 
+  if (command === "insights") {
+    await handleInsights(args[1] ?? "status", controller, ctx);
+    return;
+  }
+  if (command === "review" && args.length === 1) {
+    await showSnapshotReview(controller, ctx);
+    return;
+  }
   if (command === "create") {
     await createSnapshot(sessionId, controller, ctx);
     return;
@@ -64,7 +77,40 @@ export async function handleSnapshotsCommand(
     return;
   }
 
-  ctx.ui.notify("Unknown snapshots command. Use /brains snapshots, list, create, or clear.", "warning");
+  ctx.ui.notify("Unknown snapshots command. Use /brains snapshots, insights on|off|status, review, list, create, or clear.", "warning");
+}
+
+async function handleInsights(
+  mode: string,
+  controller: SnapshotCommandController,
+  ctx: ExtensionCommandContext,
+): Promise<void> {
+  if (mode === "on") {
+    controller.setSnapshotInsightsEnabled(true);
+    const facts = await controller.getSnapshotInsightFacts(ctx);
+    ctx.ui.notify("Snapshot insights enabled for this session.", "info");
+    if (facts.directMutationFiles.length > 0) {
+      ctx.ui.notify(
+        "Mutations have already occurred, so a true pre-change baseline may no longer be available.",
+        "warning",
+      );
+    }
+    await showSnapshotReview(controller, ctx, facts);
+    return;
+  }
+  if (mode === "off") {
+    controller.setSnapshotInsightsEnabled(false);
+    ctx.ui.notify("Snapshot insights disabled for this session.", "info");
+    return;
+  }
+  if (mode === "status") {
+    ctx.ui.notify(
+      `Snapshot insights: ${controller.isSnapshotInsightsEnabled() ? "ON" : "OFF"} for this session.`,
+      "info",
+    );
+    return;
+  }
+  ctx.ui.notify("Usage: /brains snapshots insights on|off|status", "warning");
 }
 
 async function createSnapshot(
@@ -92,6 +138,7 @@ async function createSnapshot(
     ctx.ui.notify("Snapshot failed: gsc returned invalid JSON.", "error");
     return;
   }
+  controller.resetSnapshotInsightBoundary(leafId, snapshot.snapshot_id);
   if (snapshot.unchanged || snapshot.status === "unchanged") {
     ctx.ui.notify(`No new snapshot: the file tree matches stage #${snapshot.sequence}.`, "info");
     return;
@@ -144,6 +191,7 @@ async function clearSnapshots(
     ctx.ui.notify("No snapshots found for this session.", "info");
     return;
   }
+  controller.resetSnapshotInsightBoundary(null, null);
   ctx.ui.notify(`Archived ${cleared.snapshot_count} ${plural(cleared.snapshot_count, "snapshot")}. Recoverable at ${cleared.archive_path}.`, "info");
 }
 
@@ -165,6 +213,7 @@ async function showSnapshotStatus(
     : ["Latest stage: none"];
   const markdown = [
     `Session: ${sessionId}`,
+    `Snapshot insights: ${controller.isSnapshotInsightsEnabled() ? "ON" : "OFF"}`,
     `Snapshots: ${snapshots.length}`,
     "",
     ...latestLines,
@@ -172,11 +221,45 @@ async function showSnapshotStatus(
     "Snapshots may include recognized files outside the session repository. Common credential paths are excluded; the default limits are 64 MiB per file and 256 MiB per stage.",
     "",
     "Commands:",
+    "- `/brains snapshots insights on|off|status`",
+    "- `/brains snapshots review`",
     "- `/brains snapshots list`",
     "- `/brains snapshots create`",
     "- `/brains snapshots clear`",
   ].join("\n");
   await showOutputPanel(ctx, "Session Snapshots", markdown);
+}
+
+async function showSnapshotReview(
+  controller: SnapshotCommandController,
+  ctx: ExtensionCommandContext,
+  existingFacts?: SnapshotInsightFacts,
+): Promise<void> {
+  const facts = existingFacts ?? await controller.getSnapshotInsightFacts(ctx);
+  const latest = facts.latestSnapshot;
+  const snapshotCount = facts.snapshotCount === null ? "unknown" : String(facts.snapshotCount);
+  const lines = [
+    `Snapshot insights: ${facts.enabled ? "ON" : "OFF"}`,
+    `Snapshots: ${snapshotCount}`,
+    `Latest baseline: ${facts.snapshotLoadError ? "unknown (snapshot metadata unavailable)" : latest ? `stage #${latest.sequence} (${latest.created_at})` : "none"}`,
+    `Recognized direct-tool files: ${facts.recognizedFiles.length}`,
+    `Direct mutation files since baseline: ${facts.directMutationFiles.length}`,
+    `Shell coverage uncertainty: ${facts.shellActivity ? "yes" : "no"}`,
+  ];
+  if (facts.snapshotLoadError) {
+    lines.push("Snapshot metadata could not be loaded.");
+  }
+  if (latest && !facts.boundaryOnActiveBranch) {
+    lines.push("Latest snapshot is not on the active branch; comparison coverage is uncertain.");
+  }
+  if (facts.directMutationFiles.length > 0) {
+    lines.push("", "**Direct mutation files**", "", ...facts.directMutationFiles.map(path => `- \`${path}\``));
+  }
+  lines.push(
+    "",
+    "No snapshot is created automatically. Run `/brains snapshots create` only when you want to preserve the current recognized file state.",
+  );
+  await showOutputPanel(ctx, "Snapshot Review", lines.join("\n"));
 }
 
 async function showSnapshotList(

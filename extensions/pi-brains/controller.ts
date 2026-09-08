@@ -16,6 +16,12 @@ import { GscRulesClient } from "./rules/gsc-client.ts";
 import type { ExecutionResult, ExecutionTriggerResult, LifecycleEvent, RulesJsonRule } from "./rules/types.ts";
 import { buildTelemetryEvent, RuleTelemetryWriter, type RuleTelemetryEventV1, type RuleTelemetrySession, type RuleTelemetryEvent, type RuleTelemetryRuleSnapshot, type RuleTelemetryMatch, type RuleTelemetryResult, resolveOutcome } from "./rules/telemetry.ts";
 import { TouchedFileTracker } from "./touched-files.ts";
+import {
+  collectSnapshotInsightActivity,
+  type PendingSnapshotToolCall,
+  type SnapshotInsightFacts,
+  type SnapshotStageSummary,
+} from "./snapshot-insights.ts";
 import type { PanelState, PiBrainsConfig, MailboxSummary } from "./types.ts";
 
 /**
@@ -152,6 +158,10 @@ export class PiBrainsController {
   private guideToolsSinceCheckpoint: GuideCheckpointPayloadTool[] = [];
   private guideRulesSinceCheckpoint: GuideCheckpointPayloadRule[] = [];
   private guidePendingCheckpoints = new Map<string, { files: Set<string> }>();
+  private snapshotMutationNoticeShown = false;
+  private snapshotShellNoticeShown = false;
+  private snapshotInsightBoundaryLeafId: string | null = null;
+  private snapshotInsightBoundarySnapshotId: string | null = null;
   private sessionStartHead: string | null = null;
   private sessionStartBranch: string | null = null;
 
@@ -238,6 +248,10 @@ export class PiBrainsController {
     const leafId = ctx.sessionManager.getLeafId?.() ?? null;
 
     if (sessionId !== this.boundSessionId || sessionFile !== this.boundSessionFile) {
+      this.snapshotMutationNoticeShown = false;
+      this.snapshotShellNoticeShown = false;
+      this.snapshotInsightBoundaryLeafId = null;
+      this.snapshotInsightBoundarySnapshotId = null;
       this.sessionId = sessionId;
       this.boundSessionId = sessionId;
       this.boundSessionFile = sessionFile;
@@ -657,6 +671,8 @@ export class PiBrainsController {
     }
 
     if (!this.config.rulesEnabled) {
+      const insightResult = await this.maybeHandleSnapshotInsight(event, ctx);
+      if (insightResult) return insightResult;
       this.bashObservability.decorateToolCall(event);
       return undefined;
     }
@@ -668,6 +684,8 @@ export class PiBrainsController {
 
     if (!result) {
       this.debug.log(`no result from tool call evaluation`);
+      const insightResult = await this.maybeHandleSnapshotInsight(event, ctx);
+      if (insightResult) return insightResult;
       this.bashObservability.decorateToolCall(event);
       return undefined;
     }
@@ -698,6 +716,8 @@ export class PiBrainsController {
           this.sendTriggerMessage(triggerResult.message, triggerResult.deliveryMode, ctx);
         }
       }
+      const insightResult = await this.maybeHandleSnapshotInsight(event, ctx);
+      if (insightResult) return insightResult;
       this.bashObservability.decorateToolCall(event);
       return undefined;
     }
@@ -1235,6 +1255,135 @@ export class PiBrainsController {
     if (!this.config.guideEnabled) return null;
     this.guideDebug.logGuidanceInjected();
     return GUIDE_INSTRUCTION;
+  }
+
+  isSnapshotInsightsEnabled(): boolean {
+    return this.sessionId !== null && this.config.snapshotInsightSessionIds.includes(this.sessionId);
+  }
+
+  setSnapshotInsightsEnabled(enabled: boolean): boolean {
+    if (!this.sessionId) return false;
+    const sessions = new Set(this.config.snapshotInsightSessionIds);
+    if (enabled) sessions.add(this.sessionId);
+    else sessions.delete(this.sessionId);
+    this.config.snapshotInsightSessionIds = [...sessions];
+    if (!enabled) {
+      this.snapshotMutationNoticeShown = false;
+      this.snapshotShellNoticeShown = false;
+    }
+    void this.persistConfig();
+    return true;
+  }
+
+  resetSnapshotInsightBoundary(leafId: string | null, snapshotId: string | null): void {
+    this.snapshotInsightBoundaryLeafId = leafId;
+    this.snapshotInsightBoundarySnapshotId = snapshotId;
+    this.snapshotMutationNoticeShown = false;
+    this.snapshotShellNoticeShown = false;
+  }
+
+  async getSnapshotInsightFacts(
+    ctx: ExtensionContext,
+    pending?: PendingSnapshotToolCall,
+  ): Promise<SnapshotInsightFacts> {
+    const result = await this.runGscCommand(
+      "pi", "sessions", "snapshots", "list",
+      "--session", this.sessionId ?? "",
+      "--format", "json",
+    );
+    let snapshots: SnapshotStageSummary[] | null = null;
+    if (result?.code === 0) {
+      try {
+        const parsed = JSON.parse(result.stdout);
+        if (Array.isArray(parsed)) snapshots = parsed as SnapshotStageSummary[];
+      } catch {
+        snapshots = null;
+      }
+    }
+    const latestSnapshot = snapshots?.at(-1) ?? null;
+    const runtimeBoundaryIsCurrent = this.snapshotInsightBoundaryLeafId !== null && (
+      latestSnapshot === null || this.snapshotInsightBoundarySnapshotId === latestSnapshot.snapshot_id
+    );
+    const boundaryLeafId = runtimeBoundaryIsCurrent
+      ? this.snapshotInsightBoundaryLeafId
+      : latestSnapshot?.leaf_id ?? null;
+    const activity = collectSnapshotInsightActivity(
+      ctx.sessionManager.getBranch(),
+      ctx.cwd,
+      boundaryLeafId,
+      pending,
+    );
+    return {
+      enabled: this.isSnapshotInsightsEnabled(),
+      snapshotCount: snapshots?.length ?? null,
+      latestSnapshot,
+      snapshotLoadError: snapshots === null,
+      ...activity,
+    };
+  }
+
+  private async maybeHandleSnapshotInsight(
+    event: ToolCallEvent,
+    ctx: ExtensionContext,
+  ): Promise<ToolCallEventResult | undefined> {
+    if (!this.isSnapshotInsightsEnabled() || !ctx.hasUI) return undefined;
+    const input = event.input as Record<string, unknown>;
+
+    if (event.toolName === "bash") {
+      if (this.snapshotShellNoticeShown) return undefined;
+      this.snapshotShellNoticeShown = true;
+      const facts = await this.getSnapshotInsightFacts(ctx, { toolName: "bash" });
+      const baseline = facts.snapshotLoadError
+        ? "unknown (snapshot metadata unavailable)"
+        : facts.latestSnapshot ? `stage #${facts.latestSnapshot.sequence}` : "none";
+      ctx.ui.notify(
+        [
+          "Snapshot insight: shell activity detected.",
+          `Baseline: ${baseline} · Recognized direct-tool files: ${facts.recognizedFiles.length}`,
+          "Bash file effects may not be fully observable. Run /brains snapshots review for current facts.",
+        ].join("\n"),
+        "warning",
+      );
+      return undefined;
+    }
+
+    if ((event.toolName !== "edit" && event.toolName !== "write") || this.snapshotMutationNoticeShown) {
+      return undefined;
+    }
+    this.snapshotMutationNoticeShown = true;
+    const path = typeof input.path === "string" ? input.path : "unknown path";
+    const facts = await this.getSnapshotInsightFacts(ctx, { toolName: event.toolName, path });
+    const baseline = facts.snapshotLoadError
+      ? "unknown (snapshot metadata unavailable)"
+      : facts.latestSnapshot
+        ? `stage #${facts.latestSnapshot.sequence} (${facts.latestSnapshot.created_at})`
+        : "none";
+    const boundaryWarning = facts.latestSnapshot && !facts.boundaryOnActiveBranch
+      ? "Latest snapshot is not on the active branch; comparison coverage is uncertain."
+      : null;
+    const message = [
+      `First direct mutation is about to run: ${event.toolName} ${path}`,
+      `Baseline: ${baseline}`,
+      `Recognized direct-tool files: ${facts.recognizedFiles.length}`,
+      `Direct mutation files including pending: ${facts.directMutationFiles.length}`,
+      `Shell coverage uncertainty: ${facts.shellActivity ? "yes" : "no"}`,
+      ...(boundaryWarning ? [boundaryWarning] : []),
+    ].join("\n");
+    const choice = await ctx.ui.select(message, [
+      "Continue without snapshot",
+      "Pause and run /brains snapshots review",
+      "Turn snapshot insights off",
+    ]);
+    if (choice?.startsWith("Turn")) {
+      this.setSnapshotInsightsEnabled(false);
+      return undefined;
+    }
+    if (choice === "Continue without snapshot") return undefined;
+    ctx.abort();
+    return {
+      block: true,
+      reason: "User paused the first mutation for snapshot review. Run /brains snapshots review, then retry.",
+    };
   }
 
   /**

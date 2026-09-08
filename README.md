@@ -266,6 +266,10 @@ Run `/brains help` inside Pi to discover additional commands.
 | `/brains checkpoint suggest off` | Disable checkpoint suggestions |
 | `/brains checkpoint suggest status` | Show checkpoint suggestion status |
 | `/brains snapshots` | Show snapshot status for the current session |
+| `/brains snapshots insights on` | Enable deterministic user-facing snapshot insights for this session |
+| `/brains snapshots insights off` | Disable snapshot insights for this session |
+| `/brains snapshots insights status` | Show whether snapshot insights are enabled for this session |
+| `/brains snapshots review` | Review snapshot, mutation, and shell-coverage facts without creating a snapshot |
 | `/brains snapshots list` | List each stage's directory, manifest, Git object database, and commit |
 | `/brains snapshots create` | Capture the exact recognized file contents at the current session leaf |
 | `/brains snapshots clear` | Move the current session's snapshots to a recoverable archive |
@@ -299,6 +303,14 @@ create` before a broad change or after a verified milestone. If the recognized
 file tree has not changed, GitSense reuses the latest stage instead of creating
 a duplicate. Run `/brains snapshots list` to see the filesystem location of
 every stage and manifest, plus the shared Git object database and commit IDs.
+
+Snapshot insights are off by default and scoped to the current session. Enable
+them with `/brains snapshots insights on`. Pi Brains then shows deterministic,
+user-facing facts before the first direct mutation and warns once when shell
+activity makes file coverage uncertain. It does not inject agent instructions
+or create snapshots automatically. Run `/brains snapshots review` at any time
+to inspect the current baseline, recognized direct-tool files, direct mutations
+since the baseline, and shell-coverage status.
 
 Snapshots may include recognized files outside the working repository. Common
 credential paths and `.env`/private-key files are excluded. The defaults also
