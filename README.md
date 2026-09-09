@@ -76,9 +76,11 @@ imply integration of their session logs or lifecycle state.
 
 ## Every Pi session has an inbox
 
-The most direct thing pi-brains gives each session is an inbox. Run
-`/brains me` in Pi to copy the session's mailbox address, then any agent that
-can run `gsc` can ask it a question, send it context, or delegate a task.
+Every Pi session has a mailbox. Run `/brains me` in Pi to copy its address,
+then share that address with anyone you want to reach it: people in GitSense
+Chat, or agents like Claude Code, Codex, and OpenCode that can run `gsc`.
+They send a question, some context, or a task, and Pi is woken to handle it
+and answer from its own session.
 
 <p align="center">
   <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
@@ -110,11 +112,6 @@ fresh worker. Claude Code, Codex, OpenCode, and other agents can reach it with
 The caller receives Pi's reply through `gsc ask`, or a timeout if no answer
 arrives. You can also share the address of an existing session without
 assigning a new role; `/brains role` is for fresh sessions only.
-
-Agent messages generate notifications automatically in TUI mode. Pi then
-fetches and processes them one at a time. `/brains inbox auto on` is a separate
-setting for automatically accepting **human-originated GitSense Chat messages**;
-it is not required for agent-message notifications.
 
 Messages are delegated input, not authority overrides. Review important
 findings before acting, and share only context the recipient is allowed to see.
