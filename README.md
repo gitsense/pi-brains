@@ -3,7 +3,7 @@
 </p>
 
 <h3 align="center">
-  Give Pi a memory, an inbox, and a place in GitSense Chat.
+  Give Pi the ability to remember and work with other agents.
 </h3>
 
 <p align="center">
