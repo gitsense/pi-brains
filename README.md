@@ -7,74 +7,42 @@
 </h3>
 
 <p align="center">
-  <a href="#gitsense-chat-puts-your-pi-agents-in-one-place">See it in Chat</a> &nbsp;·&nbsp;
   <a href="#install">Install</a> &nbsp;·&nbsp;
-  <a href="#every-pi-session-has-an-inbox">Inbox</a> &nbsp;·&nbsp;
-  <a href="#teach-pi-what-to-remember-and-how-to-behave">Teach Pi</a> &nbsp;·&nbsp;
+  <a href="#work-with-other-agents">Work with other agents</a> &nbsp;·&nbsp;
+  <a href="#scale-with-gitsense-chat">Scale with GitSense Chat</a> &nbsp;·&nbsp;
+  <a href="#teach-pi-what-to-remember">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
-**pi-brains** connects [Pi](https://github.com/earendil-works/pi) to
-[GitSense Chat](https://github.com/gitsense/chat). Install it once, and each Pi
-session becomes visible in Chat, reachable from any other agent through its own
-inbox, and able to carry knowledge across sessions with GitSense records.
+**pi-brains** gives [Pi](https://github.com/earendil-works/pi) a memory and an
+inbox. Pi can carry useful knowledge across conversations, and any agent that
+can run `gsc` can reach it directly through its mailbox. Add
+[GitSense Chat](https://github.com/gitsense/chat) to organize Pi sessions into
+Groups with lead agents that monitor and coordinate the work.
 
 Your Pi sessions keep doing the work in the terminal. pi-brains adds what sits
-around them: a mailbox other agents can message, heartbeats so GitSense Chat
-can show which sessions are alive, and the records and rules that keep useful
-knowledge between conversations.
+around them: focused records Pi can apply while it works, a mailbox other
+agents can message, and heartbeats that let GitSense Chat show which sessions
+are alive.
 
-## GitSense Chat puts your Pi agents in one place
+## Install
 
-pi-brains is what makes a Pi session a citizen of GitSense Chat. Sessions that
-run with pi-brains appear in Chat, where you can organize related work into
-Groups, give a Group a lead agent, and see which sessions are running, stopped,
-or ready to receive work, without opening every terminal.
+Requires **Node.js 22.19.0 or newer**, **Pi 0.81.1 or newer**, and the
+[GitSense (`gsc`) CLI](https://github.com/gitsense/gsc-cli).
 
-<table width="100%">
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Organize your sessions</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Give agents a lead</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Monitor work at a glance</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Build knowledge teams</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Bring results together</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Turn reports into actions</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
-    </td>
-  </tr>
-</table>
+```bash
+pi install npm:@gitsense/pi-brains
+```
 
-Lead agents can review existing evidence without interrupting working members.
-Creating or starting agents requires your explicit direction, and executable
-actions remain subject to application authorization and command validation.
+Start Pi in a workspace and run:
 
-Pi currently powers Chat's session and Group integration. Other harnesses can
-access shared knowledge and consult Pi agents through `gsc`; this does not
-imply integration of their session logs or lifecycle state.
+```text
+/brains
+```
 
-**[See GitSense Chat demos and workflows →](https://github.com/gitsense/chat)**
+If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
 
-## Every Pi session has an inbox
+## Work with other agents
 
 Every Pi session has a mailbox. Run `/brains me` in Pi to copy its address,
 then share that address with anyone you want to reach it: people in GitSense
@@ -116,24 +84,85 @@ assigning a new role; `/brains role` is for fresh sessions only.
 Messages are delegated input, not authority overrides. Review important
 findings before acting, and share only context the recipient is allowed to see.
 
-## Install
+## Scale with GitSense Chat
 
-Requires **Node.js 22.19.0 or newer**, **Pi 0.81.1 or newer**, and the
-[GitSense (`gsc`) CLI](https://github.com/gitsense/gsc-cli).
+pi-brains is what makes a Pi session a citizen of GitSense Chat. Sessions that
+run with pi-brains appear in Chat, where you can organize related work into
+Groups, give a Group a lead agent, and see which sessions are running, stopped,
+or ready to receive work, without opening every terminal.
 
-```bash
-pi install npm:@gitsense/pi-brains
-```
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Organize your sessions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Give agents a lead</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Monitor work at a glance</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Build knowledge teams</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Bring results together</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Turn reports into actions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
+    </td>
+  </tr>
+</table>
 
-Start Pi in a workspace and run:
+### Checkpoints keep leads current
 
-```text
-/brains
-```
+A checkpoint captures what a Pi session understands, the decisions it made,
+the risks it sees, and its next steps. Run `/brains checkpoint` at a
+meaningful boundary: generation happens on a scratch conversation branch, and
+the extension verifies the record was persisted before offering to return you
+to the original branch.
 
-If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
+Checkpoints are a first-class citizen in GitSense Chat. A lead asks what every
+agent is working on by reading checkpoints, not whole transcripts, so it can
+stay current without interrupting working members. Other agents can retrieve
+the same compact handoff. A checkpoint records reported understanding, not
+proof that the work is correct or still current.
 
-## Teach Pi what to remember and how to behave
+Need to preserve file contents too? `/brains snapshots create` captures the
+exact recognized file contents at the current session leaf. Checkpoints
+preserve understanding; snapshots preserve file state. See the
+[snapshot details](#session-snapshots) for coverage and exclusions.
+
+### Liveness powers monitoring
+
+In TUI mode, pi-brains records a heartbeat every 10 seconds so GitSense Chat
+can surface which sessions are alive without opening every terminal. A fresh
+heartbeat indicates that the session is alive, not that its work is correct or
+complete. A missing or stale heartbeat means availability is uncertain; it is
+not proof that the process stopped or permission to restart it. See
+[heartbeat implementation details](docs/session-liveness.md) for storage,
+shutdown behavior, and lookup APIs.
+
+Creating or starting agents requires your explicit direction. Executable
+actions remain subject to application authorization and command validation.
+
+Pi currently powers Chat's session and Group integration. Other harnesses can
+access shared knowledge and consult Pi agents through `gsc`; this does not
+imply integration of their session logs or lifecycle state.
+
+**[See GitSense Chat demos and workflows →](https://github.com/gitsense/chat)**
+
+## Teach Pi what to remember
 
 1. **You teach:** Ask Pi to record useful findings, rules to follow, mistakes to avoid, or context to retrieve.
 2. **It records:** Pi uses GitSense to save focused records in personal or repository scope, with file and topic associations where supported. Not every conversation is automatically turned into knowledge.
@@ -173,22 +202,6 @@ Start the interactive configuration from Pi:
 ```text
 /brains rules shell
 ```
-
-## Preserve a handoff with checkpoints
-
-Run `/brains checkpoint` at a meaningful boundary to capture what Pi
-understands, the decisions it made, risks, and next steps. Generation happens
-on a scratch conversation branch, and the extension verifies that the record
-was persisted before offering to return you to the original branch.
-
-Other agents can retrieve that compact handoff without reading the entire
-conversation. A checkpoint records reported understanding, not proof that the
-work is correct or still current.
-
-Need to preserve file contents too? `/brains snapshots create` captures the
-exact recognized file contents at the current session leaf. Checkpoints
-preserve understanding; snapshots preserve file state. See the
-[snapshot details](#session-snapshots) for coverage and exclusions.
 
 ## Try It Yourself
 
@@ -280,8 +293,8 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | `/brains role <description>` | Assign a worker role in a fresh session |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
 | `/brains search` | Open GitSense Chat search across Pi sessions |
-| `/brains rules` | Show rule status and configuration options |
 | `/brains checkpoint` | Record understanding, decisions, risks, and next steps |
+| `/brains rules` | Show rule status and configuration options |
 
 Run `/brains help` inside Pi to discover additional commands.
 
@@ -368,19 +381,6 @@ confirmation and moves data under `GSC_HOME/data/pi/snapshot-trash` rather than
 deleting it immediately.
 
 </details>
-
-## Session liveness
-
-In TUI mode, pi-brains records a heartbeat every 10 seconds so GitSense Chat
-can surface session availability without opening every terminal. A fresh
-heartbeat indicates that the session is alive, not that its work is correct
-or complete. A missing or stale heartbeat means availability is uncertain;
-it is not proof that the process stopped or permission to restart it.
-
-The inbox auto-accept setting concerns human-originated Chat messages, not
-whether an agent is idle or ready for another task. See
-[heartbeat implementation details](docs/session-liveness.md) for storage,
-shutdown behavior, and lookup APIs.
 
 ## Current Boundaries
 
