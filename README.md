@@ -58,7 +58,7 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 ## Teach Pi how you work
 
-Notes and lessons give Pi reusable context, and rules guide how it behaves.
+GitSense notes and lessons give Pi reusable context, and rules guide how it behaves.
 Teach it once, and later sessions start with your context instead of
 rediscovering it:
 
