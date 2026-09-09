@@ -3,7 +3,7 @@
 </p>
 
 <h3 align="center">
-  Give Pi the ability to remember and work with other agents.
+  Teach Pi what to remember, how to behave, and how to work with other agents.
 </h3>
 
 <p align="center">
