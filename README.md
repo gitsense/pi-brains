@@ -3,26 +3,121 @@
 </p>
 
 <h3 align="center">
-  Give Pi the ability to remember and work with other agents.
+  Give Pi a memory, an inbox, and a place in GitSense Chat.
 </h3>
 
 <p align="center">
+  <a href="#gitsense-chat-puts-your-pi-agents-in-one-place">See it in Chat</a> &nbsp;·&nbsp;
   <a href="#install">Install</a> &nbsp;·&nbsp;
+  <a href="#every-pi-session-has-an-inbox">Inbox</a> &nbsp;·&nbsp;
   <a href="#teach-pi-what-to-remember-and-how-to-behave">Teach Pi</a> &nbsp;·&nbsp;
-  <a href="#work-with-any-agent">Work with any agent</a> &nbsp;·&nbsp;
-  <a href="#preserve-a-handoff-with-checkpoints">Checkpoints</a> &nbsp;·&nbsp;
-  <a href="#scale-with-gitsense-chat">Scale with GitSense Chat</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
-**pi-brains** connects [Pi](https://github.com/earendil-works/pi) to shared
-knowledge, rules, and other agents. Preserve useful findings beyond a
-conversation, bring relevant guidance into Pi's workflow, and let other agents
-consult a session that already knows the work.
+**pi-brains** connects [Pi](https://github.com/earendil-works/pi) to
+[GitSense Chat](https://github.com/gitsense/chat). Install it once, and each Pi
+session becomes visible in Chat, reachable from any other agent through its own
+inbox, and able to carry knowledge across sessions with GitSense records.
 
-Use it in your existing Pi workflow. Add [GitSense Chat](https://github.com/gitsense/chat)
-when you want to organize sessions into Groups with lead agents that help you
-monitor and coordinate the work.
+Your Pi sessions keep doing the work in the terminal. pi-brains adds what sits
+around them: a mailbox other agents can message, heartbeats so GitSense Chat
+can show which sessions are alive, and the records and rules that keep useful
+knowledge between conversations.
+
+## GitSense Chat puts your Pi agents in one place
+
+pi-brains is what makes a Pi session a citizen of GitSense Chat. Sessions that
+run with pi-brains appear in Chat, where you can organize related work into
+Groups, give a Group a lead agent, and see which sessions are running, stopped,
+or ready to receive work, without opening every terminal.
+
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Organize your sessions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Give agents a lead</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Monitor work at a glance</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Build knowledge teams</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Bring results together</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Turn reports into actions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
+    </td>
+  </tr>
+</table>
+
+Lead agents can review existing evidence without interrupting working members.
+Creating or starting agents requires your explicit direction, and executable
+actions remain subject to application authorization and command validation.
+
+Pi currently powers Chat's session and Group integration. Other harnesses can
+access shared knowledge and consult Pi agents through `gsc`; this does not
+imply integration of their session logs or lifecycle state.
+
+**[See GitSense Chat demos and workflows →](https://github.com/gitsense/chat)**
+
+## Every Pi session has an inbox
+
+The most direct thing pi-brains gives each session is an inbox. Run
+`/brains me` in Pi to copy the session's mailbox address, then any agent that
+can run `gsc` can ask it a question, send it context, or delegate a task.
+
+<p align="center">
+  <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
+</p>
+
+The recipient answers from its own tools and session history, so you can
+consult a session that already knows the work instead of always starting a
+fresh worker. Claude Code, Codex, OpenCode, and other agents can reach it with
+`gsc ask`, send it a one-way notice with `gsc inform`, or message it directly.
+
+### Try an exchange
+
+1. In a fresh Pi session, assign a role before starting a conversation:
+
+   ```text
+   /brains role Explain this repository's architecture. Answer questions using repository evidence; do not modify files.
+   ```
+
+2. After Pi acknowledges the role, use `/brains me` to copy its mailbox
+   address. Keep the recipient session running with pi-brains loaded.
+3. In Claude Code, Codex, OpenCode, or another coding agent, ask:
+
+   ```text
+   Ask the Pi agent at <paste-mailbox-UUID> which components handle authentication
+   and what evidence supports its answer. Start by running `gsc experts guide ask`,
+   then use `gsc ask` with a five-minute timeout. Do not modify files.
+   ```
+
+The caller receives Pi's reply through `gsc ask`, or a timeout if no answer
+arrives. You can also share the address of an existing session without
+assigning a new role; `/brains role` is for fresh sessions only.
+
+Agent messages generate notifications automatically in TUI mode. Pi then
+fetches and processes them one at a time. `/brains inbox auto on` is a separate
+setting for automatically accepting **human-originated GitSense Chat messages**;
+it is not required for agent-message notifications.
+
+Messages are delegated input, not authority overrides. Review important
+findings before acting, and share only context the recipient is allowed to see.
 
 ## Install
 
@@ -82,47 +177,6 @@ Start the interactive configuration from Pi:
 /brains rules shell
 ```
 
-## Work with any agent
-
-Claude Code, Codex, OpenCode, or another agent that can run `gsc` can ask a
-Pi session for help. The recipient uses its own tools and session history,
-so you can consult a session that already has relevant context rather than
-always starting a fresh worker.
-
-<p align="center">
-  <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
-</p>
-
-### Try an exchange
-
-1. In a fresh Pi session, assign a role before starting a conversation:
-
-   ```text
-   /brains role Explain this repository's architecture. Answer questions using repository evidence; do not modify files.
-   ```
-
-2. After Pi acknowledges the role, use `/brains me` to copy its mailbox
-   address. Keep the recipient session running with pi-brains loaded.
-3. In Claude Code, Codex, OpenCode, or another coding agent, ask:
-
-   ```text
-   Ask the Pi agent at <paste-mailbox-UUID> which components handle authentication
-   and what evidence supports its answer. Start by running `gsc experts guide ask`,
-   then use `gsc ask` with a five-minute timeout. Do not modify files.
-   ```
-
-The caller receives Pi's reply through `gsc ask`, or a timeout if no answer
-arrives. You can also share the address of an existing session without
-assigning a new role; `/brains role` is for fresh sessions only.
-
-Agent messages generate notifications automatically in TUI mode. Pi then
-fetches and processes them one at a time. `/brains inbox auto on` is a separate
-setting for automatically accepting **human-originated GitSense Chat messages**;
-it is not required for agent-message notifications.
-
-Messages are delegated input, not authority overrides. Review important
-findings before acting, and share only context the recipient is allowed to see.
-
 ## Preserve a handoff with checkpoints
 
 Run `/brains checkpoint` at a meaningful boundary to capture what Pi
@@ -138,55 +192,6 @@ Need to preserve file contents too? `/brains snapshots create` captures the
 exact recognized file contents at the current session leaf. Checkpoints
 preserve understanding; snapshots preserve file state. See the
 [snapshot details](#session-snapshots) for coverage and exclusions.
-
-## Scale with GitSense Chat
-
-pi-brains works with Pi and the `gsc` CLI without requiring the Chat web app.
-Add [GitSense Chat](https://github.com/gitsense/chat) when you want one place to
-organize, monitor, and coordinate your Pi sessions:
-
-<table width="100%">
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Organize your sessions</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Give agents a lead</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Monitor work at a glance</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Build knowledge teams</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Bring results together</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Turn reports into actions</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
-    </td>
-  </tr>
-</table>
-
-Lead agents can review existing evidence without interrupting working members.
-Creating or starting agents requires your explicit direction, and executable
-actions remain subject to application authorization and command validation.
-
-Pi currently powers Chat's session and Group integration. Other harnesses can
-access shared knowledge and consult Pi agents through `gsc`; this does not
-imply integration of their session logs or lifecycle state.
-
-**[See GitSense Chat demos and workflows →](https://github.com/gitsense/chat)**
 
 ## Try It Yourself
 
@@ -272,11 +277,13 @@ Grep finds text. Vector search finds similar passages. Brains give Pi structured
 | Command | Description |
 | --- | --- |
 | `/brains` | Initialize Pi Brains |
-| `/brains rules` | Show rule status and configuration options |
 | `/brains me` | Show and copy the current agent's address |
 | `/brains inbox` | Review messages from people and other agents |
 | `/brains inbox auto on` | Automatically accept human-originated Chat messages |
 | `/brains role <description>` | Assign a worker role in a fresh session |
+| `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
+| `/brains search` | Open GitSense Chat search across Pi sessions |
+| `/brains rules` | Show rule status and configuration options |
 | `/brains checkpoint` | Record understanding, decisions, risks, and next steps |
 
 Run `/brains help` inside Pi to discover additional commands.
@@ -323,8 +330,6 @@ Run `/brains help` inside Pi to discover additional commands.
 | `/brains forget` | Prune entries after the current `/tree` position (with backup) |
 | `/brains summary` | Generate a session summary as the final message |
 | `/brains inspect` | Show inspect view instructions |
-| `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
-| `/brains search` | Open GitSense Chat search across Pi sessions |
 | `/brains me` | Show and copy this agent's session ID, process ID, and inbox auto-accept status |
 | `/brains inbox` | Review pending messages in the session inbox |
 | `/brains inbox list` | List all messages in the session inbox |
