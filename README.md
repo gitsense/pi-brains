@@ -7,23 +7,36 @@
 </h3>
 
 <p align="center">
-  <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#work-with-other-agents">Work with other agents</a> &nbsp;·&nbsp;
+  <a href="#install">Install</a> &nbsp;·&nbsp;
   <a href="#scale-with-gitsense-chat">Scale with GitSense Chat</a> &nbsp;·&nbsp;
   <a href="#teach-pi-what-to-remember">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
-**pi-brains** gives [Pi](https://github.com/earendil-works/pi) a memory and an
-inbox. Pi can carry useful knowledge across conversations, and any agent that
-can run `gsc` can reach it directly through its mailbox. Add
-[GitSense Chat](https://github.com/gitsense/chat) to organize Pi sessions into
-Groups with lead agents that monitor and coordinate the work.
+**pi-brains** helps [Pi](https://github.com/earendil-works/pi) remember what
+matters, follow your rules, and work with other agents. It uses GitSense to
+carry knowledge across conversations and gives each session a mailbox that any
+agent with `gsc` can reach.
 
-Your Pi sessions keep doing the work in the terminal. pi-brains adds what sits
-around them: focused records Pi can apply while it works, a mailbox other
-agents can message, and heartbeats that let GitSense Chat show which sessions
-are alive.
+Keep working in your terminal. When you want help managing more sessions, add
+[GitSense Chat](https://github.com/gitsense/chat) to organize them into Groups
+with lead agents that keep track of progress and coordinate the work.
+
+## Work with other agents
+
+Give other agents a way to ask Pi what it knows or share something it should
+know. Run `/brains me` to copy a session's mailbox address, then share it with
+Claude Code, Codex, OpenCode, or any agent that can run `gsc`.
+
+Use `gsc ask` when you need an answer, or `gsc inform` to send an update
+without waiting for a reply. For example, Codex could ask Pi about a
+repository or share a finding from its latest code review. Your running Pi
+session wakes to handle the message using its own context and tools.
+
+<p align="center">
+  <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
+</p>
 
 ## Install
 
@@ -41,48 +54,6 @@ Start Pi in a workspace and run:
 ```
 
 If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
-
-## Work with other agents
-
-Every Pi session has a mailbox. Run `/brains me` in Pi to copy its address,
-then share that address with anyone you want to reach it: people in GitSense
-Chat, or agents like Claude Code, Codex, and OpenCode that can run `gsc`.
-They send a question, some context, or a task, and Pi is woken to handle it
-and answer from its own session.
-
-<p align="center">
-  <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
-</p>
-
-The recipient answers from its own tools and session history, so you can
-consult a session that already knows the work instead of always starting a
-fresh worker. Claude Code, Codex, OpenCode, and other agents can reach it with
-`gsc ask`, send it a one-way notice with `gsc inform`, or message it directly.
-
-### Try an exchange
-
-1. In a fresh Pi session, assign a role before starting a conversation:
-
-   ```text
-   /brains role Explain this repository's architecture. Answer questions using repository evidence; do not modify files.
-   ```
-
-2. After Pi acknowledges the role, use `/brains me` to copy its mailbox
-   address. Keep the recipient session running with pi-brains loaded.
-3. In Claude Code, Codex, OpenCode, or another coding agent, ask:
-
-   ```text
-   Ask the Pi agent at <paste-mailbox-UUID> which components handle authentication
-   and what evidence supports its answer. Start by running `gsc experts guide ask`,
-   then use `gsc ask` with a five-minute timeout. Do not modify files.
-   ```
-
-The caller receives Pi's reply through `gsc ask`, or a timeout if no answer
-arrives. You can also share the address of an existing session without
-assigning a new role; `/brains role` is for fresh sessions only.
-
-Messages are delegated input, not authority overrides. Review important
-findings before acting, and share only context the recipient is allowed to see.
 
 ## Scale with GitSense Chat
 
