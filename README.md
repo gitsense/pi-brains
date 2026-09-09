@@ -43,9 +43,9 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 ## Teach Pi what to remember and how to behave
 
-1. **You teach** — Ask Pi to record useful findings, rules to follow, mistakes to avoid, or context to retrieve.
-2. **It records** — Pi uses GitSense to save focused records in personal or repository scope, with file and topic associations where supported. Not every conversation is automatically turned into knowledge.
-3. **It applies** — Agents retrieve relevant records, while pi-brains evaluates enabled rules at supported lifecycle events, such as before a tool call or after a tool result.
+1. **You teach:** Ask Pi to record useful findings, rules to follow, mistakes to avoid, or context to retrieve.
+2. **It records:** Pi uses GitSense to save focused records in personal or repository scope, with file and topic associations where supported. Not every conversation is automatically turned into knowledge.
+3. **It applies:** Agents retrieve relevant records, while pi-brains evaluates enabled rules at supported lifecycle events, such as before a tool call or after a tool result.
 
 For example, ask Pi:
 
@@ -127,7 +127,7 @@ on a scratch conversation branch, and the extension verifies that the record
 was persisted before offering to return you to the original branch.
 
 Other agents can retrieve that compact handoff without reading the entire
-conversation. A checkpoint records reported understanding—not proof that the
+conversation. A checkpoint records reported understanding, not proof that the
 work is correct or still current.
 
 Need to preserve file contents too? `/brains snapshots create` captures the
