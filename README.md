@@ -9,8 +9,8 @@
 <p align="center">
   <a href="#work-with-other-agents">Work with other agents</a> &nbsp;·&nbsp;
   <a href="#install">Install</a> &nbsp;·&nbsp;
+  <a href="#teach-pi-how-you-work">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#scale-with-gitsense-chat">Scale with GitSense Chat</a> &nbsp;·&nbsp;
-  <a href="#teach-pi-what-to-remember">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
@@ -55,85 +55,11 @@ Start Pi in a workspace and run:
 
 If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
 
-## Scale with GitSense Chat
+## Teach Pi how you work
 
-pi-brains is what makes a Pi session a citizen of GitSense Chat. Sessions that
-run with pi-brains appear in Chat, where you can organize related work into
-Groups, give a Group a lead agent, and see which sessions are running, stopped,
-or ready to receive work, without opening every terminal.
-
-<table width="100%">
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Organize your sessions</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Give agents a lead</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Monitor work at a glance</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Build knowledge teams</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Bring results together</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
-    </td>
-    <td width="50%" valign="top">
-      <p align="center"><strong>Turn reports into actions</strong></p>
-      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
-    </td>
-  </tr>
-</table>
-
-### Checkpoints keep leads current
-
-A checkpoint captures what a Pi session understands, the decisions it made,
-the risks it sees, and its next steps. Run `/brains checkpoint` at a
-meaningful boundary: generation happens on a scratch conversation branch, and
-the extension verifies the record was persisted before offering to return you
-to the original branch.
-
-Checkpoints are a first-class citizen in GitSense Chat. A lead asks what every
-agent is working on by reading checkpoints, not whole transcripts, so it can
-stay current without interrupting working members. Other agents can retrieve
-the same compact handoff. A checkpoint records reported understanding, not
-proof that the work is correct or still current.
-
-Need to preserve file contents too? `/brains snapshots create` captures the
-exact recognized file contents at the current session leaf. Checkpoints
-preserve understanding; snapshots preserve file state. See the
-[snapshot details](#session-snapshots) for coverage and exclusions.
-
-### Liveness powers monitoring
-
-In TUI mode, pi-brains records a heartbeat every 10 seconds so GitSense Chat
-can surface which sessions are alive without opening every terminal. A fresh
-heartbeat indicates that the session is alive, not that its work is correct or
-complete. A missing or stale heartbeat means availability is uncertain; it is
-not proof that the process stopped or permission to restart it. See
-[heartbeat implementation details](docs/session-liveness.md) for storage,
-shutdown behavior, and lookup APIs.
-
-Creating or starting agents requires your explicit direction. Executable
-actions remain subject to application authorization and command validation.
-
-Pi currently powers Chat's session and Group integration. Other harnesses can
-access shared knowledge and consult Pi agents through `gsc`; this does not
-imply integration of their session logs or lifecycle state.
-
-**[See GitSense Chat demos and workflows →](https://github.com/gitsense/chat)**
-
-## Teach Pi what to remember
+Notes and lessons give Pi reusable context, and rules guide how it behaves.
+Teach it once, and later sessions start with your context instead of
+rediscovering it:
 
 1. **You teach:** Ask Pi to record useful findings, rules to follow, mistakes to avoid, or context to retrieve.
 2. **It records:** Pi uses GitSense to save focused records in personal or repository scope, with file and topic associations where supported. Not every conversation is automatically turned into knowledge.
@@ -174,84 +100,100 @@ Start the interactive configuration from Pi:
 /brains rules shell
 ```
 
+## Make work easier to pick up
+
+A checkpoint captures what a session understands, the decisions it made, the
+risks it sees, and its next steps. Run `/brains checkpoint` at a meaningful
+boundary. Generation happens on a scratch conversation branch, so creating a
+checkpoint does not clutter your main thread, and the extension verifies the
+record was persisted before offering to return you to the original branch.
+
+Ask for a checkpoint before you step away, then read it when you come back. A
+lead or a future session can do the same: checkpoints answer what an agent is
+working on and what it has already worked on without reading the whole
+conversation transcript.
+
+A checkpoint records what the agent reported understanding at that moment. It
+is not proof that the work is correct or still current.
+
+Checkpoints preserve understanding. When you also need the exact file contents
+a session worked with, use `/brains snapshots create`; see the
+[snapshot details](#session-snapshots) for coverage and exclusions.
+
+## Scale with GitSense Chat
+
+A session name does not always tell you enough. GitSense Chat helps you find
+past work by what was discussed or which files were involved. Checkpoints
+capture what each agent understood, decided, and planned next, so you or a
+lead can catch up without reading the whole conversation.
+
+As your sessions grow, you don't have to juggle them all yourself. Organize
+related Pi sessions into Groups and add a lead agent that helps keep track of
+progress, bring findings together, and coordinate the work. Tell a lead what
+you need; it knows how to use GitSense to create agents, bring existing
+sessions into a Group, and arrange them around your work. pi-brains provides
+the messaging, checkpoints, and liveness information that make this possible.
+
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Organize your sessions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Give agents a lead</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Monitor work at a glance</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Build knowledge teams</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Bring results together</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Turn reports into actions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
+    </td>
+  </tr>
+</table>
+
+Sessions running pi-brains report whether they are alive, so GitSense Chat can
+show who is running, stopped, or ready to receive work without opening every
+terminal. A fresh heartbeat means the session is alive, not that its work is
+correct or complete. A missing or stale heartbeat means availability is
+uncertain, not that the process stopped or that you may restart it. See the
+[heartbeat details](docs/session-liveness.md) for implementation specifics.
+
+Creating or starting agents requires your explicit direction. Executable
+actions remain subject to application authorization and command validation.
+
+Pi currently powers Chat's session and Group integration. Other harnesses can
+access shared knowledge and consult Pi agents through `gsc`; this does not
+imply integration of their session logs or lifecycle state.
+
+**[See GitSense Chat demos and workflows →](https://github.com/gitsense/chat)**
+
 ## Try It Yourself
 
 These repos are already set up so you can see how pi-brains works.
 
-### Rules Demo - [`gsc-rules-demos`](https://github.com/gitsense/gsc-rules-demos)
+- **Rules demo:** [`gsc-rules-demos`](https://github.com/gitsense/gsc-rules-demos)
+  shows how rules, notes, and lessons help Pi work with a repository.
+- **Knowledge demo:** [`gitsense/pi`](https://github.com/gitsense/pi)
+  shows how queryable repository knowledge helps Pi decide where to look
+  before reading code.
 
-Use this repo to see how project knowledge and agent behavior can ship with code.
-
-```bash
-git clone https://github.com/gitsense/gsc-rules-demos.git
-cd gsc-rules-demos
-pi install npm:@gitsense/pi-brains
-pi
-```
-
-Then run `/brains` and ask Pi:
-
-```text
-/brains
-What rules are shipped with this repository?
-```
-
-Pi will walk you through the demo rules, notes, lessons, and triggers included in the repo.
-
-- **Quick examples to try:** See the [gsc-rules-demos README](https://github.com/gitsense/gsc-rules-demos#try-the-examples) for prompts you can copy and paste.
-- **Detailed walkthrough:** See the [Pi Hands-On Guide](https://github.com/gitsense/gsc-rules-demos/blob/main/docs/pi/hands-on.md) for setup notes and expected behavior.
-
-**What you'll learn:** rules can change how Pi behaves before it acts, notes can teach project-specific context, lessons can carry previous work into future sessions, and triggers can warn, block, or run checks around tool actions.
-
-### Knowledge Demo - [`gitsense/pi`](https://github.com/gitsense/pi)
-
-Use the GitSense Pi fork to try repository intelligence for Pi itself.
-
-```bash
-git clone https://github.com/gitsense/pi.git
-cd pi
-pi install npm:@gitsense/pi-brains
-pi
-```
-
-Build the included Brains:
-
-```text
-/brains build
-```
-
-Then ask Pi to use those Brains before it plans a change:
-
-```text
-I want to build a Pi extension. Before reading code, use the brains in this repo to find the docs, APIs, gotchas, and examples I should know about.
-```
-
-**What you'll learn:** Brains index repository knowledge so Pi can ask what is already known before spending context on source files.
-
-| Brain | What Pi learns before opening files |
-| --- | --- |
-| Docs | Which guide, section, or reference doc to read |
-| Code intent | Which files likely matter and why |
-| Dependency maps | Which files have high blast radius |
-| Implicit todos | Hidden debt, stubs, workarounds, or cleanup candidates |
-| Rules | What behavior must be followed |
-| Lessons | What previous work taught the team |
-
-For example, a broad request like this:
-
-```text
-I want to improve search. Before deciding what to change, use the brains in this repo to identify any gotchas, then verify the important findings against source.
-```
-
-can become a focused plan:
-
-- "Search" may mean TUI fuzzy matching, autocomplete, session search, model filtering, or agent grep/find tools.
-- `packages/tui/src/fuzzy.ts` may be shared infrastructure with high blast radius.
-- Agent `grep.ts` and `find.ts` may be separate from TUI search.
-- A Brain may surface hidden maintenance work, such as an incomplete stub or deprecated compatibility path.
-- Pi can verify the relevant findings against source before proposing a plan.
-
-Grep finds text. Vector search finds similar passages. Brains give Pi structured, queryable knowledge it can use to decide where to spend context.
+Setup steps and full walkthroughs live in each repository's README.
 
 ## Essential commands
 
