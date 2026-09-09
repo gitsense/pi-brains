@@ -26,7 +26,8 @@ with lead agents that keep track of progress and coordinate the work.
 ## Work with other agents
 
 Give other agents a way to ask Pi what it knows or share something it should
-know. Run `/brains me` to copy a session's mailbox address, then share it with
+know. Run `/brains inbox info` to show a session's mailbox address, then
+share it with
 Claude Code, Codex, OpenCode, or any agent that can run `gsc`.
 
 Use `gsc ask` when you need an answer, or `gsc inform` to send an update
@@ -200,8 +201,8 @@ Setup steps and full walkthroughs live in each repository's README.
 | Command | Description |
 | --- | --- |
 | `/brains` | Initialize Pi Brains |
-| `/brains me` | Show and copy the current agent's address |
 | `/brains inbox` | Review messages from people and other agents |
+| `/brains inbox info` | Show the mailbox address to share with other agents |
 | `/brains inbox auto on` | Automatically accept human-originated Chat messages |
 | `/brains role <description>` | Assign a worker role in a fresh session |
 | `/brains sessions` | Open the GitSense Chat view for all Pi sessions |
