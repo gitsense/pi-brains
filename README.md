@@ -89,6 +89,10 @@ Pi session for help. The recipient uses its own tools and session history,
 so you can consult a session that already has relevant context rather than
 always starting a fresh worker.
 
+<p align="center">
+  <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
+</p>
+
 ### Try an exchange
 
 1. In a fresh Pi session, assign a role before starting a conversation:
@@ -141,10 +145,38 @@ pi-brains works with Pi and the `gsc` CLI without requiring the Chat web app.
 Add [GitSense Chat](https://github.com/gitsense/chat) when you want one place to
 organize, monitor, and coordinate your Pi sessions:
 
-- **Organize sessions into Groups** around related work, roles, or status.
-- **Give a Group a lead agent** to connect findings across sessions and surface dependencies, overlapping work, and decisions that need your attention.
-- **Build knowledge teams** of focused Pi agents that other agents can consult.
-- **Inspect evidence and choose next steps** through actions alongside findings in answers and reports.
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Organize your sessions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-organize-sessions-placeholder.svg" alt="Placeholder showing Pi sessions organized in GitSense Chat" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Give agents a lead</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-give-agents-a-lead-placeholder.svg" alt="Placeholder showing a lead coordinating agents in GitSense Chat" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Monitor work at a glance</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-monitor-work-placeholder.svg" alt="Placeholder showing the status of many live Pi sessions" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Build knowledge teams</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-build-knowledge-teams-placeholder.svg" alt="Placeholder showing a group of specialized knowledge agents" width="100%"></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Bring results together</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-bring-results-together-placeholder.svg" alt="Placeholder showing a lead bringing together results from focused agents" width="100%"></p>
+    </td>
+    <td width="50%" valign="top">
+      <p align="center"><strong>Turn reports into actions</strong></p>
+      <p align="center"><img src="assets/demo/gitsense-turn-reports-into-actions-placeholder.svg" alt="Placeholder showing a report with clickable actions" width="100%"></p>
+    </td>
+  </tr>
+</table>
 
 Lead agents can review existing evidence without interrupting working members.
 Creating or starting agents requires your explicit direction, and executable
