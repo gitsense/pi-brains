@@ -58,13 +58,10 @@ If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/b
 
 ## Teach Pi how you work
 
-GitSense notes and lessons give Pi reusable context, and rules guide how it behaves.
-Teach it once, and later sessions start with your context instead of
-rediscovering it:
-
-1. **You teach:** Ask Pi to record useful findings, rules to follow, mistakes to avoid, or context to retrieve.
-2. **It records:** Pi uses GitSense to save focused records in personal or repository scope, with file and topic associations where supported. Not every conversation is automatically turned into knowledge.
-3. **It applies:** Agents retrieve relevant records, while pi-brains evaluates enabled rules at supported lifecycle events, such as before a tool call or after a tool result.
+Tell Pi what you want it to remember or how you want it to behave. Pi can use
+GitSense to save useful context as notes and lessons, or create rules that
+guide future work. Nothing is saved automatically. Tell Pi what to record and
+whether it belongs to you or the repository.
 
 For example, ask Pi:
 
@@ -103,37 +100,32 @@ Start the interactive configuration from Pi:
 
 ## Make work easier to pick up
 
-A checkpoint captures what a session understands, the decisions it made, the
-risks it sees, and its next steps. Run `/brains checkpoint` at a meaningful
-boundary. Generation happens on a scratch conversation branch, so creating a
-checkpoint does not clutter your main thread, and the extension verifies the
-record was persisted before offering to return you to the original branch.
+Run `/brains checkpoint` before stepping away or handing work over. It captures
+what the agent is working on, what it has learned, decisions, risks, and next
+steps, so you, a lead, or another session can catch up without reading the
+whole conversation.
 
-Ask for a checkpoint before you step away, then read it when you come back. A
-lead or a future session can do the same: checkpoints answer what an agent is
-working on and what it has already worked on without reading the whole
-conversation transcript.
+The checkpoint is created on a separate conversation branch, keeping your
+main thread clear. It records the agent's understanding at that moment. It may
+not reflect later work or prove correctness.
 
-A checkpoint records what the agent reported understanding at that moment. It
-is not proof that the work is correct or still current.
-
-Checkpoints preserve understanding. When you also need the exact file contents
-a session worked with, use `/brains snapshots create`; see the
-[snapshot details](#session-snapshots) for coverage and exclusions.
+When you also need the exact file contents a session worked with, use
+`/brains snapshots create`; see the [snapshot details](#session-snapshots).
 
 ## Scale with GitSense Chat
 
 A session name does not always tell you enough. GitSense Chat helps you find
-past work by what was discussed or which files were involved. Checkpoints
-capture what each agent understood, decided, and planned next, so you or a
-lead can catch up without reading the whole conversation.
+past work by what was discussed or which files were involved, then use
+checkpoints to catch up.
 
 As your sessions grow, you don't have to juggle them all yourself. Organize
-related Pi sessions into Groups and add a lead agent that helps keep track of
-progress, bring findings together, and coordinate the work. Tell a lead what
-you need; it knows how to use GitSense to create agents, bring existing
-sessions into a Group, and arrange them around your work. pi-brains provides
-the messaging, checkpoints, and liveness information that make this possible.
+related Pi sessions into Groups and add a lead. Tell it what you need, from
+checking progress and bringing findings together to creating agents and
+organizing their work.
+
+Leads create or start agents only when you ask. pi-brains gives Chat the
+messaging, checkpoints, and [liveness](docs/session-liveness.md) information
+that help make this possible.
 
 <table width="100%">
   <tr>
@@ -168,19 +160,9 @@ the messaging, checkpoints, and liveness information that make this possible.
   </tr>
 </table>
 
-Sessions running pi-brains report whether they are alive, so GitSense Chat can
-show who is running, stopped, or ready to receive work without opening every
-terminal. A fresh heartbeat means the session is alive, not that its work is
-correct or complete. A missing or stale heartbeat means availability is
-uncertain, not that the process stopped or that you may restart it. See the
-[heartbeat details](docs/session-liveness.md) for implementation specifics.
-
-Creating or starting agents requires your explicit direction. Executable
-actions remain subject to application authorization and command validation.
-
-Pi currently powers Chat's session and Group integration. Other harnesses can
-access shared knowledge and consult Pi agents through `gsc`; this does not
-imply integration of their session logs or lifecycle state.
+Keep working with other coding agents too. They can consult Pi sessions through
+`gsc`. GitSense Chat currently gets session history, liveness, and Group
+integration from Pi.
 
 **[See GitSense Chat demos and workflows →](https://github.com/gitsense/chat)**
 
