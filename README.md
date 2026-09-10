@@ -3,41 +3,25 @@
 </p>
 
 <h3 align="center">
-  Teach Pi what to remember, how to behave, and how to work with other agents.
+  Shared knowledge, rules, and agent messaging for Pi.
 </h3>
 
 <p align="center">
-  <a href="#work-with-other-agents">Work with other agents</a> &nbsp;·&nbsp;
   <a href="#install">Install</a> &nbsp;·&nbsp;
+  <a href="#work-with-other-agents">Work with other agents</a> &nbsp;·&nbsp;
   <a href="#teach-pi-how-you-work">Teach Pi</a> &nbsp;·&nbsp;
   <a href="#scale-with-gitsense-chat">Scale with GitSense Chat</a> &nbsp;·&nbsp;
   <a href="#try-it-yourself">Try it yourself</a>
 </p>
 
-**pi-brains** helps [Pi](https://github.com/earendil-works/pi) remember what
-matters, follow your rules, and work with other agents. It uses GitSense to
-carry knowledge across conversations and gives each session a mailbox that any
-agent with `gsc` can reach.
+**pi-brains** connects [Pi](https://github.com/earendil-works/pi) to GitSense so
+you can save knowledge for future sessions, apply rules during work, and
+exchange questions and updates with other coding agents. You choose what to
+save and which rules to enable.
 
-Keep working in your terminal. When you want help managing more sessions, add
-[GitSense Chat](https://github.com/gitsense/chat) to organize them into Groups
-with lead agents that keep track of progress and coordinate the work.
-
-## Work with other agents
-
-Give other agents a way to ask Pi what it knows or share something it should
-know. Run `/brains inbox info` to show a session's mailbox address, then
-share it with
-Claude Code, Codex, OpenCode, or any agent that can run `gsc`.
-
-Use `gsc ask` when you need an answer, or `gsc inform` to send an update
-without waiting for a reply. For example, Codex could ask Pi about a
-repository or share a finding from its latest code review. Your running Pi
-session wakes to handle the message using its own context and tools.
-
-<p align="center">
-  <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
-</p>
+Keep working in your terminal. Add
+[GitSense Chat](https://github.com/gitsense/chat) to find past work, organize
+sessions into Groups, and use lead agents to track progress and coordinate work.
 
 ## Install
 
@@ -55,6 +39,22 @@ Start Pi in a workspace and run:
 ```
 
 If [GitSense (`gsc`)](https://github.com/gitsense/gsc-cli) is not installed, `/brains` will show install instructions.
+
+## Work with other agents
+
+Give other agents a way to ask Pi what it knows or share something it should
+know. Run `/brains inbox info` to show a session's mailbox address, then
+share it with
+Claude Code, Codex, OpenCode, or any agent that can run `gsc`.
+
+Use `gsc ask` when you need an answer, or `gsc inform` to send an update
+without waiting for a reply. For example, Codex could ask Pi about a
+repository or share a finding from its latest code review. Your running Pi
+session wakes to handle the message using its own context and tools.
+
+<p align="center">
+  <img src="assets/demo/work-with-any-agent-placeholder.svg" alt="Placeholder for a terminal demo showing Claude Code, Codex, and OpenCode initiating requests to a Pi session" width="100%">
+</p>
 
 ## Teach Pi how you work
 
